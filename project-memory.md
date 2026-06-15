@@ -23,3 +23,11 @@ The pull to split was partly "we'll lose live shared access unless it pushes to 
 - No hard stops in v1: a wrong hard stop is more dangerous than none; legal judgment stays with the licensed vet. Per-state hard rules are a possible future layer.
 - Barn-config pattern (store truth, configure local encoding) recurs across fields (official-ID type, age encoding). Build once as a pattern.
 - The change-of-ownership is only the vet's HALF of a traceability trail; combining it with the barn's own paperwork is a future opportunity (needs a shared key), not a v1 requirement.
+
+## 2026-06-14 (part 2) — Office layer + live database
+- The office Google Sheet was the missing piece: it's the work ORDER (created before the vet works), not a parallel record. consignment_lot/buyer_load ARE that work order; the chute fills it; mark-off becomes derived. Collapses today's Sheet + Zoho double-entry.
+- Frozen prices solve the real pain (Chandy adjusts rates and must archive sheets): each line keeps its own rate snapshot, so the rate card edits forward and past bills never change. No more archiving.
+- Buyer numbers are allocated per day and not stable buyer-to-buyer; regulars carry a typical destination for pre-fill, but the day's load owns the real destination (it would be a legal error to bake destination into the number — e.g. 811 usually goes to Fall River but not always).
+- Stack decision: Next.js + Supabase. Server layer needed for the GVL token + future master push (secrets server-side only).
+- DATABASE IS LIVE: Supabase project "Sale Barn Vet" = odrcpdnzhnyiofokokum (us-west-1, org ubkukhruakwaflabwnzh), separate from HerdWork. 13 tables, RLS enabled on all (secure-by-default; policies come with the auth build), billing math in generated columns, seeded with the rate card + animal types. Security advisor run; function search_path hardened.
+- Production-hardening checklist + GVL integration are tracked as Notion items.

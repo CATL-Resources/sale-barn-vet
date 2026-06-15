@@ -1,0 +1,16 @@
+# Supabase CLI config for Sale Barn Vet.
+#
+# The live project is already created and the schema in supabase/migrations is
+# already applied to it. To connect this repo to the live database:
+#
+#   supabase login                                   # one-time, needs a personal access token
+#   supabase link --project-ref odrcpdnzhnyiofokokum
+#   supabase db pull                                 # re-sync migrations from remote (no-op if in sync)
+#   supabase gen types typescript --linked > types/supabase.ts
+#
+# project_id is the local identifier used by the CLI; it is not the remote ref.
+project_id = "sale-barn-vet"
+
+[db]
+# Matches the live project's Postgres major version (used only by the local stack).
+major_version = 17
