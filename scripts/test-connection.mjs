@@ -1,16 +1,20 @@
-// Quick wiring check: reads public.work_type through the anon key.
+// Wiring + RLS check. Reads public.work_type.
 //
-// Run after creating .env.local:
 //   npm run test:db
 //
-// EXPECTED on a fresh DB: 0 rows. RLS is enabled and no SELECT policies exist yet,
-// so the anon key sees nothing. That confirms the wiring is correct AND that the
-// database is secure-by-default. Rows appear once auth/RLS policies are added.
+// LOGGED OUT (default): expects 0 rows — RLS grants access only to authenticated barn
+//   members, so the anon request sees nothing. That confirms the wiring AND that the
+//   database is secure-by-default.
+// LOGGED IN: after the first admin/member is bootstrapped, set TEST_USER_EMAIL and
+//   TEST_USER_PASSWORD in .env.local; the script signs in and should then see the 11
+//   seeded work_type rows.
 
 import { createClient } from '@supabase/supabase-js'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const email = process.env.TEST_USER_EMAIL
+const password = process.env.TEST_USER_PASSWORD
 
 if (!url || !anonKey) {
   console.error(
@@ -20,20 +24,35 @@ if (!url || !anonKey) {
   process.exit(1)
 }
 
-const supabase = createClient(url, anonKey)
+const supabase = createClient(url, anonKey, { auth: { persistSession: false } })
+
+if (email && password) {
+  const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+  if (signInError) {
+    console.error('Sign-in FAILED:', signInError.message)
+    process.exit(1)
+  }
+  console.log(`Signed in as ${email} (authenticated request).`)
+} else {
+  console.log('No TEST_USER_EMAIL / TEST_USER_PASSWORD set — running as anonymous (logged-out).')
+}
+
 const { data, error } = await supabase
   .from('work_type')
   .select('name, vet_charge, sol_charge')
 
 if (error) {
-  console.error('Connection FAILED:', error.message)
+  console.error('Query FAILED:', error.message)
   process.exit(1)
 }
 
-console.log(`Connected to Supabase. work_type rows visible to anon: ${data.length}`)
+console.log(`Connected. work_type rows visible: ${data.length}`)
 if (data.length > 0) console.table(data)
-else
+
+if (!email && data.length === 0) {
   console.log(
-    '\n0 rows is EXPECTED here: RLS is on and no SELECT policies exist yet.\n' +
-      'The wiring is correct — data will surface once policies land in the auth build.',
+    '\n0 rows is EXPECTED logged-out: RLS allows only authenticated barn members.\n' +
+      'After the first admin membership is bootstrapped, set TEST_USER_EMAIL / TEST_USER_PASSWORD\n' +
+      'in .env.local to sign in — you should then see the 11 seeded work_type rows.',
   )
+}

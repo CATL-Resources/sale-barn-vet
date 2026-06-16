@@ -1,22 +1,21 @@
 'use client'
 
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 import type { Database } from '@/types/supabase'
 
 /**
- * Browser-side Supabase client, typed against the live schema (types/supabase.ts).
- * Uses the public anon key. Auth/session wiring lands with the auth build.
+ * Browser-side Supabase client, typed against the live schema.
+ * Uses the public anon key; session is carried in cookies (see middleware + server client).
  */
-export function createBrowserClient() {
+export function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!url || !anonKey) {
     throw new Error(
-      'Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY. ' +
-        'Copy .env.local.example to .env.local and fill it in (Supabase dashboard -> Project Settings -> API).',
+      'Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY. See .env.local.example.',
     )
   }
 
-  return createClient<Database>(url, anonKey)
+  return createBrowserClient<Database>(url, anonKey)
 }
