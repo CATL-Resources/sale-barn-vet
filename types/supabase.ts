@@ -63,6 +63,7 @@ export type Database = {
           age_designation: string | null
           age_value: string | null
           animal_type_id: string | null
+          barn_id: string
           breed: string | null
           buyer_load_id: string | null
           color: string | null
@@ -83,6 +84,7 @@ export type Database = {
           age_designation?: string | null
           age_value?: string | null
           animal_type_id?: string | null
+          barn_id: string
           breed?: string | null
           buyer_load_id?: string | null
           color?: string | null
@@ -103,6 +105,7 @@ export type Database = {
           age_designation?: string | null
           age_value?: string | null
           animal_type_id?: string | null
+          barn_id?: string
           breed?: string | null
           buyer_load_id?: string | null
           color?: string | null
@@ -125,6 +128,13 @@ export type Database = {
             columns: ["animal_type_id"]
             isOneToOne: false
             referencedRelation: "animal_type"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "animal_barn_id_fkey"
+            columns: ["barn_id"]
+            isOneToOne: false
+            referencedRelation: "barn"
             referencedColumns: ["id"]
           },
           {
@@ -236,10 +246,43 @@ export type Database = {
         }
         Relationships: []
       }
+      barn_member: {
+        Row: {
+          barn_id: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          barn_id: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          barn_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "barn_member_barn_id_fkey"
+            columns: ["barn_id"]
+            isOneToOne: false
+            referencedRelation: "barn"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       buyer_load: {
         Row: {
           admin_total: number | null
           animal_type_id: string | null
+          barn_id: string
           buyer_number_id: string | null
           buyer_number_text: string | null
           buyer_party_id: string | null
@@ -270,6 +313,7 @@ export type Database = {
         Insert: {
           admin_total?: number | null
           animal_type_id?: string | null
+          barn_id: string
           buyer_number_id?: string | null
           buyer_number_text?: string | null
           buyer_party_id?: string | null
@@ -300,6 +344,7 @@ export type Database = {
         Update: {
           admin_total?: number | null
           animal_type_id?: string | null
+          barn_id?: string
           buyer_number_id?: string | null
           buyer_number_text?: string | null
           buyer_party_id?: string | null
@@ -333,6 +378,13 @@ export type Database = {
             columns: ["animal_type_id"]
             isOneToOne: false
             referencedRelation: "animal_type"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buyer_load_barn_id_fkey"
+            columns: ["barn_id"]
+            isOneToOne: false
+            referencedRelation: "barn"
             referencedColumns: ["id"]
           },
           {
@@ -429,6 +481,7 @@ export type Database = {
         Row: {
           admin_total: number | null
           animal_type_id: string | null
+          barn_id: string
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -456,6 +509,7 @@ export type Database = {
         Insert: {
           admin_total?: number | null
           animal_type_id?: string | null
+          barn_id: string
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -483,6 +537,7 @@ export type Database = {
         Update: {
           admin_total?: number | null
           animal_type_id?: string | null
+          barn_id?: string
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -516,6 +571,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "consignment_lot_barn_id_fkey"
+            columns: ["barn_id"]
+            isOneToOne: false
+            referencedRelation: "barn"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "consignment_lot_sale_day_id_fkey"
             columns: ["sale_day_id"]
             isOneToOne: false
@@ -540,6 +602,7 @@ export type Database = {
       }
       document: {
         Row: {
+          barn_id: string
           buyer_load_id: string | null
           created_at: string
           created_by: string | null
@@ -554,6 +617,7 @@ export type Database = {
           version: number
         }
         Insert: {
+          barn_id: string
           buyer_load_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -568,6 +632,7 @@ export type Database = {
           version?: number
         }
         Update: {
+          barn_id?: string
           buyer_load_id?: string | null
           created_at?: string
           created_by?: string | null
@@ -583,6 +648,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "document_barn_id_fkey"
+            columns: ["barn_id"]
+            isOneToOne: false
+            referencedRelation: "barn"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "document_buyer_load_id_fkey"
             columns: ["buyer_load_id"]
             isOneToOne: false
@@ -594,6 +666,7 @@ export type Database = {
       identifier: {
         Row: {
           animal_id: string
+          barn_id: string
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -606,6 +679,7 @@ export type Database = {
         }
         Insert: {
           animal_id: string
+          barn_id: string
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -618,6 +692,7 @@ export type Database = {
         }
         Update: {
           animal_id?: string
+          barn_id?: string
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -634,6 +709,13 @@ export type Database = {
             columns: ["animal_id"]
             isOneToOne: false
             referencedRelation: "animal"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "identifier_barn_id_fkey"
+            columns: ["barn_id"]
+            isOneToOne: false
+            referencedRelation: "barn"
             referencedColumns: ["id"]
           },
         ]
@@ -738,6 +820,7 @@ export type Database = {
       special_charge: {
         Row: {
           admin_total: number
+          barn_id: string
           created_at: string
           created_by: string | null
           customer_charge: number
@@ -755,6 +838,7 @@ export type Database = {
         }
         Insert: {
           admin_total?: number
+          barn_id: string
           created_at?: string
           created_by?: string | null
           customer_charge?: number
@@ -772,6 +856,7 @@ export type Database = {
         }
         Update: {
           admin_total?: number
+          barn_id?: string
           created_at?: string
           created_by?: string | null
           customer_charge?: number
@@ -788,6 +873,13 @@ export type Database = {
           vet_total?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "special_charge_barn_id_fkey"
+            columns: ["barn_id"]
+            isOneToOne: false
+            referencedRelation: "barn"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "special_charge_party_id_fkey"
             columns: ["party_id"]
@@ -859,7 +951,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      user_barn_ids: { Args: never; Returns: string[] }
+      user_is_barn_admin: { Args: { b: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

@@ -10,9 +10,21 @@ site), separate from HerdWork and Work Cows.
 
 ## Status
 
-Foundation only — the repo is wired to the **live** Supabase database, but feature UI
-(Office work orders, chuteside Capture, Office filter-to-build, Settings) is intentionally not
-built yet. It lands with the auth/RLS + Claude Design phase.
+Auth + RLS layer is in. The repo is wired to the **live** Supabase database with email/password
+auth (invite-only), session cookies, route protection, and row-level security on every table.
+**Styled feature UI** (Office work orders, chuteside Capture, Office filter-to-build, Settings)
+is intentionally not built yet — it lands with the Claude Design phase. The only screen is a
+throwaway `/login` + a minimal protected home that doubles as an auth/RLS check.
+
+## Auth & access model (v1)
+
+- **Invite-only.** No public sign-up. An admin creates accounts; a `barn_member` row ties a
+  login to the barn with a role (`admin` / `office` / `vet`).
+- **RLS:** every logged-in barn member can read/write everything for their barn; role only
+  gates which screens show later (not a database wall). Not logged in → nothing.
+- **First admin** is bootstrapped outside the app (insert a `barn_member` row directly), then
+  sign in at `/login`.
+- Server code authenticates with `supabase.auth.getUser()` (verified) — never `getSession()`.
 
 ## Database
 
@@ -43,6 +55,8 @@ Get the values for `.env.local` from the Supabase dashboard:
 **Project Settings → API → Project URL** and the **anon / public** key. `.env.local` is
 gitignored — never commit keys.
 
-> **Expected:** `npm run test:db` reads **0 rows**. RLS is enabled on every table and no
-> SELECT policies exist yet, so the anon key sees nothing. That confirms the wiring is correct
-> and the database is secure-by-default; data surfaces once policies land in the auth build.
+> **Expected:** `npm run test:db` reads **0 rows** when logged out — RLS grants access only to
+> authenticated barn members, so the anon request sees nothing (wiring correct + secure-by-default).
+> After the first admin/member is bootstrapped, set `TEST_USER_EMAIL` / `TEST_USER_PASSWORD` in
+> `.env.local` and re-run: the script signs in and you should see the 11 seeded `work_type` rows.
+> In the app, sign in at `/login` — the home page shows the same count for your account.

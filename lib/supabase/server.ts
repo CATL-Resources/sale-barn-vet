@@ -1,25 +1,43 @@
-import { createClient } from '@supabase/supabase-js'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 import type { Database } from '@/types/supabase'
 
 /**
- * Server-side Supabase client, typed against the live schema (types/supabase.ts).
+ * Cookie-based server Supabase client, typed against the live schema.
  *
- * The server layer exists so server-only secrets (e.g. the future GVL integration
- * token and the master-DB push) never reach the browser. For now it uses the anon
- * key with sessions disabled; cookie/session handling lands with the auth build.
+ * Use in Server Components, Route Handlers, and Server Actions. The server layer
+ * keeps server-only secrets (future GVL token, master-DB push) out of the browser.
+ *
+ * IMPORTANT: for auth decisions in server code, call `supabase.auth.getUser()`
+ * (verifies with the auth server). Do NOT trust `getSession()`.
  */
-export function createServerClient() {
+export function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
   if (!url || !anonKey) {
     throw new Error(
-      'Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY. ' +
-        'Copy .env.local.example to .env.local and fill it in (Supabase dashboard -> Project Settings -> API).',
+      'Missing NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY. See .env.local.example.',
     )
   }
 
-  return createClient<Database>(url, anonKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
+  const cookieStore = cookies()
+
+  return createServerClient<Database>(url, anonKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll()
+      },
+      setAll(cookiesToSet: { name: string; value: string; options: CookieOptions }[]) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options),
+          )
+        } catch {
+          // Called from a Server Component (cookies are read-only there).
+          // Safe to ignore — the middleware refreshes the session cookie.
+        }
+      },
+    },
   })
 }
