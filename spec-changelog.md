@@ -13,3 +13,13 @@
 - DECISION: no hard stops in v1; all checks are soft flags. Flag set defined.
 - Established the barn-config pattern (store truth, configure local encoding) as a system-wide principle.
 - Architecture: online-primary, concurrent multi-device on one DB, with per-device local fallback (push-on-reconnect). Foundational constraint.
+
+## 2026-06-14 (part 2) — Office layer, pricing, schema applied, stack
+- Added the OFFICE work-order layer (consignment_lot + buyer_load as the office work orders the chute fills; three roles; office UX = spreadsheet-fast).
+- Locked the pricing model from the live vet sheet (work_type -> vet+SOL per head; Vet Total = charge x head x 1.042; Admin = Vet Total x 5%; SOL Total = charge x head; Total = sum). Admin/tax are uniform barn rates (removed the Drug Free Bull exception as a sheet error).
+- FROZEN PRICE snapshots per line; reconciliation totals derived (split buyer/seller + special charges).
+- buyer_number = sub-identity of a buyer; typical destination is pre-fill only, actual destination lives on the buyer_load and is what the CVI uses.
+- Added exportable XLSX outputs (per-animal change-of-ownership + per-lot billing; tag columns text-typed).
+- Added GVL eCVI integration direction (Chrome stopgap -> token integration).
+- Set stack: Next.js + Supabase.
+- SCHEMA APPLIED to live Supabase project odrcpdnzhnyiofokokum (13 tables, RLS on, seeded). See supabase/migrations.

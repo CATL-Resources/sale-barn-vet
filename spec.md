@@ -1,89 +1,76 @@
 # Sale Barn Vet — Spec (v1)
 
-Product: Sale Barn Vet (salebarnvet.com). The regulatory + health work a beef-cattle vet does AT a sale barn. Standalone product, separate from HerdWork and Work Cows.
+Product: Sale Barn Vet (salebarnvet.com). Regulatory + health work a beef-cattle vet does AT a sale barn. Standalone product (own repo, own Supabase database, own site), separate from HerdWork and Work Cows.
 
-## 1. The premise that makes this its own product
-Every other product (HerdWork, Work Cows) starts from a PREDEFINED group of known animals you track over time. Sale barn work has none of that:
-- No predefined list. Animals arrive as strangers, consigned by people you may not know, seen once, gone.
-- The animal is not the point — the OUTPUT DOCUMENT is. The real deliverables are a CVI (health certificate) and a change-of-ownership record. The animal record is scaffolding used to generate those papers.
-- This is the one moment an animal's identity transfers from the seller's operation to the buyer's. The tag (EID or metal) is the only thread.
+## 1. Premise
+- No predefined animal list: animals arrive as strangers, seen once, gone.
+- The OUTPUT DOCUMENT is the product (CVI + change-of-ownership), not an animal life history.
+- The sale barn is the one moment identity transfers between operations; the tag is the only thread.
 
-## 2. What replaces the predefined group (the spine)
-- SALE DAY — the top container. You create and BILL work by day. Holds both halves of the day (sellers before the sale, buyers after).
-- SELLER and BUYER — durable handles that cut ACROSS days. This is how history is searched ("pull up everything for Johnson", "every load Buyer 44 took"). Not free-typed strings on a record — first-class entities the work points back to.
-- BATCH — the durable grouping inside a day. Means a consignor's lot BEFORE the sale; a buyer's split AFTER the sale. Carries the shared descriptors.
-- ANIMAL + IDENTIFIER(S) — the spine that survives the split and the pen-shuffling. One animal, one-or-more identifiers of any kind.
-- The same animal can be touched in BOTH halves (seller pass + buyer pass). It is ONE animal record that picks up a second pass, tied by tag — not two unrelated records.
+## 2. The spine that replaces the predefined list
+- SALE DAY — top container; you create and BILL by day.
+- SELLER / BUYER — durable handles that cut across days; how history is searched.
+- BATCH, two forms: CONSIGNMENT LOT (pre-sale, by seller) and BUYER LOAD (post-sale, by buyer). The same animal moves from one to the other; that move is the nature of a sale barn.
+- ANIMAL + IDENTIFIER(S) — the thread across the split.
 
-## 3. Two modes, two locations (core architecture insight)
-There is no single workflow. There are two, and they happen in different places.
+## 3. Three roles / two locations
+- OFFICE STAFF (desk, laptop) — set up the work orders (lots) + pricing/reconciliation, BEFORE the work. UX = spreadsheet-fast (keyboard, tab, paste); NOT the chuteside UI.
+- VET CREW AT THE CHUTE (tablet) — open the lot the office created and record animals into it. "Seconds per head." No re-entry of pen/seller/type/head.
+- VET CREW IN THE OFFICE (~300 yds, laptop) — filter-to-build buyer loads + generate papers, AFTER the sale, animals not present.
 
-### CAPTURE mode — chuteside, animals present
-Tablet at the chute, gate sliding, "seconds per head". Job: get animals into the system fast.
-- Pen-flow / sticky mini-batch: set the shared header ONCE at the top of a pen — it carries to every animal until you start a new batch.
-  - STICKY fields (carry until "Next Pen"): pen #, seller, buyer, animal type.
-  - FRESH fields (blank every animal): tag(s), quick notes. Quick notes must NEVER be sticky (a "lame" note must not bleed onto the next animal).
-- Expected count entered up front; running tally shows "17 of 30".
-- "Next Pen / New Batch" button — explicit. The app cannot see the gate slide, so switching pens is a deliberate one-tap action that asks for the new pen/seller/buyer/type. Do NOT auto-advance on count (counts are usually right but not reliably right).
-- Count is SOFT: never blocks. A gentle flag fires at/over the expected number ("you're at 30 of 30" / "you've passed the expected count") — a heads-up to recount or hit Next Pen, not a wall.
+## 4. The office layer (replaces today's Google Sheet + Zoho double-entry)
+Today: an office Google Sheet (work order + auto-pricing + reconciliation) AND animal records in Zoho, kept in sync by hand. This product collapses both into one pipeline: the office creates the lot; the chute fills it; "marked off" is DERIVED from work done, not a manual check.
 
-### OFFICE / ASSEMBLE mode — ~300 yards away, NO animals present
-Desk tool that operates on already-captured records to produce papers. Job: filter captured data, not capture.
-- FILTER-TO-BUILD buyer loads: pre-sale you may ID a whole consignment (e.g. 100 cows) as ID-ONLY touches (tag + age designation, nothing more). The sale tells you a buyer took 50, described by criteria ("50 head, purple tags"). You often do NOT re-run them — you FILTER the captured 100 by the description, and the matching records ARE the load.
-- DESIGNATE BUYER saves the set: assigning the buyer to the filtered group is what saves it as "his". This also shrinks the unassigned pool (the other 50 are now known to be "not his"), so assigning buyers is partly elimination.
-- HAND-TUNE against the notes: the filter returns CLOSE, not exact (52 come back when the paper says 50). The vet works it down by hand using the quick notes ("two are lame/lump, probably got kicked out → drop them → 50"). Explicitly fuzzy-but-close work done by judgment. The descriptive fields (color, quick notes, animal type) are load-bearing here — they are the filter + reconciliation criteria, not just metadata.
-- The CVI and change-of-ownership GENERATE from the resulting set.
+### Pricing model (from the live vet sheet — authoritative)
+Each work-order line has a WORK TYPE that sets two per-head rates: Vet Charge and SOL (St. Onge Livestock) Charge. For head count H:
+- Vet Total = Vet Charge x H x 1.042  (4.2% sales tax folded in)
+- Admin = Vet Total x 0.05
+- SOL Total = SOL Charge x H
+- Total Customer Charge = Vet Total + Admin + SOL Total
+FROZEN PRICES: each line copies its rates at work time, so changing the rate card later never alters past bills. This eliminates the "adjust prices -> archive the sheet" cycle; history lives in the records.
+RECONCILIATION: the sale day sums all lines split by Buyer vs Seller (Total / Vet / Admin / SOL / Head) plus a grand total; SPECIAL CHARGES (ad-hoc one-offs) fold in. All derived, never typed.
+Rate card (vet / SOL per head): Drug Free Bull 13/1.25; Preg and Mouth Cows 11/1.25; Cow ID-Chute 7.5/0.5; Preg Heifers 9/0.5; Bull ID-Chute 10/0.5; Canada Export 16/1.25; ID Only 5/0; Bangs Vaccination 13/0.5; Band 35/1; Pairs 12/1.25; Test Bull 75/1.
+Admin (5%) and sales tax (4.2%) are barn settings, uniform across all work types (the Drug Free Bull exception in the old sheet was an error; standardized).
 
-## 4. Outputs (generated, never hand-filled)
-- CVI / electronic health paper — surfaces on the BUYER side, esp. out-of-state loads.
-- Change-of-ownership — the vet's HALF of a state traceability trail (animal → buyer). The state must combine it with the sale barn's own paperwork to trace an animal; today those halves are not combined. It is populated entirely from captured chuteside data.
-- Both papers = the day's touches, reorganized and printed. Record each animal once; the papers fall out.
+### Buyer numbers
+A buyer (party) has MANY buyer numbers; a number is allocated that day and can be non-numeric ("CAM", "418-x"). Regular numbers carry a TYPICAL destination/state/needs (reference list, pre-fill only). The ACTUAL destination lives on that day's buyer load, pre-filled but editable — and the CVI uses the actual, not the typical.
 
-## 5. Identity + identifiers
-- Required: at least ONE official ID per animal. An official ID = an official metal tag OR an official EID. WHICH kind counts is BARN-CONFIG (St. Onge = EID; many barns = metal). Mixed groups (some metal, some EID, some both) are normal.
-- An animal may carry MULTIPLE identifiers: official EID + official metal + a secondary 900 EID + a back tag. Model identifiers as a LIST attached to the animal, each typed.
-- Identifier types:
-  - Official EID — exactly 15 digits, must start with 840 (US country code).
-  - Official metal tag — 2-digit state code + 3 letters + 4 numbers (e.g. 46ABC4678, 43VRT5001). Leading 2 digits = state of origin. Letters A/B/C = regular official tag; V/S/T = brucellosis (bangs) tag.
-  - Secondary / management EID — non-official, may start with 900. Lives in its own slot; the 840 rule does NOT apply to it and it must not trip the duplicate flag against the official EID.
-  - Back tag — barn back-number, often a barcode scan; used on the buyer side.
+## 5. Identity + attributes
+- Required: at least one OFFICIAL ID per animal (official metal tag OR official EID; which counts is barn-config; St. Onge = EID). Mixed metal/EID groups normal; multiple tags per animal normal.
+- Identifier types: official EID (15 digits, starts 840); official metal (2-digit state + 3 letters + 4 numbers; A/B/C regular, V/S/T brucellosis); secondary/management EID (e.g. 900-series, non-official); back tag (barcode). Stored as a typed list; value is TEXT (protects the 15-digit string).
+- Animal inherits its lot's animal type/color; stores its own value only when different.
+- Age: a VALUE and/or a DESIGNATION (encoding) — method (color/placement/mark) is barn-config; St. Onge uses color. Both optional; use one, the other, or both.
+- Preg status gated by type: expected for bred cows, available for pairs (bred/open both valid), absent for bulls. Optional bred-timing (months preferred over season).
+- Quick notes (horns, lame, lump jaw, colors): re-identification + the filter criteria for filter-to-build; never sticky across animals.
 
-## 6. Animal attributes (batch sets defaults, animal overrides on exception)
-The animal INHERITS the batch's attributes and only stores its own value when different ("only if it's different within the group"). Keeps "seconds per head" honest.
-- Cattle type (enum): yearlings, feeder cattle, replacement heifers, weaned cows, bred cows, bulls, drug-free bulls, yearling sale bulls, PAIRS. Type partly predicts the work (pairs → age; bred cows → age + preg; bulls → soundness).
-- Color; breed/type (beef vs dairy) — recorded at batch level when the group is uniform, at animal level when it varies.
-- Age — captured in two INDEPENDENT optional layers, use one/the other/both:
-  - Age VALUE — the real age.
-  - Age DESIGNATION — the local encoding of age: St. Onge = TAG COLOR; elsewhere = placement or a mark. The METHOD (color/placement/mark) is BARN-CONFIG; the VALUE (which color, which spot) is entered chuteside. At St. Onge, recording the color IS the age entry (don't force both).
-- Preg status — GATED BY CATTLE TYPE: expected for bred cows; AVAILABLE for pairs (a pair can be checked bred or open — valid, not a contradiction); ABSENT for bulls (field not shown). Values: bred / open, plus an optional bred-TIMING designation — season (spring/summer/fall) OR months-along. Prefer months over seasons (seasons confuse people). Sale-barn-specific.
-- Quick notes (re-identification / sort handles): colors, horns, lame, lump jaw, etc. Never sticky.
-- Also seen: "non-brucellosis vaccinate" status (movement-relevant). Note: a V/S/T metal tag implies bangs-vaccinate by the tag alone — possible future inference, not a v1 requirement.
+## 6. Office filter-to-build (assemble a buyer load)
+Pre-sale you may ID a whole consignment as ID-ONLY (tag only). The sale tells you a buyer took N head, described by criteria ("50 purple tags"). You often DON'T re-run them — filter the captured animals by the description; the matches ARE the load. DESIGNATE BUYER saves the set and shrinks the unassigned pool. The filter lands CLOSE not exact (52 back when the paper says 50); hand-tune via the quick notes. The CVI + change-of-ownership generate from the resulting set.
 
-## 7. Pen = transient location only
-Pens are fluid; animals move constantly (feed, water, load-out). A pen is a point-in-time "where are they now / where did they go back to" stamp, recorded on the touch, largely disposable after. NOT a structural grouping.
+## 7. Outputs
+- CVI (health paper) and CHANGE-OF-OWNERSHIP, generated from the touches, not hand-filled. The change-of-ownership is the vet's HALF of a state traceability trail (combined with the barn's own paperwork by the state).
+- EXPORTABLE XLSX: a per-ANIMAL change-of-ownership record (tag, sex, age, color, seller, buyer, destination) and a per-LOT billing/reconciliation view. Tag columns MUST be written as TEXT (exact stored string) to protect 15-digit 840 EIDs — same reason XLSX beat CSV in Work Cows; bites hardest here because it's a legal document. Exact column layout TBD (easy to change; exports read from the tables).
+- GVL (GlobalVetLink) eCVI: "generate CVI" produces a GVL-ready payload (header fields + a verified animal list with exact tags). Stopgap path: Claude in Chrome fills GVL via its designate-headers + paste-block entry; the vet reviews and SIGNS (auto-fill yes, auto-sign never). Durable path: GVL integration token (server-side) pushes the payload directly. See the production-hardening + integration items.
 
 ## 8. Flags — ALL SOFT in v1, NO hard stops
-DECISION: no hard legal stops in v1. The hard rules (out-of-state CVI requirements, who-can-sell, bangs gating) vary by destination/species/test and are too complex to encode reliably; a hard stop you get WRONG is worse than none (a tool fighting the vet at the chute, or refusing a paper it should print). The app records and flags; the vet decides. The legal judgment stays with the licensed vet. (Per-state hard-stop layer = possible future, explicitly out of v1.)
+No legal blocks in v1 (too variable by state/species/test; a wrong hard stop is worse than none; legal judgment stays with the licensed vet). All checks are soft flags, computed live (not stored): duplicate tag (excl. the legit 840+900 pairing), missing official ID (kind = barn-config), EID not 15-digit/840, metal tag off-format, animal missing a field its group has, expected-count reached/passed (gentle). A per-state hard-stop layer is possible future, out of v1.
 
-Soft flags (v1):
-- Duplicate tag (EID, metal, or back tag) within the day — EXCLUDING the legitimate 840-official + 900-secondary pairing on one animal.
-- Missing official ID — at least one required; which kind counts is barn-config.
-- Official EID not 15 digits / not starting with 840 (field validation).
-- Metal tag not matching 2-digit / 3-letter / 4-number format (field validation).
-- Animal missing a field the rest of its group has (odd-one-out vs. the batch).
-- Expected count reached/passed (gentle).
+## 9. The barn-config pattern (system-wide)
+Store the underlying truth; treat the local encoding as barn-level config. Recurs across: which tag is official, age encoding (color/placement/mark + the color->age map), billing rates. Build once as a pattern.
 
-## 9. The recurring barn-config pattern (system-wide principle)
-Every barn encodes the same fact differently (age by color here, placement there, a mark elsewhere; official ID = EID here, metal there). The app stores the UNDERLYING TRUTH (age, official-id-present) and treats the LOCAL ENCODING as barn-level config. Data model stores truth; input screen stores how this barn talks about it. Keeps records portable, chute screen local. This pattern recurs — build it as a pattern once.
+## 10. Architecture + stack
+- Stack: Next.js + Supabase. Next.js's server layer is required for the GVL token and the future master-DB push (secrets stay server-side, never in the browser).
+- Supabase project: "Sale Barn Vet", id odrcpdnzhnyiofokokum, region us-west-1, org ubkukhruakwaflabwnzh. SEPARATE from HerdWork (irsztvspkjfyzhhfbdet).
+- ONLINE-PRIMARY + concurrent: chute tablet + chute laptop + office computers live on one database at once. The single shared DB is what removes today's tablet->laptop transfer step.
+- LOCAL FALLBACK (foundational, designed-in not bolted-on): each device captures locally when the connection drops and pushes on reconnect. NOT the Work Cows offline-first model — this is online-first with offline resilience. Source-of-truth/merge for offline edits resolved at the foundation.
+- Future: one-way push into a master DB so HerdWork could inherit sale-barn CVI history. Out of v1.
 
-## 10. Equipment + architecture
-- Chuteside TABLET — capture at the chute.
-- Chuteside LAPTOP (a few feet away) — sees upcoming pens / workload ahead; runs filtering + batch editing.
-- OFFICE computers (~300 yds, in a building) — same database; write health papers.
-- ALL devices live on ONE sale-barn database, concurrently — chute still capturing late animals while the office papers early buyers. This is the fix for today's bottleneck (capture on tablet, then re-batch on laptop): there is no transfer step because the data is in the shared store the moment a tag is scanned.
-- ONLINE-PRIMARY with per-device LOCAL FALLBACK: normally live/shared/concurrent. On a dropped connection, the device keeps capturing locally and PUSHES ON RECONNECT. This is a foundational design constraint (resolve source-of-truth/merge for offline edits at the foundation), not a bolt-on. NOTE: this is NOT the Work Cows offline-first model — it is online-first with offline resilience.
+## 11. Data model (AS BUILT in Supabase — see supabase/migrations)
+13 tables, all with: uuid id (client-generatable for offline), created_at/updated_at (auto), created_by, version, deleted_at (soft delete), RLS enabled.
+- Config: barn (official_id_type, age_encoding_method, admin_fee_rate, sales_tax_rate), work_type (vet_charge, sol_charge), animal_type, age_color_map, party, buyer_number (number text, typical_destination/state/needs).
+- Day + work orders: sale_day; consignment_lot and buyer_load (both: work_type, animal_type, pen, expected_head, head_billed, work_complete, health_complete, frozen rate snapshot, and GENERATED total columns vet_total/admin_total/sol_total/total_customer_charge — the billing math cannot drift); special_charge.
+- Animals: animal (attributes + quick_notes array + pen), identifier (type, value TEXT, is_official).
+- Outputs: document (type cvi/change_of_ownership, destination, status, gvl_reference).
+Seeded: barn (St. Onge Livestock), the 11 work types with rates, the 9 animal types.
 
-## 11. Explicitly OUT of v1
-- Any hard stop / legal block.
-- Auto-combining the vet's paperwork with the sale barn's own paperwork (a future opportunity if a shared key — EID/back tag/lot — exists).
-- One-way push into a master DB (so an animal later in HerdWork could inherit its sale-barn CVI history). Future bridge.
+## 12. Out of v1
+Hard stops; auto-combining with the barn's own paperwork; the master-DB push; the GVL token integration (stopgap-via-Chrome first).
