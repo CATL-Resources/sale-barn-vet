@@ -19,6 +19,8 @@ export type Database = {
           active: boolean
           age_code: string
           age_label: string
+          age_max_years: number | null
+          age_min_years: number | null
           barn_id: string
           created_at: string
           designation_value: string
@@ -30,6 +32,8 @@ export type Database = {
           active?: boolean
           age_code: string
           age_label: string
+          age_max_years?: number | null
+          age_min_years?: number | null
           barn_id: string
           created_at?: string
           designation_value: string
@@ -41,6 +45,8 @@ export type Database = {
           active?: boolean
           age_code?: string
           age_label?: string
+          age_max_years?: number | null
+          age_min_years?: number | null
           barn_id?: string
           created_at?: string
           designation_value?: string
@@ -212,6 +218,7 @@ export type Database = {
           admin_fee_rate: number
           age_encoding_method: string
           age_id_method: string
+          age_numeric_enabled: boolean
           back_tag_auto_increment: boolean
           back_tag_barn_codes: string[]
           back_tag_state_codes: Json
@@ -232,6 +239,7 @@ export type Database = {
           admin_fee_rate?: number
           age_encoding_method?: string
           age_id_method?: string
+          age_numeric_enabled?: boolean
           back_tag_auto_increment?: boolean
           back_tag_barn_codes?: string[]
           back_tag_state_codes?: Json
@@ -252,6 +260,7 @@ export type Database = {
           admin_fee_rate?: number
           age_encoding_method?: string
           age_id_method?: string
+          age_numeric_enabled?: boolean
           back_tag_auto_increment?: boolean
           back_tag_barn_codes?: string[]
           back_tag_state_codes?: Json
@@ -465,6 +474,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "document_barn_id_fkey"
+            columns: ["barn_id"]
+            isOneToOne: false
+            referencedRelation: "barn"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      field_value_option: {
+        Row: {
+          active: boolean
+          barn_id: string
+          code: string | null
+          created_at: string
+          field_key: string
+          id: string
+          is_pinned: boolean
+          label: string
+          sort_order: number
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          active?: boolean
+          barn_id: string
+          code?: string | null
+          created_at?: string
+          field_key: string
+          id?: string
+          is_pinned?: boolean
+          label: string
+          sort_order?: number
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          active?: boolean
+          barn_id?: string
+          code?: string | null
+          created_at?: string
+          field_key?: string
+          id?: string
+          is_pinned?: boolean
+          label?: string
+          sort_order?: number
+          updated_at?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "field_value_option_barn_id_fkey"
             columns: ["barn_id"]
             isOneToOne: false
             referencedRelation: "barn"
