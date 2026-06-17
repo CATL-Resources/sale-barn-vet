@@ -23,3 +23,13 @@
 - Added GVL eCVI integration direction (Chrome stopgap -> token integration).
 - Set stack: Next.js + Supabase.
 - SCHEMA APPLIED to live Supabase project odrcpdnzhnyiofokokum (13 tables, RLS on, seeded). See supabase/migrations.
+
+## 2026-06-16 — Schema fix: pen + pen_work as the work/billing unit
+- Replaced the one-pen-per-lot model: PEN is now just a physical location; PEN_WORK (one pen + one work type + one owner + counts + status) is the real workable/billable unit.
+- Billing FROZEN on pen_work (frozen rate snapshot + generated totals on head_worked); re-sorting an animal to another pen never alters what was already billed.
+- Counts split into head_started / head_expected / head_returned / head_worked (office bills on head_worked).
+- Animals now carry pen_work_id (work they were done under) + current_pen_id (where they physically are now).
+- Dropped consignment_lot + buyer_load (were empty). Consignor/buyer totals are now rollup VIEWS (seller_rollup / buyer_rollup, security_invoker) over pen_work.
+- Added origin on pen_work (office | chute | received_phone) to support a future receiving-by-phone module.
+- pen + pen_work: updated_at triggers, barn_id auto-fill, RLS member policies, created_by default; security advisor clean.
+- Home + Capture temporarily stubbed (they referenced the dropped tables); Buyers PR closed/superseded. Real screens to be re-issued against the new model.

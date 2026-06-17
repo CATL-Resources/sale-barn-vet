@@ -1,51 +1,39 @@
-import { createClient } from '@/lib/supabase/server'
-import { CaptureScreen } from '@/components/capture/capture-screen'
-import { createPen, saveAnimal } from './actions'
+import Link from 'next/link'
+import { ArrowLeftIcon } from '@/components/ui/icons'
 
-export default async function CapturePage() {
-  const supabase = createClient()
-
-  const { data: animalTypes } = await supabase
-    .from('animal_type')
-    .select('id, name')
-    .eq('active', true)
-    .order('name')
-    .returns<{ id: string; name: string }[]>()
-
-  const { data: day } = await supabase
-    .from('sale_day')
-    .select('id')
-    .order('sale_date', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  // Seed the duplicate-tag check with the official IDs already worked this sale day.
-  let existingOfficialIds: string[] = []
-  if (day) {
-    const { data: animals } = await supabase
-      .from('animal')
-      .select('id')
-      .eq('sale_day_id', day.id)
-      .returns<{ id: string }[]>()
-    const animalIds = (animals ?? []).map((a) => a.id)
-    if (animalIds.length > 0) {
-      const { data: ids } = await supabase
-        .from('identifier')
-        .select('value')
-        .eq('is_official', true)
-        .in('animal_id', animalIds)
-        .returns<{ value: string }[]>()
-      existingOfficialIds = (ids ?? []).map((i) => i.value)
-    }
-  }
-
+// NOTE: temporarily stubbed. Capture wrote into consignment_lot, which the
+// pen / pen_work schema change dropped. The real Capture screen is being
+// re-issued against pen_work.
+export default function CapturePage() {
   return (
-    <CaptureScreen
-      animalTypes={animalTypes ?? []}
-      hasSaleDay={!!day}
-      existingOfficialIds={existingOfficialIds}
-      createPen={createPen}
-      saveAnimal={saveAnimal}
-    />
+    <>
+      <div
+        style={{
+          background: '#0E2646',
+          height: 56,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 2,
+          padding: '0 8px 0 4px',
+          flexShrink: 0,
+          borderRadius: '17px 17px 0 0',
+        }}
+      >
+        <Link href="/" aria-label="Back" className="sbv-iconbtn" style={{ color: '#FFFFFF' }}>
+          <ArrowLeftIcon size={22} />
+        </Link>
+        <div style={{ flex: '1 1 0%', color: '#FFFFFF', fontSize: 16, fontWeight: 600, letterSpacing: '-0.01em' }}>
+          Capture
+        </div>
+      </div>
+      <main className="sbv-scroll">
+        <div style={{ padding: '48px 20px', textAlign: 'center' }}>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1A1A1A', margin: 0 }}>Capture is being rebuilt</h2>
+          <p style={{ fontSize: 14, color: '#717182', marginTop: 8 }}>
+            Re-issuing against the new pen / pen-work model.
+          </p>
+        </div>
+      </main>
+    </>
   )
 }

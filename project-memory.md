@@ -31,3 +31,12 @@ The pull to split was partly "we'll lose live shared access unless it pushes to 
 - Stack decision: Next.js + Supabase. Server layer needed for the GVL token + future master push (secrets server-side only).
 - DATABASE IS LIVE: Supabase project "Sale Barn Vet" = odrcpdnzhnyiofokokum (us-west-1, org ubkukhruakwaflabwnzh), separate from HerdWork. 13 tables, RLS enabled on all (secure-by-default; policies come with the auth build), billing math in generated columns, seeded with the rate card + animal types. Security advisor run; function search_path hardened.
 - Production-hardening checklist + GVL integration are tracked as Notion items.
+
+## 2026-06-16 — pen + pen_work (the model correction)
+- The earlier model assumed one pen + one work type per consignor (a "lot"). Reality: a PEN is a physical location whose contents change all day, and the real unit is a PEN-WORK = (one pen + one work type + one owner + the head it was worked on + status), captured as an event.
+- Examples that broke the old model: 10 pairs + 2 weigh-ups in one pen = 2 pen_works; 5 head of 3 different buyers in one pen = 3 pen_works; a consignor's 100 head can span several pen_works.
+- Billing attaches to the work EVENT and is FROZEN there: an open cow preg-checked this morning keeps her preg charge even after she's re-sorted to the weigh-up pen. So pen_work freezes the rate; animals carry current_pen_id separately from the pen_work they were billed under.
+- Consignor and buyer are no longer first-class billing rows — they're ROLLUPS (views) over pen_work for a sale_day.
+- Decision: dropped consignment_lot/buyer_load (empty) rather than keep them as rollup tables; rollups are views.
+- origin on pen_work anticipates a RECEIVING module: whoever receives cattle enters the mail on their phone (head/seller/type/work), office reviews/accepts, it becomes pen_works with origin='received_phone'. Not built now.
+- Consequence for the app: Home/Capture/Buyers were built on the old tables; Home + Capture stubbed and Buyers PR superseded. Screens get re-issued against pen_work (the office work-order screen changes the most — a consignor expands into multiple pen_works).

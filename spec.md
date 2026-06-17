@@ -65,12 +65,17 @@ Store the underlying truth; treat the local encoding as barn-level config. Recur
 - Future: one-way push into a master DB so HerdWork could inherit sale-barn CVI history. Out of v1.
 
 ## 11. Data model (AS BUILT in Supabase — see supabase/migrations)
-13 tables, all with: uuid id (client-generatable for offline), created_at/updated_at (auto), created_by, version, deleted_at (soft delete), RLS enabled.
+All tables: uuid id (client-generatable for offline), created_at/updated_at (auto), created_by, version, deleted_at (soft delete), RLS enabled.
 - Config: barn (official_id_type, age_encoding_method, admin_fee_rate, sales_tax_rate), work_type (vet_charge, sol_charge), animal_type, age_color_map, party, buyer_number (number text, typical_destination/state/needs).
-- Day + work orders: sale_day; consignment_lot and buyer_load (both: work_type, animal_type, pen, expected_head, head_billed, work_complete, health_complete, frozen rate snapshot, and GENERATED total columns vet_total/admin_total/sol_total/total_customer_charge — the billing math cannot drift); special_charge.
-- Animals: animal (attributes + quick_notes array + pen), identifier (type, value TEXT, is_official).
+- Day: sale_day; special_charge (ad-hoc, folds into reconciliation).
+- PEN = physical location only (barn, sale_day, pen_number, notes). Lightweight, reused; contents change through the day. NOT a billing/work unit.
+- PEN_WORK = the work/billing unit. One pen + one work_type + one owner (exactly one of seller_party_id / buyer_party_id, enforced by a check constraint) + animal_type + the point-in-time counts (head_started / head_expected / head_returned / head_worked) + status (work_complete, health_complete) + origin (office | chute | received_phone). BILLING IS FROZEN HERE: frozen_vet_charge/sol_charge/admin_rate/tax_rate snapshot at work time, with GENERATED columns vet_total/admin_total/sol_total/total_customer_charge computed on head_worked. Re-sorting an animal to another pen later never changes what was already billed. A consignor's head can span several pen_works; one pen can hold several pen_works.
+- Animals: animal (attributes + quick_notes array; pen_work_id = the work it was done under; current_pen_id = where it physically is now, changes on re-sort), identifier (type, value TEXT, is_official).
 - Outputs: document (type cvi/change_of_ownership, destination, status, gvl_reference).
+- Rollups (views, security_invoker): seller_rollup / buyer_rollup — per-person totals (head_worked + charges) derived from pen_work grouped by seller/buyer for a sale_day. Consignor and buyer are ROLLUPS; itemization lives in pen_work.
+- (consignment_lot and buyer_load were the old one-pen-per-lot units; replaced by pen_work and dropped. The animal.consignment_lot_id / buyer_load_id columns remain only as inert legacy columns.)
 Seeded: barn (St. Onge Livestock), the 11 work types with rates, the 9 animal types.
+FUTURE: a receiving module (whoever receives the cattle enters the mail on their phone → office reviews → becomes pen_works with origin='received_phone'). The origin field already supports it.
 
 ## 12. Out of v1
 Hard stops; auto-combining with the barn's own paperwork; the master-DB push; the GVL token integration (stopgap-via-Chrome first).

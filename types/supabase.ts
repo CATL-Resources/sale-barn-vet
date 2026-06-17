@@ -70,9 +70,11 @@ export type Database = {
           consignment_lot_id: string | null
           created_at: string
           created_by: string | null
+          current_pen_id: string | null
           deleted_at: string | null
           id: string
           pen: string | null
+          pen_work_id: string | null
           preg_status: string | null
           preg_timing: string | null
           quick_notes: string[]
@@ -91,9 +93,11 @@ export type Database = {
           consignment_lot_id?: string | null
           created_at?: string
           created_by?: string | null
+          current_pen_id?: string | null
           deleted_at?: string | null
           id?: string
           pen?: string | null
+          pen_work_id?: string | null
           preg_status?: string | null
           preg_timing?: string | null
           quick_notes?: string[]
@@ -112,9 +116,11 @@ export type Database = {
           consignment_lot_id?: string | null
           created_at?: string
           created_by?: string | null
+          current_pen_id?: string | null
           deleted_at?: string | null
           id?: string
           pen?: string | null
+          pen_work_id?: string | null
           preg_status?: string | null
           preg_timing?: string | null
           quick_notes?: string[]
@@ -138,17 +144,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "animal_buyer_load_id_fkey"
-            columns: ["buyer_load_id"]
+            foreignKeyName: "animal_current_pen_id_fkey"
+            columns: ["current_pen_id"]
             isOneToOne: false
-            referencedRelation: "buyer_load"
+            referencedRelation: "pen"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "animal_consignment_lot_id_fkey"
-            columns: ["consignment_lot_id"]
+            foreignKeyName: "animal_pen_work_id_fkey"
+            columns: ["pen_work_id"]
             isOneToOne: false
-            referencedRelation: "consignment_lot"
+            referencedRelation: "pen_work"
             referencedColumns: ["id"]
           },
           {
@@ -278,145 +284,6 @@ export type Database = {
           },
         ]
       }
-      buyer_load: {
-        Row: {
-          admin_total: number | null
-          animal_type_id: string | null
-          barn_id: string
-          buyer_number_id: string | null
-          buyer_number_text: string | null
-          buyer_party_id: string | null
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          destination: string | null
-          destination_state: string | null
-          expected_head: number | null
-          frozen_admin_rate: number | null
-          frozen_sol_charge: number | null
-          frozen_tax_rate: number | null
-          frozen_vet_charge: number | null
-          head_billed: number | null
-          health_complete: boolean
-          id: string
-          notes: string | null
-          pen: string | null
-          sale_day_id: string
-          sol_total: number | null
-          total_customer_charge: number | null
-          updated_at: string
-          version: number
-          vet_total: number | null
-          work_complete: boolean
-          work_type_id: string | null
-        }
-        Insert: {
-          admin_total?: number | null
-          animal_type_id?: string | null
-          barn_id: string
-          buyer_number_id?: string | null
-          buyer_number_text?: string | null
-          buyer_party_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          destination?: string | null
-          destination_state?: string | null
-          expected_head?: number | null
-          frozen_admin_rate?: number | null
-          frozen_sol_charge?: number | null
-          frozen_tax_rate?: number | null
-          frozen_vet_charge?: number | null
-          head_billed?: number | null
-          health_complete?: boolean
-          id?: string
-          notes?: string | null
-          pen?: string | null
-          sale_day_id: string
-          sol_total?: number | null
-          total_customer_charge?: number | null
-          updated_at?: string
-          version?: number
-          vet_total?: number | null
-          work_complete?: boolean
-          work_type_id?: string | null
-        }
-        Update: {
-          admin_total?: number | null
-          animal_type_id?: string | null
-          barn_id?: string
-          buyer_number_id?: string | null
-          buyer_number_text?: string | null
-          buyer_party_id?: string | null
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          destination?: string | null
-          destination_state?: string | null
-          expected_head?: number | null
-          frozen_admin_rate?: number | null
-          frozen_sol_charge?: number | null
-          frozen_tax_rate?: number | null
-          frozen_vet_charge?: number | null
-          head_billed?: number | null
-          health_complete?: boolean
-          id?: string
-          notes?: string | null
-          pen?: string | null
-          sale_day_id?: string
-          sol_total?: number | null
-          total_customer_charge?: number | null
-          updated_at?: string
-          version?: number
-          vet_total?: number | null
-          work_complete?: boolean
-          work_type_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "buyer_load_animal_type_id_fkey"
-            columns: ["animal_type_id"]
-            isOneToOne: false
-            referencedRelation: "animal_type"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "buyer_load_barn_id_fkey"
-            columns: ["barn_id"]
-            isOneToOne: false
-            referencedRelation: "barn"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "buyer_load_buyer_number_id_fkey"
-            columns: ["buyer_number_id"]
-            isOneToOne: false
-            referencedRelation: "buyer_number"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "buyer_load_buyer_party_id_fkey"
-            columns: ["buyer_party_id"]
-            isOneToOne: false
-            referencedRelation: "party"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "buyer_load_sale_day_id_fkey"
-            columns: ["sale_day_id"]
-            isOneToOne: false
-            referencedRelation: "sale_day"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "buyer_load_work_type_id_fkey"
-            columns: ["work_type_id"]
-            isOneToOne: false
-            referencedRelation: "work_type"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       buyer_number: {
         Row: {
           barn_id: string
@@ -477,129 +344,6 @@ export type Database = {
           },
         ]
       }
-      consignment_lot: {
-        Row: {
-          admin_total: number | null
-          animal_type_id: string | null
-          barn_id: string
-          created_at: string
-          created_by: string | null
-          deleted_at: string | null
-          expected_head: number | null
-          frozen_admin_rate: number | null
-          frozen_sol_charge: number | null
-          frozen_tax_rate: number | null
-          frozen_vet_charge: number | null
-          head_billed: number | null
-          health_complete: boolean
-          id: string
-          notes: string | null
-          pen: string | null
-          people_names: string | null
-          sale_day_id: string
-          seller_party_id: string | null
-          sol_total: number | null
-          total_customer_charge: number | null
-          updated_at: string
-          version: number
-          vet_total: number | null
-          work_complete: boolean
-          work_type_id: string | null
-        }
-        Insert: {
-          admin_total?: number | null
-          animal_type_id?: string | null
-          barn_id: string
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          expected_head?: number | null
-          frozen_admin_rate?: number | null
-          frozen_sol_charge?: number | null
-          frozen_tax_rate?: number | null
-          frozen_vet_charge?: number | null
-          head_billed?: number | null
-          health_complete?: boolean
-          id?: string
-          notes?: string | null
-          pen?: string | null
-          people_names?: string | null
-          sale_day_id: string
-          seller_party_id?: string | null
-          sol_total?: number | null
-          total_customer_charge?: number | null
-          updated_at?: string
-          version?: number
-          vet_total?: number | null
-          work_complete?: boolean
-          work_type_id?: string | null
-        }
-        Update: {
-          admin_total?: number | null
-          animal_type_id?: string | null
-          barn_id?: string
-          created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
-          expected_head?: number | null
-          frozen_admin_rate?: number | null
-          frozen_sol_charge?: number | null
-          frozen_tax_rate?: number | null
-          frozen_vet_charge?: number | null
-          head_billed?: number | null
-          health_complete?: boolean
-          id?: string
-          notes?: string | null
-          pen?: string | null
-          people_names?: string | null
-          sale_day_id?: string
-          seller_party_id?: string | null
-          sol_total?: number | null
-          total_customer_charge?: number | null
-          updated_at?: string
-          version?: number
-          vet_total?: number | null
-          work_complete?: boolean
-          work_type_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "consignment_lot_animal_type_id_fkey"
-            columns: ["animal_type_id"]
-            isOneToOne: false
-            referencedRelation: "animal_type"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "consignment_lot_barn_id_fkey"
-            columns: ["barn_id"]
-            isOneToOne: false
-            referencedRelation: "barn"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "consignment_lot_sale_day_id_fkey"
-            columns: ["sale_day_id"]
-            isOneToOne: false
-            referencedRelation: "sale_day"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "consignment_lot_seller_party_id_fkey"
-            columns: ["seller_party_id"]
-            isOneToOne: false
-            referencedRelation: "party"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "consignment_lot_work_type_id_fkey"
-            columns: ["work_type_id"]
-            isOneToOne: false
-            referencedRelation: "work_type"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       document: {
         Row: {
           barn_id: string
@@ -652,13 +396,6 @@ export type Database = {
             columns: ["barn_id"]
             isOneToOne: false
             referencedRelation: "barn"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "document_buyer_load_id_fkey"
-            columns: ["buyer_load_id"]
-            isOneToOne: false
-            referencedRelation: "buyer_load"
             referencedColumns: ["id"]
           },
         ]
@@ -766,6 +503,225 @@ export type Database = {
             columns: ["barn_id"]
             isOneToOne: false
             referencedRelation: "barn"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pen: {
+        Row: {
+          barn_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          notes: string | null
+          pen_number: string
+          sale_day_id: string | null
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          barn_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          notes?: string | null
+          pen_number: string
+          sale_day_id?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          barn_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          notes?: string | null
+          pen_number?: string
+          sale_day_id?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pen_barn_id_fkey"
+            columns: ["barn_id"]
+            isOneToOne: false
+            referencedRelation: "barn"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pen_sale_day_id_fkey"
+            columns: ["sale_day_id"]
+            isOneToOne: false
+            referencedRelation: "sale_day"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pen_work: {
+        Row: {
+          admin_total: number | null
+          animal_type_id: string | null
+          barn_id: string
+          buyer_number_id: string | null
+          buyer_number_text: string | null
+          buyer_party_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          destination: string | null
+          destination_state: string | null
+          frozen_admin_rate: number | null
+          frozen_sol_charge: number | null
+          frozen_tax_rate: number | null
+          frozen_vet_charge: number | null
+          head_expected: number | null
+          head_returned: number | null
+          head_started: number | null
+          head_worked: number | null
+          health_complete: boolean
+          id: string
+          notes: string | null
+          origin: string
+          pen_id: string | null
+          sale_day_id: string
+          seller_party_id: string | null
+          sol_total: number | null
+          total_customer_charge: number | null
+          updated_at: string
+          version: number
+          vet_total: number | null
+          work_complete: boolean
+          work_type_id: string | null
+        }
+        Insert: {
+          admin_total?: number | null
+          animal_type_id?: string | null
+          barn_id: string
+          buyer_number_id?: string | null
+          buyer_number_text?: string | null
+          buyer_party_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          destination?: string | null
+          destination_state?: string | null
+          frozen_admin_rate?: number | null
+          frozen_sol_charge?: number | null
+          frozen_tax_rate?: number | null
+          frozen_vet_charge?: number | null
+          head_expected?: number | null
+          head_returned?: number | null
+          head_started?: number | null
+          head_worked?: number | null
+          health_complete?: boolean
+          id?: string
+          notes?: string | null
+          origin?: string
+          pen_id?: string | null
+          sale_day_id: string
+          seller_party_id?: string | null
+          sol_total?: number | null
+          total_customer_charge?: number | null
+          updated_at?: string
+          version?: number
+          vet_total?: number | null
+          work_complete?: boolean
+          work_type_id?: string | null
+        }
+        Update: {
+          admin_total?: number | null
+          animal_type_id?: string | null
+          barn_id?: string
+          buyer_number_id?: string | null
+          buyer_number_text?: string | null
+          buyer_party_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          destination?: string | null
+          destination_state?: string | null
+          frozen_admin_rate?: number | null
+          frozen_sol_charge?: number | null
+          frozen_tax_rate?: number | null
+          frozen_vet_charge?: number | null
+          head_expected?: number | null
+          head_returned?: number | null
+          head_started?: number | null
+          head_worked?: number | null
+          health_complete?: boolean
+          id?: string
+          notes?: string | null
+          origin?: string
+          pen_id?: string | null
+          sale_day_id?: string
+          seller_party_id?: string | null
+          sol_total?: number | null
+          total_customer_charge?: number | null
+          updated_at?: string
+          version?: number
+          vet_total?: number | null
+          work_complete?: boolean
+          work_type_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pen_work_animal_type_id_fkey"
+            columns: ["animal_type_id"]
+            isOneToOne: false
+            referencedRelation: "animal_type"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pen_work_barn_id_fkey"
+            columns: ["barn_id"]
+            isOneToOne: false
+            referencedRelation: "barn"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pen_work_buyer_number_id_fkey"
+            columns: ["buyer_number_id"]
+            isOneToOne: false
+            referencedRelation: "buyer_number"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pen_work_buyer_party_id_fkey"
+            columns: ["buyer_party_id"]
+            isOneToOne: false
+            referencedRelation: "party"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pen_work_pen_id_fkey"
+            columns: ["pen_id"]
+            isOneToOne: false
+            referencedRelation: "pen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pen_work_sale_day_id_fkey"
+            columns: ["sale_day_id"]
+            isOneToOne: false
+            referencedRelation: "sale_day"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pen_work_seller_party_id_fkey"
+            columns: ["seller_party_id"]
+            isOneToOne: false
+            referencedRelation: "party"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pen_work_work_type_id_fkey"
+            columns: ["work_type_id"]
+            isOneToOne: false
+            referencedRelation: "work_type"
             referencedColumns: ["id"]
           },
         ]
@@ -948,7 +904,78 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      buyer_rollup: {
+        Row: {
+          admin_total: number | null
+          barn_id: string | null
+          buyer_party_id: string | null
+          head_worked: number | null
+          pen_work_count: number | null
+          sale_day_id: string | null
+          sol_total: number | null
+          total_customer_charge: number | null
+          vet_total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pen_work_barn_id_fkey"
+            columns: ["barn_id"]
+            isOneToOne: false
+            referencedRelation: "barn"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pen_work_buyer_party_id_fkey"
+            columns: ["buyer_party_id"]
+            isOneToOne: false
+            referencedRelation: "party"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pen_work_sale_day_id_fkey"
+            columns: ["sale_day_id"]
+            isOneToOne: false
+            referencedRelation: "sale_day"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_rollup: {
+        Row: {
+          admin_total: number | null
+          barn_id: string | null
+          head_worked: number | null
+          pen_work_count: number | null
+          sale_day_id: string | null
+          seller_party_id: string | null
+          sol_total: number | null
+          total_customer_charge: number | null
+          vet_total: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pen_work_barn_id_fkey"
+            columns: ["barn_id"]
+            isOneToOne: false
+            referencedRelation: "barn"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pen_work_sale_day_id_fkey"
+            columns: ["sale_day_id"]
+            isOneToOne: false
+            referencedRelation: "sale_day"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pen_work_seller_party_id_fkey"
+            columns: ["seller_party_id"]
+            isOneToOne: false
+            referencedRelation: "party"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       [_ in never]: never
