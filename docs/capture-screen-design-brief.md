@@ -14,10 +14,11 @@ what order, with what default, and whether any is required all come from each
 barn's own settings (the setup screen). The screen's only job is to render that
 list. Change a setting and the screen changes — no code change.
 
-For St. Onge specifically: **Age, Breed, and Fetal sex are turned OFF** and must
-not appear. **Month bred means the actual calendar month** she was bred (St.
-Onge's breeding window is September–December), not a count of months along. Use
-St. Onge's real on-set (listed at the bottom) for the mockups.
+For St. Onge specifically: **Age, Breed, Body color, and Fetal sex are turned
+OFF** and must not appear. (A Metal-tag field exists too, also off.) **Month bred
+means the actual calendar month** she was bred (St. Onge's breeding window is
+September–December), not a count of months along. Use St. Onge's real on-set
+(listed at the bottom) for the mockups.
 
 ---
 
@@ -170,9 +171,9 @@ Existing building blocks to reuse rather than redraw: `Pill` (the quick notes),
 - **The whole field list is settings-driven** — which fields show, their order,
   their default, and whether any is required all come from each barn's settings
   (`barn_field_config`). Render that list; never hardcode the form. **St. Onge
-  has Age, Breed, and Fetal sex turned OFF.** St. Onge's actual on-set, in order:
-  **EID, Back tag, Tag #, Tag color, Preg stage, Month bred, Quick notes,
-  Notes.**
+  has Age, Breed, Body color, and Fetal sex turned OFF (plus a Metal-tag field
+  that's also off).** St. Onge's actual on-set, in order: **EID, Back tag,
+  Tag #, Preg stage, Month bred, Quick notes, Notes.**
 
 ---
 
