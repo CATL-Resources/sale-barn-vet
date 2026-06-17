@@ -7,6 +7,20 @@ needed now is the look and the feel of how a vet uses them.
 
 ---
 
+## Settings-driven — read this first
+
+**Nothing on this screen is a fixed, hardcoded form.** Which fields appear, in
+what order, with what default, and whether any is required all come from each
+barn's own settings (the setup screen). The screen's only job is to render that
+list. Change a setting and the screen changes — no code change.
+
+For St. Onge specifically: **Age, Breed, and Fetal sex are turned OFF** and must
+not appear. **Month bred means the actual calendar month** she was bred (St.
+Onge's breeding window is September–December), not a count of months along. Use
+St. Onge's real on-set (listed at the bottom) for the mockups.
+
+---
+
 ## Who uses it and where
 
 The vet crew, **at the chute, on a tablet**, animals coming through one at a
@@ -47,29 +61,30 @@ pregnancy check. Each type of work carries a yes/no switch for this. Today it's
 everything else. So when the vet is running one of those two kinds of work, the
 pregnancy fields show up; otherwise they're not on the screen at all.
 
-When they show, there are **three fields**:
+These pieces are configurable per barn. The full set is **Stage**, **Month
+bred**, and **Fetal sex**. **St. Onge uses Stage and Month bred** (fetal sex is
+turned off):
 
 1. **Stage** — pick one. The choices are set per barn. St. Onge's are:
    **Open, Short, Mid, Long, AI, Not checked.** This is the main one and should
    be the easiest to hit — a row of big tap buttons, pick one.
-2. **Month bred** — how far along, in months. Only matters once she's known to
-   be bred, so it can stay hidden or greyed until Stage says she's carrying.
-   A short number entry or a quick stepper — whatever is fastest with gloves on.
-3. **Fetal sex** — **Bull / Heifer / Unknown** (stored as M / F / Unknown).
-   Three tap buttons. Usually skipped, so it shouldn't get in the way.
+2. **Month bred** — the **actual calendar month** she was bred, picked from the
+   barn's breeding window (St. Onge runs **September–December**). It is **not** a
+   count of how many months along. Show it as a small set of month buttons (the
+   window comes from settings), not a number field.
+3. **Fetal sex** — a configurable field (Bull / Heifer / Unknown, stored as
+   M / F / Unknown) that some barns want. **St. Onge has it OFF**, so it does not
+   appear on St. Onge's screen.
 
 Design notes:
-- Stage is tapped on nearly every animal in these jobs; month bred and fetal sex
-  are occasional. Give Stage the weight; let the other two be lighter.
-- Keep the whole group compact — it sits alongside the tag and the other
-  attributes, not on its own page.
+- Stage is tapped on nearly every animal in these jobs; month bred is occasional.
+  Give Stage the weight; keep month bred lighter.
+- Keep the group compact — it sits alongside the tags and the other shown
+  fields, not on its own page.
 
-**One open question for Chandy / design to settle:** right now the pregnancy
-fields are switched on by the **type of work** (Preg and Mouth Cows, Preg
-Heifers). An older note in our settings spec says they should instead follow the
-**type of cattle** (always for bred cows, optional for pairs, never for bulls).
-Both are reasonable. We built the work-type switch. If cattle-type is preferred,
-that's a small change. Design can assume **work-type switch** for now.
+**Settled:** the pregnancy fields turn on by the **type of work** (Preg and
+Mouth Cows, Preg Heifers), not by the type of cattle. Treat work-type as the
+trigger.
 
 ---
 
@@ -148,12 +163,15 @@ Existing building blocks to reuse rather than redraw: `Pill` (the quick notes),
 - Each work type has the pregnancy on/off switch (`work_type.includes_preg_check`);
   it's on for Preg and Mouth Cows and Preg Heifers.
 - The pregnancy stage choices are a per-barn list (St. Onge: Open, Short, Mid,
-  Long, AI, Not checked). Month bred and fetal sex are stored on the animal.
+  Long, AI, Not checked). Month bred (the actual calendar month, drawn from the
+  barn's breeding window) and fetal sex are stored on the animal.
 - The quick notes are a real list per barn with usage-based ordering, pinning,
   permanent-vs-just-today scope, and an active flag. St. Onge's seven are seeded.
-- Which fields show on capture, their order, and whether any are required is
-  itself configurable per barn — but for St. Onge, design for this on-set:
-  **EID, Tag #, Color, Age, Breed, Stage, Month bred, Fetal sex, Quick notes,
+- **The whole field list is settings-driven** — which fields show, their order,
+  their default, and whether any is required all come from each barn's settings
+  (`barn_field_config`). Render that list; never hardcode the form. **St. Onge
+  has Age, Breed, and Fetal sex turned OFF.** St. Onge's actual on-set, in order:
+  **EID, Back tag, Tag #, Tag color, Preg stage, Month bred, Quick notes,
   Notes.**
 
 ---
@@ -162,7 +180,9 @@ Existing building blocks to reuse rather than redraw: `Pill` (the quick notes),
 
 1. The per-animal capture layout for a **preg job** (so both pieces show), in the
    phone-width frame — resting state, and with a few quick notes selected.
-2. The **stage / month-bred / fetal-sex** group on its own, close up.
+2. The **preg group** on its own, close up — for St. Onge that's **Stage** and
+   **Month bred** (month bred = a month picker from the Sept–Dec window). Fetal
+   sex only shows for barns that turn it on.
 3. The **add-a-new-quick-note** moment (the little "keep for today or for good?"
    choice).
 4. A **non-preg job** layout (same screen with the pregnancy group gone) so we
