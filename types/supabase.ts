@@ -830,6 +830,63 @@ export type Database = {
           },
         ]
       }
+      quick_note_definition: {
+        Row: {
+          active: boolean
+          barn_id: string
+          created_at: string
+          id: string
+          is_flag: boolean
+          label: string
+          sale_day_id: string | null
+          scope: string
+          sort_priority: number
+          updated_at: string
+          use_count: number
+        }
+        Insert: {
+          active?: boolean
+          barn_id: string
+          created_at?: string
+          id?: string
+          is_flag?: boolean
+          label: string
+          sale_day_id?: string | null
+          scope?: string
+          sort_priority?: number
+          updated_at?: string
+          use_count?: number
+        }
+        Update: {
+          active?: boolean
+          barn_id?: string
+          created_at?: string
+          id?: string
+          is_flag?: boolean
+          label?: string
+          sale_day_id?: string | null
+          scope?: string
+          sort_priority?: number
+          updated_at?: string
+          use_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quick_note_definition_barn_id_fkey"
+            columns: ["barn_id"]
+            isOneToOne: false
+            referencedRelation: "barn"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quick_note_definition_sale_day_id_fkey"
+            columns: ["sale_day_id"]
+            isOneToOne: false
+            referencedRelation: "sale_day"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sale_day: {
         Row: {
           barn_id: string
@@ -964,6 +1021,7 @@ export type Database = {
           created_by: string | null
           deleted_at: string | null
           id: string
+          includes_preg_check: boolean
           name: string
           sol_charge: number
           updated_at: string
@@ -977,6 +1035,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           id?: string
+          includes_preg_check?: boolean
           name: string
           sol_charge?: number
           updated_at?: string
@@ -990,6 +1049,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           id?: string
+          includes_preg_check?: boolean
           name?: string
           sol_charge?: number
           updated_at?: string
