@@ -212,6 +212,9 @@ export type Database = {
           admin_fee_rate: number
           age_encoding_method: string
           age_id_method: string
+          back_tag_auto_increment: boolean
+          back_tag_barn_codes: string[]
+          back_tag_state_codes: Json
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -229,6 +232,9 @@ export type Database = {
           admin_fee_rate?: number
           age_encoding_method?: string
           age_id_method?: string
+          back_tag_auto_increment?: boolean
+          back_tag_barn_codes?: string[]
+          back_tag_state_codes?: Json
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -246,6 +252,9 @@ export type Database = {
           admin_fee_rate?: number
           age_encoding_method?: string
           age_id_method?: string
+          back_tag_auto_increment?: boolean
+          back_tag_barn_codes?: string[]
+          back_tag_state_codes?: Json
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
