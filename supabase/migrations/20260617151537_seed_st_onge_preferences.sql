@@ -33,15 +33,16 @@ SELECT
 FROM public.barn b
 CROSS JOIN (VALUES
   ('eid',         'EID',         true,  1),
-  ('visual_tag',  'Tag #',       true,  2),
-  ('hide_color',  'Color',       true,  3),
-  ('age',         'Age',         true,  4),
-  ('breed',       'Breed',       true,  5),
-  ('preg_stage',  'Stage',       true,  6),
-  ('preg_timing', 'Month bred',  true,  7),
-  ('fetal_sex',   'Fetal sex',   true,  8),
-  ('quick_notes', 'Quick notes', true,  9),
-  ('notes',       'Notes',       true,  10)
+  ('back_tag',    'Back tag',    true,  2),
+  ('visual_tag',  'Tag #',       true,  3),
+  ('hide_color',  'Color',       true,  4),
+  ('age',         'Age',         true,  5),
+  ('breed',       'Breed',       true,  6),
+  ('preg_stage',  'Stage',       true,  7),
+  ('preg_timing', 'Month bred',  true,  8),
+  ('fetal_sex',   'Fetal sex',   true,  9),
+  ('quick_notes', 'Quick notes', true,  10),
+  ('notes',       'Notes',       true,  11)
 ) AS v(key, label, shown, ord)
 WHERE b.deleted_at IS NULL;
 
