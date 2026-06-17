@@ -78,3 +78,32 @@ export function FlagIcon({ size = 12, strokeWidth = 2.5, style }: IconProps) {
     </svg>
   )
 }
+
+export function MoreVerticalIcon({ size = 20, strokeWidth = 2, style }: IconProps) {
+  return (
+    <svg {...svgProps(size, strokeWidth, style)} aria-hidden="true">
+      <circle cx="12" cy="5" r="1" />
+      <circle cx="12" cy="12" r="1" />
+      <circle cx="12" cy="19" r="1" />
+    </svg>
+  )
+}
+
+export function FilterIcon({ size = 15, strokeWidth = 2, style }: IconProps) {
+  return (
+    <svg {...svgProps(size, strokeWidth, style)} aria-hidden="true">
+      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+    </svg>
+  )
+}
+
+export function SortIcon({ size = 15, strokeWidth = 2, style }: IconProps) {
+  return (
+    <svg {...svgProps(size, strokeWidth, style)} aria-hidden="true">
+      <path d="m21 16-4 4-4-4" />
+      <path d="M17 20V4" />
+      <path d="m3 8 4-4 4 4" />
+      <path d="M7 4v16" />
+    </svg>
+  )
+}
