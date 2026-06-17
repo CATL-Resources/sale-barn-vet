@@ -21,7 +21,14 @@ export const colors = {
   drawerSelected: '#F3F6FB',
   danger: '#E24B4A',
   dangerBg: '#FCEBEB',
-  warning: '#F59E0B',
+  warning: '#F59E0B', // amber status dot
+  // Work-orders screen additions
+  bronze: '#B45309', // under-worked head warning ("X of Y")
+  buyerRole: '#946A00', // "Buyer #N" role label
+  tealPillBg: '#E1F5EE', // complete-status pill fill
+  textFaint: '#C2C2CA', // "—" placeholder in charge cells
+  columnSubheaderBg: '#F7F8FB', // group column header strip
+  hoverBg: '#FAFAF8', // row / footer hover
 } as const
 
 export const navyGradient =

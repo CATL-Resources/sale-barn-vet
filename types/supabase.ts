@@ -65,9 +65,7 @@ export type Database = {
           animal_type_id: string | null
           barn_id: string
           breed: string | null
-          buyer_load_id: string | null
           color: string | null
-          consignment_lot_id: string | null
           created_at: string
           created_by: string | null
           current_pen_id: string | null
@@ -88,9 +86,7 @@ export type Database = {
           animal_type_id?: string | null
           barn_id: string
           breed?: string | null
-          buyer_load_id?: string | null
           color?: string | null
-          consignment_lot_id?: string | null
           created_at?: string
           created_by?: string | null
           current_pen_id?: string | null
@@ -111,9 +107,7 @@ export type Database = {
           animal_type_id?: string | null
           barn_id?: string
           breed?: string | null
-          buyer_load_id?: string | null
           color?: string | null
-          consignment_lot_id?: string | null
           created_at?: string
           created_by?: string | null
           current_pen_id?: string | null
@@ -347,7 +341,6 @@ export type Database = {
       document: {
         Row: {
           barn_id: string
-          buyer_load_id: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -362,7 +355,6 @@ export type Database = {
         }
         Insert: {
           barn_id: string
-          buyer_load_id?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -377,7 +369,6 @@ export type Database = {
         }
         Update: {
           barn_id?: string
-          buyer_load_id?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
