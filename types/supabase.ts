@@ -14,43 +14,43 @@ export type Database = {
   }
   public: {
     Tables: {
-      age_color_map: {
+      age_designation_option: {
         Row: {
-          age_value: string
+          active: boolean
+          age_code: string
+          age_label: string
           barn_id: string
-          color: string
           created_at: string
-          created_by: string | null
-          deleted_at: string | null
+          designation_value: string
           id: string
+          sort_order: number
           updated_at: string
-          version: number
         }
         Insert: {
-          age_value: string
+          active?: boolean
+          age_code: string
+          age_label: string
           barn_id: string
-          color: string
           created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
+          designation_value: string
           id?: string
+          sort_order?: number
           updated_at?: string
-          version?: number
         }
         Update: {
-          age_value?: string
+          active?: boolean
+          age_code?: string
+          age_label?: string
           barn_id?: string
-          color?: string
           created_at?: string
-          created_by?: string | null
-          deleted_at?: string | null
+          designation_value?: string
           id?: string
+          sort_order?: number
           updated_at?: string
-          version?: number
         }
         Relationships: [
           {
-            foreignKeyName: "age_color_map_barn_id_fkey"
+            foreignKeyName: "age_designation_option_barn_id_fkey"
             columns: ["barn_id"]
             isOneToOne: false
             referencedRelation: "barn"
@@ -70,6 +70,7 @@ export type Database = {
           created_by: string | null
           current_pen_id: string | null
           deleted_at: string | null
+          fetal_sex: string | null
           id: string
           pen: string | null
           pen_work_id: string | null
@@ -91,6 +92,7 @@ export type Database = {
           created_by?: string | null
           current_pen_id?: string | null
           deleted_at?: string | null
+          fetal_sex?: string | null
           id?: string
           pen?: string | null
           pen_work_id?: string | null
@@ -112,6 +114,7 @@ export type Database = {
           created_by?: string | null
           current_pen_id?: string | null
           deleted_at?: string | null
+          fetal_sex?: string | null
           id?: string
           pen?: string | null
           pen_work_id?: string | null
@@ -208,12 +211,16 @@ export type Database = {
         Row: {
           admin_fee_rate: number
           age_encoding_method: string
+          age_id_method: string
           created_at: string
           created_by: string | null
           deleted_at: string | null
           id: string
           name: string
           official_id_type: string
+          preg_active_months: string[]
+          preg_id_method: string
+          preg_timing_format: string
           sales_tax_rate: number
           updated_at: string
           version: number
@@ -221,12 +228,16 @@ export type Database = {
         Insert: {
           admin_fee_rate?: number
           age_encoding_method?: string
+          age_id_method?: string
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           id?: string
           name: string
           official_id_type?: string
+          preg_active_months?: string[]
+          preg_id_method?: string
+          preg_timing_format?: string
           sales_tax_rate?: number
           updated_at?: string
           version?: number
@@ -234,17 +245,78 @@ export type Database = {
         Update: {
           admin_fee_rate?: number
           age_encoding_method?: string
+          age_id_method?: string
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           id?: string
           name?: string
           official_id_type?: string
+          preg_active_months?: string[]
+          preg_id_method?: string
+          preg_timing_format?: string
           sales_tax_rate?: number
           updated_at?: string
           version?: number
         }
         Relationships: []
+      }
+      barn_field_config: {
+        Row: {
+          barn_id: string
+          created_at: string
+          default_value: string | null
+          display_label: string | null
+          field_key: string
+          id: string
+          is_displayed: boolean
+          is_required: boolean
+          sort_order: number
+          updated_at: string
+          work_type_id: string | null
+        }
+        Insert: {
+          barn_id: string
+          created_at?: string
+          default_value?: string | null
+          display_label?: string | null
+          field_key: string
+          id?: string
+          is_displayed?: boolean
+          is_required?: boolean
+          sort_order?: number
+          updated_at?: string
+          work_type_id?: string | null
+        }
+        Update: {
+          barn_id?: string
+          created_at?: string
+          default_value?: string | null
+          display_label?: string | null
+          field_key?: string
+          id?: string
+          is_displayed?: boolean
+          is_required?: boolean
+          sort_order?: number
+          updated_at?: string
+          work_type_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "barn_field_config_barn_id_fkey"
+            columns: ["barn_id"]
+            isOneToOne: false
+            referencedRelation: "barn"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "barn_field_config_work_type_id_fkey"
+            columns: ["work_type_id"]
+            isOneToOne: false
+            referencedRelation: "work_type"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       barn_member: {
         Row: {
@@ -713,6 +785,47 @@ export type Database = {
             columns: ["work_type_id"]
             isOneToOne: false
             referencedRelation: "work_type"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      preg_stage_config: {
+        Row: {
+          active: boolean
+          barn_id: string
+          created_at: string
+          display_label: string
+          id: string
+          sort_order: number
+          stage_code: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          barn_id: string
+          created_at?: string
+          display_label: string
+          id?: string
+          sort_order?: number
+          stage_code: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          barn_id?: string
+          created_at?: string
+          display_label?: string
+          id?: string
+          sort_order?: number
+          stage_code?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "preg_stage_config_barn_id_fkey"
+            columns: ["barn_id"]
+            isOneToOne: false
+            referencedRelation: "barn"
             referencedColumns: ["id"]
           },
         ]
