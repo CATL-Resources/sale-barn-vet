@@ -1,39 +1,26 @@
-import Link from 'next/link'
-import { ArrowLeftIcon } from '@/components/ui/icons'
+import { createClient } from '@/lib/supabase/server'
+import { fetchCaptureBootstrap } from '@/lib/capture/queries'
+import { CaptureScreen } from '@/components/capture/capture-screen'
 
-// NOTE: temporarily stubbed. Capture wrote into consignment_lot, which the
-// pen / pen_work schema change dropped. The real Capture screen is being
-// re-issued against pen_work.
-export default function CapturePage() {
-  return (
-    <>
-      <div
-        style={{
-          background: '#0E2646',
-          height: 56,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 2,
-          padding: '0 8px 0 4px',
-          flexShrink: 0,
-          borderRadius: '17px 17px 0 0',
-        }}
-      >
-        <Link href="/" aria-label="Back" className="sbv-iconbtn" style={{ color: '#FFFFFF' }}>
-          <ArrowLeftIcon size={22} />
-        </Link>
-        <div style={{ flex: '1 1 0%', color: '#FFFFFF', fontSize: 16, fontWeight: 600, letterSpacing: '-0.01em' }}>
-          Capture
-        </div>
+export const dynamic = 'force-dynamic'
+
+// Chuteside capture. The (full) layout already guards auth; here we load the
+// barn config + reference lists and hand off to the client capture flow.
+export default async function CapturePage() {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const bootstrap = await fetchCaptureBootstrap(supabase)
+
+  if (!bootstrap) {
+    return (
+      <div style={{ padding: '48px 20px', textAlign: 'center' }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1A1A1A', margin: 0 }}>No barn set up yet</h2>
+        <p style={{ fontSize: 14, color: '#717182', marginTop: 8 }}>Add a barn before capturing.</p>
       </div>
-      <main className="sbv-scroll">
-        <div style={{ padding: '48px 20px', textAlign: 'center' }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1A1A1A', margin: 0 }}>Capture is being rebuilt</h2>
-          <p style={{ fontSize: 14, color: '#717182', marginTop: 8 }}>
-            Re-issuing against the new pen / pen-work model.
-          </p>
-        </div>
-      </main>
-    </>
-  )
+    )
+  }
+
+  return <CaptureScreen bootstrap={bootstrap} userId={user?.id ?? null} />
 }
