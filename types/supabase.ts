@@ -78,6 +78,7 @@ export type Database = {
           deleted_at: string | null
           fetal_sex: string | null
           id: string
+          notes: string | null
           pen: string | null
           pen_work_id: string | null
           preg_status: string | null
@@ -100,6 +101,7 @@ export type Database = {
           deleted_at?: string | null
           fetal_sex?: string | null
           id?: string
+          notes?: string | null
           pen?: string | null
           pen_work_id?: string | null
           preg_status?: string | null
@@ -122,6 +124,7 @@ export type Database = {
           deleted_at?: string | null
           fetal_sex?: string | null
           id?: string
+          notes?: string | null
           pen?: string | null
           pen_work_id?: string | null
           preg_status?: string | null

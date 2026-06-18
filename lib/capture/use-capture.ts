@@ -1,0 +1,381 @@
+'use client'
+
+import { useCallback, useMemo, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+import { upsertPen } from '@/lib/work-orders/pens'
+import type { TablesInsert } from '@/types/supabase'
+import {
+  emptyDraft,
+  isBredStage,
+  type AnimalDraft,
+  type BatchInfo,
+  type CaptureBootstrap,
+  type SortPen,
+} from './types'
+
+export type ToastKind = 'error' | 'warn' | 'success'
+export type ToastMsg = { kind: ToastKind; message: string } | null
+
+export type StartBatchInput = {
+  saleDayId: string | null
+  penId: string | null
+  penNumber: string | null
+  workTypeId: string
+  sellerPartyId: string | null
+  sellerName: string
+  headStarted: number | null
+}
+
+function errMsg(e: unknown, fallback: string): string {
+  if (e && typeof e === 'object' && 'message' in e) {
+    const m = (e as { message?: unknown }).message
+    if (typeof m === 'string' && m) return m
+  }
+  return fallback
+}
+
+export type Step = 'start' | 'capture'
+
+export function useCapture(bootstrap: CaptureBootstrap, userId: string | null) {
+  const supabase = useMemo(() => createClient(), [])
+  const barnId = bootstrap.barn.id
+
+  const [step, setStep] = useState<Step>('start')
+  const [batch, setBatch] = useState<BatchInfo | null>(null)
+  const [draft, setDraft] = useState<AnimalDraft>(emptyDraft)
+  const [worked, setWorked] = useState(0)
+  const [sorted, setSorted] = useState(0)
+  const [stageTally, setStageTally] = useState<Record<string, number>>({})
+  const [sortPens, setSortPens] = useState<SortPen[]>([])
+  const [saving, setSaving] = useState(false)
+  const [toast, setToast] = useState<ToastMsg>(null)
+
+  const flash = useCallback((kind: ToastKind, message: string) => {
+    setToast({ kind, message })
+    if (kind !== 'warn') window.setTimeout(() => setToast(null), 3200)
+  }, [])
+  const dismissToast = useCallback(() => setToast(null), [])
+
+  const patchDraft = useCallback((fields: Partial<AnimalDraft>) => {
+    setDraft((d) => ({ ...d, ...fields }))
+  }, [])
+
+  // Which fields actually show, given the batch + current draft.
+  const shows = useCallback(
+    (key: string): boolean => {
+      if (!batch) return false
+      if (key === 'preg_stage') return batch.includesPregCheck
+      if (key === 'preg_timing') return batch.includesPregCheck && isBredStage(draft.pregStatus)
+      const cfg = bootstrap.fields.find((f) => f.field_key === key)
+      return cfg?.is_displayed ?? false
+    },
+    [batch, draft.pregStatus, bootstrap.fields],
+  )
+
+  const loadSortPens = useCallback(
+    async (saleDayId: string) => {
+      const { data, error } = await supabase
+        .from('animal')
+        .select('current_pen_id, pen:pen!animal_current_pen_id_fkey(id,pen_number)')
+        .eq('sale_day_id', saleDayId)
+        .not('current_pen_id', 'is', null)
+        .is('deleted_at', null)
+      if (error) return
+      const byPen = new Map<string, SortPen>()
+      for (const row of (data ?? []) as Array<{
+        current_pen_id: string | null
+        pen: { id: string; pen_number: string } | null
+      }>) {
+        if (!row.pen) continue
+        const found = byPen.get(row.pen.id)
+        if (found) found.count += 1
+        else byPen.set(row.pen.id, { id: row.pen.id, pen_number: row.pen.pen_number, count: 1 })
+      }
+      setSortPens(Array.from(byPen.values()).sort((a, b) => a.pen_number.localeCompare(b.pen_number)))
+    },
+    [supabase],
+  )
+
+  const resolveSaleDay = useCallback(
+    async (saleDayId: string | null): Promise<string> => {
+      if (saleDayId) return saleDayId
+      const today = bootstrap.today
+      const { data: existing } = await supabase
+        .from('sale_day')
+        .select('id')
+        .eq('barn_id', barnId)
+        .eq('sale_date', today)
+        .is('deleted_at', null)
+        .maybeSingle()
+      if (existing) return existing.id
+      const { data: created, error } = await supabase
+        .from('sale_day')
+        .insert({ barn_id: barnId, sale_date: today, status: 'open' })
+        .select('id')
+        .single()
+      if (error || !created) throw error ?? new Error('Could not start the sale day')
+      return created.id
+    },
+    [supabase, barnId, bootstrap.today],
+  )
+
+  const startBatch = useCallback(
+    async (input: StartBatchInput): Promise<boolean> => {
+      setSaving(true)
+      try {
+        const saleDayId = await resolveSaleDay(input.saleDayId)
+
+        let penId = input.penId
+        let penNumber = input.penNumber
+        if (!penId && input.penNumber && input.penNumber.trim()) {
+          penId = await upsertPen(supabase, barnId, saleDayId, input.penNumber.trim())
+          penNumber = input.penNumber.trim()
+        } else if (penId) {
+          penNumber = bootstrap.pens.find((p) => p.id === penId)?.pen_number ?? penNumber
+        }
+
+        let sellerPartyId = input.sellerPartyId
+        let sellerName = input.sellerName
+        if (!sellerPartyId) {
+          const name = input.sellerName.trim()
+          if (!name) {
+            flash('warn', 'Pick or add a consignor first')
+            return false
+          }
+          const { data: party, error: pe } = await supabase
+            .from('party')
+            .insert({ barn_id: barnId, name })
+            .select('id,name')
+            .single()
+          if (pe || !party) throw pe ?? new Error('Could not add consignor')
+          sellerPartyId = party.id
+          sellerName = party.name
+        }
+
+        const wt = bootstrap.workTypes.find((w) => w.id === input.workTypeId)
+        if (!wt) {
+          flash('warn', 'Pick a work type first')
+          return false
+        }
+
+        const insert: TablesInsert<'pen_work'> = {
+          barn_id: barnId,
+          sale_day_id: saleDayId,
+          pen_id: penId,
+          work_type_id: input.workTypeId,
+          seller_party_id: sellerPartyId,
+          head_started: input.headStarted,
+          origin: 'chute',
+          created_by: userId,
+        }
+        const { data: created, error } = await supabase
+          .from('pen_work')
+          .insert(insert)
+          .select('id')
+          .single()
+        if (error || !created) throw error ?? new Error('Could not start the batch')
+
+        setBatch({
+          penWorkId: created.id,
+          saleDayId,
+          penId,
+          penNumber,
+          workTypeId: wt.id,
+          workTypeName: wt.name,
+          includesPregCheck: wt.includes_preg_check,
+          sellerPartyId,
+          sellerName,
+          animalTypeId: null,
+          headStarted: input.headStarted,
+        })
+        setWorked(0)
+        setSorted(0)
+        setStageTally({})
+        setDraft(emptyDraft())
+        await loadSortPens(saleDayId)
+        setStep('capture')
+        return true
+      } catch (e) {
+        flash('error', errMsg(e, 'Could not start the batch'))
+        return false
+      } finally {
+        setSaving(false)
+      }
+    },
+    [supabase, barnId, userId, bootstrap.pens, bootstrap.workTypes, resolveSaleDay, loadSortPens, flash],
+  )
+
+  // Sort allocation — shared, all-day pens.
+  const clearSort = useCallback(() => patchDraft({ sortPenId: null }), [patchDraft])
+  const chooseSortPen = useCallback((penId: string) => patchDraft({ sortPenId: penId }), [patchDraft])
+
+  const createSortPen = useCallback(
+    async (rawNumber: string): Promise<void> => {
+      if (!batch) return
+      const number = rawNumber.trim() || `Sort ${sortPens.length + 1}`
+      try {
+        const penId = await upsertPen(supabase, barnId, batch.saleDayId, number)
+        setSortPens((prev) =>
+          prev.some((p) => p.id === penId) ? prev : [...prev, { id: penId, pen_number: number, count: 0 }],
+        )
+        patchDraft({ sortPenId: penId })
+      } catch (e) {
+        flash('error', errMsg(e, 'Could not make the sort pen'))
+      }
+    },
+    [supabase, barnId, batch, sortPens.length, patchDraft, flash],
+  )
+
+  const toggleQuickNote = useCallback(
+    (label: string) => {
+      setDraft((d) => ({
+        ...d,
+        quickNotes: d.quickNotes.includes(label)
+          ? d.quickNotes.filter((l) => l !== label)
+          : [...d.quickNotes, label],
+      }))
+    },
+    [],
+  )
+
+  const requiredMissing = useCallback((): string | null => {
+    if (!batch) return null
+    for (const f of bootstrap.fields) {
+      if (!f.is_required || !shows(f.field_key)) continue
+      const label = f.display_label || f.field_key
+      const has = (v: string | null) => v != null && v !== ''
+      const ok =
+        f.field_key === 'eid' ? has(draft.eid.trim() || null)
+        : f.field_key === 'back_tag' ? has(draft.backTag.trim() || null)
+        : f.field_key === 'visual_tag' ? has(draft.visualTag.trim() || null)
+        : f.field_key === 'metal_tag' ? has(draft.metalTag.trim() || null)
+        : f.field_key === 'age' ? has(draft.ageDesignation)
+        : f.field_key === 'breed' ? has(draft.breed)
+        : f.field_key === 'hide_color' ? has(draft.color)
+        : f.field_key === 'preg_stage' ? has(draft.pregStatus)
+        : f.field_key === 'preg_timing' ? has(draft.pregTiming)
+        : f.field_key === 'fetal_sex' ? has(draft.fetalSex)
+        : true
+      if (!ok) return label
+    }
+    return null
+  }, [batch, bootstrap.fields, shows, draft])
+
+  /** Save the current animal and clear the form for the next. Returns success. */
+  const saveAnimal = useCallback(async (): Promise<boolean> => {
+    if (!batch || saving) return false
+
+    const missing = requiredMissing()
+    if (missing) {
+      flash('warn', `Finish ${missing} before the next animal`)
+      return false
+    }
+
+    setSaving(true)
+    try {
+      const off = bootstrap.barn.official_id_type
+      const animalRow: TablesInsert<'animal'> = {
+        barn_id: barnId,
+        sale_day_id: batch.saleDayId,
+        pen_work_id: batch.penWorkId,
+        animal_type_id: batch.animalTypeId,
+        color: shows('hide_color') ? draft.color : null,
+        breed: shows('breed') ? draft.breed : null,
+        age_value: null,
+        age_designation: shows('age') ? draft.ageDesignation : null,
+        preg_status: shows('preg_stage') ? draft.pregStatus : null,
+        preg_timing: shows('preg_timing') ? draft.pregTiming : null,
+        fetal_sex: shows('fetal_sex') ? draft.fetalSex : null,
+        quick_notes: draft.quickNotes,
+        notes: draft.notes.trim() || null,
+        current_pen_id: draft.sortPenId,
+        created_by: userId,
+      }
+      const { data: animal, error } = await supabase.from('animal').insert(animalRow).select('id').single()
+      if (error || !animal) throw error ?? new Error('Could not save the animal')
+
+      const idRows: TablesInsert<'identifier'>[] = []
+      const addId = (type: string, value: string, official: boolean) => {
+        const v = value.trim()
+        if (v) idRows.push({ animal_id: animal.id, barn_id: barnId, type, value: v, is_official: official, created_by: userId })
+      }
+      if (shows('eid')) addId('eid', draft.eid, off === 'EID' || off === 'Both')
+      if (shows('back_tag')) addId('back_tag', draft.backTag, false)
+      if (shows('visual_tag')) addId('visual_tag', draft.visualTag, false)
+      if (shows('metal_tag')) addId('metal_tag', draft.metalTag, off === 'Metal' || off === 'Both')
+      if (idRows.length) {
+        const { error: ie } = await supabase.from('identifier').insert(idRows)
+        if (ie) throw ie
+      }
+
+      setWorked((w) => w + 1)
+      if (shows('preg_stage') && draft.pregStatus) {
+        const code = draft.pregStatus
+        setStageTally((t) => ({ ...t, [code]: (t[code] ?? 0) + 1 }))
+      }
+      if (draft.sortPenId) {
+        const penId = draft.sortPenId
+        setSorted((s) => s + 1)
+        setSortPens((prev) => prev.map((p) => (p.id === penId ? { ...p, count: p.count + 1 } : p)))
+      }
+      setDraft(emptyDraft())
+      flash('success', 'Saved')
+      return true
+    } catch (e) {
+      flash('error', errMsg(e, 'Could not save — try again'))
+      return false
+    } finally {
+      setSaving(false)
+    }
+  }, [batch, saving, requiredMissing, bootstrap.barn.official_id_type, barnId, draft, userId, shows, supabase, flash])
+
+  const closeBatch = useCallback(async (): Promise<boolean> => {
+    if (!batch) return false
+    setSaving(true)
+    try {
+      const { error } = await supabase
+        .from('pen_work')
+        .update({ work_complete: true, head_worked: worked })
+        .eq('id', batch.penWorkId)
+      if (error) throw error
+      setBatch(null)
+      setDraft(emptyDraft())
+      setWorked(0)
+      setSorted(0)
+      setStageTally({})
+      setStep('start')
+      flash('success', 'Batch closed')
+      return true
+    } catch (e) {
+      flash('error', errMsg(e, 'Could not close the batch'))
+      return false
+    } finally {
+      setSaving(false)
+    }
+  }, [batch, worked, supabase, flash])
+
+  return {
+    bootstrap,
+    step,
+    batch,
+    draft,
+    worked,
+    sorted,
+    stageTally,
+    sortPens,
+    saving,
+    toast,
+    shows,
+    patchDraft,
+    toggleQuickNote,
+    startBatch,
+    saveAnimal,
+    closeBatch,
+    clearSort,
+    chooseSortPen,
+    createSortPen,
+    dismissToast,
+  }
+}
+
+export type CaptureApi = ReturnType<typeof useCapture>
