@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition, type ReactNode } from 'react'
 import { computePenWorkCharges, formatUsd } from '@/lib/work-orders/pricing'
+import { PrintPenCardButton } from '@/components/pen-card/print-pen-card-button'
 import type { AnimalType, Barn, PenWorkFull, SpecialChargeFull, WorkType } from '@/lib/work-orders/types'
 import {
   createParty,
@@ -194,6 +195,7 @@ export function WorkOrderForm({
         <div style={{ height: 60, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '0 18px', borderBottom: `1px solid ${LINE}` }}>
           <span style={{ fontSize: 17, fontWeight: 800, color: NAVY, letterSpacing: '-0.01em' }}>{editing ? 'Edit work order' : 'New work order'}</span>
           <div style={{ flex: 1 }} />
+          {editing ? <PrintPenCardButton penWorkId={editing.id} /> : null}
           <button type="button" onClick={onClose} aria-label="Close" style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F1F2F4', border: 'none', borderRadius: 9, cursor: 'pointer', fontSize: 18, color: NAVY }}>✕</button>
         </div>
 
