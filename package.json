@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "changelog": "node scripts/changelog.mjs",
     "test:db": "node --env-file=.env.local scripts/test-connection.mjs",
     "import:customers": "node --env-file=.env.local scripts/import/import-customers.mjs",
     "types:gen": "supabase gen types typescript --linked > types/supabase.ts"
