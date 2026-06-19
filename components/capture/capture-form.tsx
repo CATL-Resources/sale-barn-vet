@@ -277,9 +277,11 @@ export function CaptureForm({
         </div>
       </div>
 
-      {/* body */}
-      <div className="sbv-scroll" style={{ display: 'flex', flexDirection: 'column', gap: 11, padding: 12 }}>
-        {flaggedOn.length > 0 && (
+      {/* body — sbv-scroll just scrolls; an inner wrapper holds the spacing so
+          the cards keep their natural height instead of being shrunk to fit */}
+      <div className="sbv-scroll">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 11, padding: 12 }}>
+          {flaggedOn.length > 0 && (
           <div style={{ background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: 14, padding: '13px 15px', display: 'flex', alignItems: 'center', gap: 12 }}>
             <FlagIcon size={26} color="#B45309" sw={2.4} />
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -425,6 +427,7 @@ export function CaptureForm({
               <span style={{ fontSize: 14, fontWeight: 600, color: '#9A9AA6' }}>Add a note</span>
             </button>
           ))}
+        </div>
       </div>
 
       {/* save bar */}
