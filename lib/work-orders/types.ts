@@ -14,8 +14,8 @@ export type Barn = Tables['barn']['Row']
 
 /** A pen_work with all related rows joined in. */
 export type PenWorkFull = PenWork & {
-  seller: Pick<Party, 'id' | 'name'> | null
-  buyer: Pick<Party, 'id' | 'name'> | null
+  seller: Pick<Party, 'id' | 'name' | 'customer_number'> | null
+  buyer: Pick<Party, 'id' | 'name' | 'customer_number'> | null
   buyerNumber: Pick<BuyerNumber, 'id' | 'number' | 'typical_destination' | 'typical_state'> | null
   workType: Pick<WorkType, 'id' | 'name' | 'vet_charge' | 'sol_charge'> | null
   animalType: Pick<AnimalType, 'id' | 'name'> | null
