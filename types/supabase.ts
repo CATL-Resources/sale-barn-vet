@@ -720,6 +720,7 @@ export type Database = {
           id: string
           notes: string | null
           origin: string
+          origin_location_id: string | null
           pen_id: string | null
           sale_day_id: string
           seller_party_id: string | null
@@ -755,6 +756,7 @@ export type Database = {
           id?: string
           notes?: string | null
           origin?: string
+          origin_location_id?: string | null
           pen_id?: string | null
           sale_day_id: string
           seller_party_id?: string | null
@@ -790,6 +792,7 @@ export type Database = {
           id?: string
           notes?: string | null
           origin?: string
+          origin_location_id?: string | null
           pen_id?: string | null
           sale_day_id?: string
           seller_party_id?: string | null
@@ -1017,6 +1020,7 @@ export type Database = {
           head: number
           id: string
           party_id: string | null
+          pen_work_id: string | null
           role: string
           sale_day_id: string
           sol_total: number
@@ -1035,6 +1039,7 @@ export type Database = {
           head?: number
           id?: string
           party_id?: string | null
+          pen_work_id?: string | null
           role?: string
           sale_day_id: string
           sol_total?: number
@@ -1053,6 +1058,7 @@ export type Database = {
           head?: number
           id?: string
           party_id?: string | null
+          pen_work_id?: string | null
           role?: string
           sale_day_id?: string
           sol_total?: number
