@@ -94,7 +94,8 @@ export function StartBatch({
         </div>
       </div>
 
-      <div className="sbv-scroll" style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16 }}>
+      <div className="sbv-scroll">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16 }}>
         <button type="button" style={fieldBtn} onClick={() => setPicker('saleDay')}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: '#717182' }}>Sale day</div>
@@ -192,6 +193,7 @@ export function StartBatch({
               fontVariantNumeric: 'tabular-nums',
             }}
           />
+        </div>
         </div>
       </div>
 
