@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { upsertPen } from '@/lib/work-orders/pens'
 import type { TablesInsert } from '@/types/supabase'
@@ -57,14 +57,20 @@ type ResolvedField = {
 
 export type Step = 'start' | 'capture'
 
-export function useCapture(bootstrap: CaptureBootstrap, userId: string | null) {
+export function useCapture(
+  bootstrap: CaptureBootstrap,
+  userId: string | null,
+  // When present, open already bound to an existing work order's batch (the
+  // chute Barn Work List hands this in) instead of the new-batch start flow.
+  initial?: { batch: BatchInfo; worked: number },
+) {
   const supabase = useMemo(() => createClient(), [])
   const barnId = bootstrap.barn.id
 
-  const [step, setStep] = useState<Step>('start')
-  const [batch, setBatch] = useState<BatchInfo | null>(null)
+  const [step, setStep] = useState<Step>(initial ? 'capture' : 'start')
+  const [batch, setBatch] = useState<BatchInfo | null>(initial?.batch ?? null)
   const [draft, setDraft] = useState<AnimalDraft>(emptyDraft)
-  const [worked, setWorked] = useState(0)
+  const [worked, setWorked] = useState(initial?.worked ?? 0)
   const [sorted, setSorted] = useState(0)
   const [stageTally, setStageTally] = useState<Record<string, number>>({})
   const [sortPens, setSortPens] = useState<SortPen[]>([])
@@ -154,6 +160,15 @@ export function useCapture(bootstrap: CaptureBootstrap, userId: string | null) {
     },
     [supabase],
   )
+
+  // When opened already bound to a work order, load that day's sort pens once.
+  const boundLoaded = useRef(false)
+  useEffect(() => {
+    if (initial && !boundLoaded.current) {
+      boundLoaded.current = true
+      void loadSortPens(initial.batch.saleDayId)
+    }
+  }, [initial, loadSortPens])
 
   const resolveSaleDay = useCallback(
     async (saleDayId: string | null): Promise<string> => {

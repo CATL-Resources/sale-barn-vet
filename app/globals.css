@@ -518,3 +518,50 @@ button {
     padding: 26px 24px;
   }
 }
+
+/* ---- Barn work list (chute; phone + tablet) ---- */
+.wl-wrap {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.wl-card {
+  width: 100%;
+  text-align: left;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.wl-card:active {
+  background: var(--drawer-selected);
+}
+/* The inline Open / Resume button shows on a tablet; the phone uses the chevron
+   and opens the detail on tap. */
+.wl-rowaction {
+  display: none;
+}
+@media (min-width: 720px) {
+  .wl-wrap {
+    padding: 18px;
+  }
+  .wl-card {
+    padding: 16px 18px;
+    gap: 16px;
+  }
+  .wl-rowaction {
+    display: inline-flex;
+  }
+  .wl-chevron {
+    display: none;
+  }
+}

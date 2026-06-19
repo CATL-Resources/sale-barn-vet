@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { CaptureBootstrap } from '@/lib/capture/types'
+import type { BatchInfo, CaptureBootstrap } from '@/lib/capture/types'
 import { useCapture } from '@/lib/capture/use-capture'
 import { StartBatch } from './start-batch'
 import { CaptureForm } from './capture-form'
@@ -9,8 +9,16 @@ import { CloseOutSheet } from './close-out-sheet'
 import { CaptureToast } from './toast'
 import { OptionPicker, type Option } from './sheets'
 
-export function CaptureScreen({ bootstrap, userId }: { bootstrap: CaptureBootstrap; userId: string | null }) {
-  const api = useCapture(bootstrap, userId)
+export function CaptureScreen({
+  bootstrap,
+  userId,
+  initialBatch,
+}: {
+  bootstrap: CaptureBootstrap
+  userId: string | null
+  initialBatch?: { batch: BatchInfo; worked: number }
+}) {
+  const api = useCapture(bootstrap, userId, initialBatch)
   const [closeOutOpen, setCloseOutOpen] = useState(false)
   const [sortSheetOpen, setSortSheetOpen] = useState(false)
 
