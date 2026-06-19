@@ -75,6 +75,18 @@ button {
   }
 }
 
+/* Full-screen task frame (Capture): lock to the viewport height so the inner
+   body scrolls while the header and save bar stay put. Without a definite
+   height the nested flex scroll never bounds and the bottom gets clipped. */
+.sbv-frame.sbv-frame--task {
+  height: 100dvh;
+}
+@media (min-width: 430px) {
+  .sbv-frame.sbv-frame--task {
+    height: 844px;
+  }
+}
+
 .sbv-scroll {
   flex: 1 1 0%;
   min-height: 0;

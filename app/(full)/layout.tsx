@@ -16,7 +16,7 @@ export default async function FullLayout({ children }: { children: ReactNode }) 
 
   return (
     <div className="sbv-canvas">
-      <div className="sbv-frame">{children}</div>
+      <div className="sbv-frame sbv-frame--task">{children}</div>
     </div>
   )
 }

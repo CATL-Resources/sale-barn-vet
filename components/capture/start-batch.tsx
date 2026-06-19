@@ -84,7 +84,7 @@ export function StartBatch({
   }
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       <div style={{ background: '#0E2646', flexShrink: 0, padding: '16px 16px 18px', borderRadius: '17px 17px 0 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Link href="/" aria-label="Back" style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF' }}>
