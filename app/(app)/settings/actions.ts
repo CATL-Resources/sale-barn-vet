@@ -2,18 +2,79 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import type { SavePayload } from './types'
+
+export type SaveResult = { ok: true } | { ok: false; error: string }
 
 /**
- * Turn a capture field on or off for the barn. The chuteside Capture form is
- * built from this list, so flipping a row here changes what the vet sees —
- * no code change. RLS limits the update to the user's own barn.
+ * Write the staged Settings changes for the signed-in user's barn.
+ *
+ * Only changed rows arrive in the payload. Everything is additive: turning a
+ * field or option "off" sets a flag (is_displayed / active = false) — nothing is
+ * ever deleted. Per-barn row-level security limits every write to the caller's
+ * own barn (and barn-level columns to a barn admin).
+ *
+ * Fail-safe: on the first rejected write we stop and return the error string.
+ * The form keeps the user's edits and does not show them as saved.
  */
-export async function setFieldDisplayed(id: string, displayed: boolean) {
+export async function saveSettings(payload: SavePayload): Promise<SaveResult> {
   const supabase = createClient()
-  const { error } = await supabase
-    .from('barn_field_config')
-    .update({ is_displayed: displayed })
-    .eq('id', id)
-  if (error) throw new Error(error.message)
+
+  // Barn id for inserts. RLS scopes this select to the caller's barn.
+  const { data: barn, error: barnErr } = await supabase
+    .from('barn')
+    .select('id')
+    .limit(1)
+    .maybeSingle()
+  if (barnErr) return { ok: false, error: barnErr.message }
+  if (!barn) return { ok: false, error: 'No barn is visible for your account.' }
+  const barnId = barn.id
+
+  try {
+    if (payload.barn) {
+      const { id, ...patch } = payload.barn
+      const { error } = await supabase.from('barn').update(patch).eq('id', id)
+      if (error) throw new Error(`Barn settings — ${error.message}`)
+    }
+
+    for (const { id, ...patch } of payload.fields) {
+      const { error } = await supabase.from('barn_field_config').update(patch).eq('id', id)
+      if (error) throw new Error(`Capture field — ${error.message}`)
+    }
+
+    for (const { id, ...patch } of payload.workTypes) {
+      const { error } = await supabase.from('work_type').update(patch).eq('id', id)
+      if (error) throw new Error(`Work type — ${error.message}`)
+    }
+
+    for (const { id, ...patch } of payload.options) {
+      const { error } = await supabase.from('field_value_option').update(patch).eq('id', id)
+      if (error) throw new Error(`Option — ${error.message}`)
+    }
+    if (payload.newOptions.length > 0) {
+      const rows = payload.newOptions.map((o) => ({ ...o, barn_id: barnId, active: true }))
+      const { error } = await supabase.from('field_value_option').insert(rows)
+      if (error) throw new Error(`New option — ${error.message}`)
+    }
+
+    for (const { id, ...patch } of payload.pregStages) {
+      const { error } = await supabase.from('preg_stage_config').update(patch).eq('id', id)
+      if (error) throw new Error(`Pregnancy stage — ${error.message}`)
+    }
+
+    for (const { id, ...patch } of payload.ageDesignations) {
+      const { error } = await supabase.from('age_designation_option').update(patch).eq('id', id)
+      if (error) throw new Error(`Age row — ${error.message}`)
+    }
+    if (payload.newAgeDesignations.length > 0) {
+      const rows = payload.newAgeDesignations.map((a) => ({ ...a, barn_id: barnId, active: true }))
+      const { error } = await supabase.from('age_designation_option').insert(rows)
+      if (error) throw new Error(`New age row — ${error.message}`)
+    }
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : 'Save failed.' }
+  }
+
   revalidatePath('/settings')
+  return { ok: true }
 }
