@@ -38,7 +38,7 @@ export function CaptureScreen({ bootstrap, userId }: { bootstrap: CaptureBootstr
   }))
 
   return (
-    <div style={{ height: '100%', position: 'relative' }}>
+    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', position: 'relative' }}>
       {api.step === 'start' ? (
         <StartBatch bootstrap={bootstrap} onStart={api.startBatch} saving={api.saving} />
       ) : (

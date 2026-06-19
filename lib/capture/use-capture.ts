@@ -34,6 +34,27 @@ function errMsg(e: unknown, fallback: string): string {
   return fallback
 }
 
+const FIELD_LABELS: Record<string, string> = {
+  eid: 'EID',
+  back_tag: 'Back tag',
+  visual_tag: 'Tag #',
+  metal_tag: 'Metal tag',
+  age: 'Age',
+  breed: 'Breed',
+  hide_color: 'Color',
+  preg_stage: 'Preg status',
+  preg_timing: 'Month bred',
+  fetal_sex: 'Fetal sex',
+}
+
+type ResolvedField = {
+  is_displayed: boolean
+  is_required: boolean
+  sort_order: number
+  display_label: string | null
+  default_value: string | null
+}
+
 export type Step = 'start' | 'capture'
 
 export function useCapture(bootstrap: CaptureBootstrap, userId: string | null) {
@@ -60,16 +81,54 @@ export function useCapture(bootstrap: CaptureBootstrap, userId: string | null) {
     setDraft((d) => ({ ...d, ...fields }))
   }, [])
 
-  // Which fields actually show, given the batch + current draft.
+  // Resolve each field for the active work type: start from the barn-wide rows
+  // (work_type_id IS NULL), then let a row for this work type override its flags.
+  const resolved = useMemo(() => {
+    const map = new Map<string, ResolvedField>()
+    for (const f of bootstrap.fields) {
+      if (f.work_type_id !== null) continue
+      map.set(f.field_key, {
+        is_displayed: f.is_displayed,
+        is_required: f.is_required,
+        sort_order: f.sort_order,
+        display_label: f.display_label,
+        default_value: f.default_value,
+      })
+    }
+    if (batch) {
+      for (const f of bootstrap.fields) {
+        if (f.work_type_id !== batch.workTypeId) continue
+        const base = map.get(f.field_key)
+        map.set(f.field_key, {
+          is_displayed: f.is_displayed,
+          is_required: f.is_required,
+          sort_order: f.sort_order,
+          display_label: f.display_label ?? base?.display_label ?? null,
+          default_value: f.default_value ?? base?.default_value ?? null,
+        })
+      }
+    }
+    return map
+  }, [bootstrap.fields, batch])
+
+  // Which fields show. preg keeps a fallback on the work type's preg-check flag
+  // so a preg job with no per-work-type row still shows preg (no regression).
   const shows = useCallback(
     (key: string): boolean => {
       if (!batch) return false
-      if (key === 'preg_stage') return batch.includesPregCheck
-      if (key === 'preg_timing') return batch.includesPregCheck && isBredStage(draft.pregStatus)
-      const cfg = bootstrap.fields.find((f) => f.field_key === key)
-      return cfg?.is_displayed ?? false
+      const displayed = resolved.get(key)?.is_displayed ?? false
+      if (key === 'preg_stage') return displayed || batch.includesPregCheck
+      if (key === 'preg_timing') return (displayed || batch.includesPregCheck) && isBredStage(draft.pregStatus)
+      return displayed
     },
-    [batch, draft.pregStatus, bootstrap.fields],
+    [batch, resolved, draft.pregStatus],
+  )
+
+  const required = useCallback((key: string): boolean => resolved.get(key)?.is_required ?? false, [resolved])
+
+  const fieldLabel = useCallback(
+    (key: string): string => resolved.get(key)?.display_label || FIELD_LABELS[key] || key,
+    [resolved],
   )
 
   const loadSortPens = useCallback(
@@ -238,96 +297,170 @@ export function useCapture(bootstrap: CaptureBootstrap, userId: string | null) {
     [],
   )
 
-  const requiredMissing = useCallback((): string | null => {
-    if (!batch) return null
-    for (const f of bootstrap.fields) {
-      if (!f.is_required || !shows(f.field_key)) continue
-      const label = f.display_label || f.field_key
-      const has = (v: string | null) => v != null && v !== ''
-      const ok =
-        f.field_key === 'eid' ? has(draft.eid.trim() || null)
-        : f.field_key === 'back_tag' ? has(draft.backTag.trim() || null)
-        : f.field_key === 'visual_tag' ? has(draft.visualTag.trim() || null)
-        : f.field_key === 'metal_tag' ? has(draft.metalTag.trim() || null)
-        : f.field_key === 'age' ? has(draft.ageDesignation)
-        : f.field_key === 'breed' ? has(draft.breed)
-        : f.field_key === 'hide_color' ? has(draft.color)
-        : f.field_key === 'preg_stage' ? has(draft.pregStatus)
-        : f.field_key === 'preg_timing' ? has(draft.pregTiming)
-        : f.field_key === 'fetal_sex' ? has(draft.fetalSex)
-        : true
-      if (!ok) return label
-    }
-    return null
-  }, [batch, bootstrap.fields, shows, draft])
-
-  /** Save the current animal and clear the form for the next. Returns success. */
-  const saveAnimal = useCallback(async (): Promise<boolean> => {
-    if (!batch || saving) return false
-
-    const missing = requiredMissing()
-    if (missing) {
-      flash('warn', `Finish ${missing} before the next animal`)
-      return false
-    }
-
-    setSaving(true)
-    try {
-      const off = bootstrap.barn.official_id_type
-      const animalRow: TablesInsert<'animal'> = {
-        barn_id: barnId,
-        sale_day_id: batch.saleDayId,
-        pen_work_id: batch.penWorkId,
-        animal_type_id: batch.animalTypeId,
-        color: shows('hide_color') ? draft.color : null,
-        breed: shows('breed') ? draft.breed : null,
-        age_value: null,
-        age_designation: shows('age') ? draft.ageDesignation : null,
-        preg_status: shows('preg_stage') ? draft.pregStatus : null,
-        preg_timing: shows('preg_timing') ? draft.pregTiming : null,
-        fetal_sex: shows('fetal_sex') ? draft.fetalSex : null,
-        quick_notes: draft.quickNotes,
-        notes: draft.notes.trim() || null,
-        current_pen_id: draft.sortPenId,
-        created_by: userId,
+  // The first required + shown field with no value, by label (null = all good).
+  const requiredMissing = useCallback(
+    (eidValue: string): string | null => {
+      if (!batch) return null
+      const order = ['eid', 'back_tag', 'visual_tag', 'metal_tag', 'age', 'breed', 'hide_color', 'preg_stage', 'preg_timing', 'fetal_sex']
+      for (const key of order) {
+        if (!required(key) || !shows(key)) continue
+        const present =
+          key === 'eid' ? !!eidValue.trim()
+          : key === 'back_tag' ? !!draft.backTag.trim()
+          : key === 'visual_tag' ? !!draft.visualTag.trim()
+          : key === 'metal_tag' ? !!draft.metalTag.trim()
+          : key === 'age' ? !!draft.ageDesignation
+          : key === 'breed' ? !!draft.breed
+          : key === 'hide_color' ? !!draft.color
+          : key === 'preg_stage' ? !!draft.pregStatus
+          : key === 'preg_timing' ? !!draft.pregTiming
+          : key === 'fetal_sex' ? !!draft.fetalSex
+          : true
+        if (!present) return fieldLabel(key)
       }
-      const { data: animal, error } = await supabase.from('animal').insert(animalRow).select('id').single()
-      if (error || !animal) throw error ?? new Error('Could not save the animal')
+      return null
+    },
+    [batch, required, shows, draft, fieldLabel],
+  )
 
-      const idRows: TablesInsert<'identifier'>[] = []
-      const addId = (type: string, value: string, official: boolean) => {
-        const v = value.trim()
-        if (v) idRows.push({ animal_id: animal.id, barn_id: barnId, type, value: v, is_official: official, created_by: userId })
-      }
-      if (shows('eid')) addId('eid', draft.eid, off === 'EID' || off === 'Both')
-      if (shows('back_tag')) addId('back_tag', draft.backTag, false)
-      if (shows('visual_tag')) addId('visual_tag', draft.visualTag, false)
-      if (shows('metal_tag')) addId('metal_tag', draft.metalTag, off === 'Metal' || off === 'Both')
-      if (idRows.length) {
-        const { error: ie } = await supabase.from('identifier').insert(idRows)
-        if (ie) throw ie
-      }
+  // Is this EID already on a non-deleted animal in the current batch?
+  const isDuplicateEid = useCallback(
+    async (value: string): Promise<boolean> => {
+      if (!batch) return false
+      const { data: animals } = await supabase
+        .from('animal')
+        .select('id')
+        .eq('pen_work_id', batch.penWorkId)
+        .is('deleted_at', null)
+      const ids = (animals ?? []).map((a) => a.id)
+      if (!ids.length) return false
+      const { data, error } = await supabase
+        .from('identifier')
+        .select('id')
+        .eq('barn_id', barnId)
+        .eq('type', 'eid')
+        .eq('value', value.trim())
+        .is('deleted_at', null)
+        .in('animal_id', ids)
+      if (error) return false
+      return (data ?? []).length > 0
+    },
+    [supabase, barnId, batch],
+  )
 
-      setWorked((w) => w + 1)
-      if (shows('preg_stage') && draft.pregStatus) {
-        const code = draft.pregStatus
-        setStageTally((t) => ({ ...t, [code]: (t[code] ?? 0) + 1 }))
+  // Insert the current record. No required check, no form reset — callers handle
+  // those so a scan can roll straight into the next cow.
+  const buildAndInsert = useCallback(
+    async (eidValue: string): Promise<boolean> => {
+      if (!batch || saving) return false
+      setSaving(true)
+      try {
+        const off = bootstrap.barn.official_id_type
+        const animalRow: TablesInsert<'animal'> = {
+          barn_id: barnId,
+          sale_day_id: batch.saleDayId,
+          pen_work_id: batch.penWorkId,
+          animal_type_id: batch.animalTypeId,
+          color: shows('hide_color') ? draft.color : null,
+          breed: shows('breed') ? draft.breed : null,
+          age_value: null,
+          age_designation: shows('age') ? draft.ageDesignation : null,
+          preg_status: shows('preg_stage') ? draft.pregStatus : null,
+          preg_timing: shows('preg_timing') ? draft.pregTiming : null,
+          fetal_sex: shows('fetal_sex') ? draft.fetalSex : null,
+          quick_notes: draft.quickNotes,
+          notes: draft.notes.trim() || null,
+          current_pen_id: draft.sortPenId,
+          created_by: userId,
+        }
+        const { data: animal, error } = await supabase.from('animal').insert(animalRow).select('id').single()
+        if (error || !animal) throw error ?? new Error('Could not save the animal')
+
+        const idRows: TablesInsert<'identifier'>[] = []
+        const addId = (type: string, value: string, official: boolean) => {
+          const v = value.trim()
+          if (v) idRows.push({ animal_id: animal.id, barn_id: barnId, type, value: v, is_official: official, created_by: userId })
+        }
+        if (shows('eid')) addId('eid', eidValue, off === 'EID' || off === 'Both')
+        if (shows('back_tag')) addId('back_tag', draft.backTag, false)
+        if (shows('visual_tag')) addId('visual_tag', draft.visualTag, false)
+        if (shows('metal_tag')) addId('metal_tag', draft.metalTag, off === 'Metal' || off === 'Both')
+        if (idRows.length) {
+          const { error: ie } = await supabase.from('identifier').insert(idRows)
+          if (ie) throw ie
+        }
+
+        setWorked((w) => w + 1)
+        if (shows('preg_stage') && draft.pregStatus) {
+          const code = draft.pregStatus
+          setStageTally((t) => ({ ...t, [code]: (t[code] ?? 0) + 1 }))
+        }
+        if (draft.sortPenId) {
+          const penId = draft.sortPenId
+          setSorted((s) => s + 1)
+          setSortPens((prev) => prev.map((p) => (p.id === penId ? { ...p, count: p.count + 1 } : p)))
+        }
+        flash('success', 'Saved')
+        return true
+      } catch (e) {
+        flash('error', errMsg(e, 'Could not save — try again'))
+        return false
+      } finally {
+        setSaving(false)
       }
-      if (draft.sortPenId) {
-        const penId = draft.sortPenId
-        setSorted((s) => s + 1)
-        setSortPens((prev) => prev.map((p) => (p.id === penId ? { ...p, count: p.count + 1 } : p)))
+    },
+    [batch, saving, bootstrap.barn.official_id_type, barnId, draft, userId, shows, supabase, flash],
+  )
+
+  /** Deliberate Save & next: check required, save, then open a fresh record. */
+  const saveNext = useCallback(
+    async (eidOverride?: string): Promise<boolean> => {
+      if (!batch) return false
+      const ev = (eidOverride ?? draft.eid).trim()
+      const missing = requiredMissing(ev)
+      if (missing) {
+        flash('warn', `${missing} needed to save`)
+        return false
       }
-      setDraft(emptyDraft())
-      flash('success', 'Saved')
-      return true
-    } catch (e) {
-      flash('error', errMsg(e, 'Could not save — try again'))
-      return false
-    } finally {
-      setSaving(false)
-    }
-  }, [batch, saving, requiredMissing, bootstrap.barn.official_id_type, barnId, draft, userId, shows, supabase, flash])
+      if (ev && (await isDuplicateEid(ev))) {
+        flash('warn', 'This tag is already in this batch')
+        return false
+      }
+      const ok = await buildAndInsert(ev)
+      if (ok) setDraft(emptyDraft())
+      return ok
+    },
+    [batch, draft.eid, requiredMissing, isDuplicateEid, buildAndInsert, flash],
+  )
+
+  /**
+   * An EID scan. EMPTY record -> fill the EID and wait. ACTIVE record -> this is
+   * the next cow: save the current one (when required fields are satisfied) and
+   * carry the new tag in. The identifying scan never saves its own record.
+   */
+  const handleScan = useCallback(
+    async (value: string): Promise<void> => {
+      if (!batch) return
+      const v = value.trim()
+      if (!v) return
+      if (v === draft.eid.trim() || (await isDuplicateEid(v))) {
+        flash('warn', 'This tag is already in this batch')
+        return
+      }
+      if (!draft.eid.trim()) {
+        patchDraft({ eid: v })
+        return
+      }
+      const missing = requiredMissing(draft.eid)
+      if (missing) {
+        flash('warn', `${missing} needed before the next cow`)
+        return
+      }
+      const ok = await buildAndInsert(draft.eid)
+      if (ok) setDraft({ ...emptyDraft(), eid: v })
+    },
+    [batch, draft.eid, isDuplicateEid, requiredMissing, buildAndInsert, patchDraft, flash],
+  )
 
   const closeBatch = useCallback(async (): Promise<boolean> => {
     if (!batch) return false
@@ -365,11 +498,15 @@ export function useCapture(bootstrap: CaptureBootstrap, userId: string | null) {
     sortPens,
     saving,
     toast,
+    resolved,
     shows,
+    required,
+    fieldLabel,
     patchDraft,
     toggleQuickNote,
     startBatch,
-    saveAnimal,
+    saveNext,
+    handleScan,
     closeBatch,
     clearSort,
     chooseSortPen,

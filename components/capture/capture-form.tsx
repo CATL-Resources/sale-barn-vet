@@ -4,10 +4,13 @@ import { useRef, useState } from 'react'
 import { tagColorHex, isPaleSwatch } from '@/lib/capture/colors'
 import { isBredStage } from '@/lib/capture/types'
 import type { CaptureApi } from '@/lib/capture/use-capture'
-import { ChevronLeft, ChevronDown, ChevronUp, ScanIcon, CalendarIcon, PencilIcon, SortIcon, CloseOutIcon, FlagIcon, CheckIcon } from './icons'
+import { ChevronLeft, ChevronDown, ChevronUp, ScanIcon, CalendarIcon, PencilIcon, SortIcon, CloseOutIcon, FlagIcon, CheckIcon, XIcon } from './icons'
 import { OptionPicker, type Option } from './sheets'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+// Fields inside the white "Fields" card, rendered in resolved sort_order.
+const CARD_FIELDS = ['age', 'breed', 'hide_color', 'preg_stage', 'preg_timing', 'fetal_sex'] as const
 
 const cardHead = (title: string) => (
   <div style={{ background: '#EEF1F6', padding: '8px 14px 9px', borderBottom: '1px solid #DEE3EC' }}>
@@ -16,10 +19,17 @@ const cardHead = (title: string) => (
   </div>
 )
 
-const fieldLabel = (label: string, hint?: string) => (
+const RequiredChip = () => (
+  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: '#B45309', background: '#FEF3C7', border: '1px solid #F2C879', borderRadius: 999, padding: '2px 8px' }}>
+    REQUIRED
+  </span>
+)
+
+const fieldLabel = (label: string, hint?: string, requiredEmpty?: boolean) => (
   <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, marginBottom: 8 }}>
     <div style={{ fontSize: 13, fontWeight: 700, color: '#1A1A1A' }}>{label}</div>
     {hint && <div style={{ fontSize: 12, fontWeight: 500, color: '#9A9AA6' }}>{hint}</div>}
+    {requiredEmpty && <RequiredChip />}
   </div>
 )
 
@@ -32,8 +42,9 @@ export function CaptureForm({
   onOpenCloseOut: () => void
   onTapSort: () => void
 }) {
-  const { bootstrap, batch, draft, worked, sorted, sortPens, saving, shows, patchDraft, toggleQuickNote, saveAnimal } = api
+  const { bootstrap, batch, draft, worked, sorted, sortPens, saving, resolved, shows, required, patchDraft, toggleQuickNote, saveNext, handleScan } = api
   const eidRef = useRef<HTMLInputElement>(null)
+  const [scanLine, setScanLine] = useState('')
   const [breedExpanded, setBreedExpanded] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
   const [monthOpen, setMonthOpen] = useState(false)
@@ -47,26 +58,39 @@ export function CaptureForm({
 
   const flaggedOn = bootstrap.quickNotes.filter((q) => q.is_flag && draft.quickNotes.includes(q.label))
   const sortPen = draft.sortPenId ? sortPens.find((p) => p.id === draft.sortPenId) : null
+  const active = draft.eid.trim().length > 0
 
   const monthOptions: Option[] = (bootstrap.barn.preg_active_months.length ? bootstrap.barn.preg_active_months : MONTHS).map(
     (m) => ({ id: m, label: m }),
   )
 
-  async function handleSave() {
-    const ok = await saveAnimal()
+  const orderedFields = CARD_FIELDS.filter((k) => shows(k)).sort(
+    (a, b) => (resolved.get(a)?.sort_order ?? 0) - (resolved.get(b)?.sort_order ?? 0),
+  )
+
+  // A scan landed on the EID line (wand sends the code then Enter).
+  async function onScanEnter() {
+    const v = scanLine.trim()
+    if (!v) return
+    await handleScan(v)
+    setScanLine('')
+    eidRef.current?.focus()
+  }
+
+  // Deliberate Save & next. Carry an uncommitted typed EID through as the value.
+  async function onSaveNext() {
+    const override = !draft.eid.trim() && scanLine.trim() ? scanLine.trim() : undefined
+    const ok = await saveNext(override)
     if (ok) {
+      setScanLine('')
       setNoteOpen(false)
       setBreedExpanded(false)
       eidRef.current?.focus()
     }
   }
 
-  // --- identity inputs ---
-  const navyInput = (
-    key: 'backTag' | 'visualTag' | 'metalTag',
-    label: string,
-    placeholder: string,
-  ) => (
+  // --- identity inputs (typed tags) ---
+  const navyInput = (key: 'backTag' | 'visualTag' | 'metalTag', label: string, placeholder: string) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 9 }}>
       <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA' }}>{label}</div>
       <input
@@ -91,10 +115,131 @@ export function CaptureForm({
     </div>
   )
 
-  const scanned = draft.eid.trim().length > 0
+  const scanInput = (placeholder: string, dashed: boolean) => (
+    <input
+      ref={eidRef}
+      autoFocus
+      value={scanLine}
+      onChange={(e) => setScanLine(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault()
+          void onScanEnter()
+        }
+      }}
+      placeholder={placeholder}
+      style={{
+        flex: 1,
+        minWidth: 0,
+        border: 'none',
+        outline: 'none',
+        background: 'transparent',
+        fontFamily: 'inherit',
+        fontSize: dashed ? 14 : 16,
+        fontWeight: 700,
+        color: '#1A1A1A',
+        fontVariantNumeric: 'tabular-nums',
+      }}
+    />
+  )
+
+  function renderField(key: string) {
+    switch (key) {
+      case 'age':
+        return (
+          <div key="age">
+            {fieldLabel('Age', 'by tag color', required('age') && !draft.ageDesignation)}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {bootstrap.ageOptions.map((a) => {
+                const selected = draft.ageDesignation === a.designation_value
+                const hex = tagColorHex(a.designation_value)
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => patchDraft({ ageDesignation: selected ? null : a.designation_value })}
+                    style={{ height: 40, padding: '0 13px', display: 'inline-flex', alignItems: 'center', gap: 7, borderRadius: 999, background: selected ? '#0E2646' : '#FFFFFF', color: selected ? '#FFFFFF' : '#1A1A1A', border: `1px solid ${selected ? '#0E2646' : '#D4D4D0'}`, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontVariantNumeric: 'tabular-nums' }}
+                  >
+                    <span style={{ width: 13, height: 13, borderRadius: 999, background: hex, border: isPaleSwatch(a.designation_value) ? '1.5px solid #C9C9C4' : '1px solid rgba(0,0,0,0.12)', flexShrink: 0 }} />
+                    {a.age_label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )
+      case 'breed':
+        return (
+          <PillField key="breed" label="Breed" options={bootstrap.breedOptions} value={draft.breed} onPick={(v) => patchDraft({ breed: v })} expanded={breedExpanded} setExpanded={setBreedExpanded} requiredEmpty={required('breed') && !draft.breed} />
+        )
+      case 'hide_color':
+        return (
+          <PillField key="hide_color" label="Color" options={bootstrap.colorOptions} value={draft.color} onPick={(v) => patchDraft({ color: v })} expanded={false} setExpanded={() => {}} alwaysAll requiredEmpty={required('hide_color') && !draft.color} />
+        )
+      case 'preg_stage':
+        return (
+          <div key="preg_stage">
+            {fieldLabel('Stage', undefined, required('preg_stage') && !draft.pregStatus)}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {bootstrap.pregStages.map((s) => {
+                const selected = draft.pregStatus === s.stage_code
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => patchDraft({ pregStatus: selected ? null : s.stage_code, pregTiming: isBredStage(s.stage_code) ? draft.pregTiming : null })}
+                    style={{ height: 44, padding: '0 16px', borderRadius: 11, background: selected ? '#0E2646' : '#FFFFFF', color: selected ? '#FFFFFF' : '#1A1A1A', border: `1px solid ${selected ? '#0E2646' : '#D4D4D0'}`, fontFamily: 'inherit', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    {s.display_label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )
+      case 'preg_timing':
+        return (
+          <div key="preg_timing">
+            {fieldLabel('Month bred', 'shows for a bred stage', required('preg_timing') && !draft.pregTiming)}
+            <button
+              type="button"
+              onClick={() => setMonthOpen(true)}
+              style={{ height: 46, padding: '0 14px', display: 'inline-flex', alignItems: 'center', gap: 10, borderRadius: 11, background: '#FFFFFF', border: '1px solid #D4D4D0', fontFamily: 'inherit', cursor: 'pointer' }}
+            >
+              <CalendarIcon size={17} color="#717182" />
+              <span style={{ fontSize: 15, fontWeight: 700, color: draft.pregTiming ? '#1A1A1A' : '#9A9AA6' }}>{draft.pregTiming ?? 'Pick month'}</span>
+              <ChevronDown size={16} color="#9A9AA6" />
+            </button>
+          </div>
+        )
+      case 'fetal_sex':
+        return (
+          <div key="fetal_sex">
+            {fieldLabel('Fetal sex', undefined, required('fetal_sex') && !draft.fetalSex)}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {['Heifer', 'Bull'].map((fx) => {
+                const selected = draft.fetalSex === fx
+                return (
+                  <button
+                    key={fx}
+                    type="button"
+                    onClick={() => patchDraft({ fetalSex: selected ? null : fx })}
+                    style={{ height: 40, padding: '0 16px', borderRadius: 999, background: selected ? '#0E2646' : '#FFFFFF', color: selected ? '#FFFFFF' : '#1A1A1A', border: `1px solid ${selected ? '#0E2646' : '#D4D4D0'}`, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    {fx}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )
+      default:
+        return null
+    }
+  }
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       {/* header */}
       <div style={{ background: '#0E2646', flexShrink: 0, padding: '14px 16px 16px', borderRadius: '17px 17px 0 0', boxShadow: '0 6px 18px rgba(8,18,40,0.30)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -164,54 +309,41 @@ export function CaptureForm({
             Identity · {bootstrap.barn.official_id_type} barn
           </div>
           {shows('eid') && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 9 }}>
-              <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA' }}>EID</div>
-              <div
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  height: 50,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 9,
-                  padding: '0 13px',
-                  borderRadius: 11,
-                  background: scanned ? '#E1F5EE' : '#FFFFFF',
-                  border: '2px solid #55BAAA',
-                  boxShadow: scanned ? 'none' : '0 0 0 3px rgba(85,186,170,0.35)',
-                }}
-              >
-                <ScanIcon size={19} color="#2E9486" />
-                <input
-                  ref={eidRef}
-                  autoFocus
-                  value={draft.eid}
-                  onChange={(e) => patchDraft({ eid: e.target.value })}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      void handleSave()
-                    }
-                  }}
-                  placeholder="Scan tag"
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    border: 'none',
-                    outline: 'none',
-                    background: 'transparent',
-                    fontFamily: 'inherit',
-                    fontSize: 16,
-                    fontWeight: 700,
-                    color: scanned ? '#1A6B5E' : '#1A1A1A',
-                    fontVariantNumeric: 'tabular-nums',
-                  }}
-                />
-                <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: '#2E9486' }}>
-                  {!scanned && <span style={{ width: 6, height: 6, borderRadius: 999, background: '#2E9486' }} />}
-                  {scanned ? 'SCANNED' : 'READER ON'}
-                </span>
-              </div>
+            <div style={{ marginBottom: 9 }}>
+              {active ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                    <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA' }}>EID</div>
+                    <div style={{ flex: 1, minWidth: 0, height: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '0 13px', borderRadius: 11, background: '#E1F5EE', border: '1px solid #55BAAA' }}>
+                      <ScanIcon size={19} color="#2E9486" />
+                      <span style={{ flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#1A6B5E', fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{draft.eid}</span>
+                      <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: '#2E9486' }}>SCANNED</span>
+                      <button type="button" aria-label="Clear EID" onClick={() => patchDraft({ eid: '' })} style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
+                        <XIcon size={15} color="#2E9486" sw={2.2} />
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 60, flexShrink: 0, fontSize: 12, fontWeight: 700, color: '#8FA8CC' }}>Next</div>
+                    <div style={{ flex: 1, minWidth: 0, height: 42, display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', borderRadius: 10, background: 'rgba(255,255,255,0.10)', border: '1px dashed rgba(255,255,255,0.4)' }}>
+                      {scanInput('Scan the next cow', true)}
+                      <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: '#F3D12A' }}>READER ON</span>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA' }}>EID</div>
+                  <div style={{ flex: 1, minWidth: 0, height: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '0 13px', borderRadius: 11, background: '#FFFFFF', border: '2px solid #55BAAA', boxShadow: '0 0 0 3px rgba(85,186,170,0.35)' }}>
+                    <ScanIcon size={19} color="#2E9486" />
+                    {scanInput('Scan tag', false)}
+                    <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: '#2E9486' }}>
+                      <span style={{ width: 6, height: 6, borderRadius: 999, background: '#2E9486' }} />
+                      READER ON
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           {shows('back_tag') && navyInput('backTag', 'Back tag', 'Optional · scan barcode')}
@@ -220,138 +352,11 @@ export function CaptureForm({
         </div>
 
         {/* fields */}
-        {(shows('age') || shows('breed') || shows('hide_color') || shows('preg_stage') || shows('fetal_sex')) && (
+        {orderedFields.length > 0 && (
           <div style={{ background: '#FFFFFF', border: '1px solid #D4D4D0', borderRadius: 14, overflow: 'hidden' }}>
             {cardHead('Fields')}
             <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {shows('age') && (
-                <div>
-                  {fieldLabel('Age', 'by tag color')}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {bootstrap.ageOptions.map((a) => {
-                      const selected = draft.ageDesignation === a.designation_value
-                      const hex = tagColorHex(a.designation_value)
-                      return (
-                        <button
-                          key={a.id}
-                          type="button"
-                          onClick={() => patchDraft({ ageDesignation: selected ? null : a.designation_value })}
-                          style={{
-                            height: 40,
-                            padding: '0 13px',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 7,
-                            borderRadius: 999,
-                            background: selected ? '#0E2646' : '#FFFFFF',
-                            color: selected ? '#FFFFFF' : '#1A1A1A',
-                            border: `1px solid ${selected ? '#0E2646' : '#D4D4D0'}`,
-                            fontFamily: 'inherit',
-                            fontSize: 13,
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            fontVariantNumeric: 'tabular-nums',
-                          }}
-                        >
-                          <span style={{ width: 13, height: 13, borderRadius: 999, background: hex, border: isPaleSwatch(a.designation_value) ? '1.5px solid #C9C9C4' : '1px solid rgba(0,0,0,0.12)', flexShrink: 0 }} />
-                          {a.age_label}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {shows('breed') && (
-                <PillField
-                  label="Breed"
-                  options={bootstrap.breedOptions}
-                  value={draft.breed}
-                  onPick={(v) => patchDraft({ breed: v })}
-                  expanded={breedExpanded}
-                  setExpanded={setBreedExpanded}
-                />
-              )}
-
-              {shows('hide_color') && (
-                <PillField
-                  label="Color"
-                  options={bootstrap.colorOptions}
-                  value={draft.color}
-                  onPick={(v) => patchDraft({ color: v })}
-                  expanded={false}
-                  setExpanded={() => {}}
-                  alwaysAll
-                />
-              )}
-
-              {shows('preg_stage') && (
-                <div>
-                  {fieldLabel('Stage')}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {bootstrap.pregStages.map((s) => {
-                      const selected = draft.pregStatus === s.stage_code
-                      return (
-                        <button
-                          key={s.id}
-                          type="button"
-                          onClick={() => patchDraft({ pregStatus: selected ? null : s.stage_code, pregTiming: isBredStage(s.stage_code) ? draft.pregTiming : null })}
-                          style={{
-                            height: 44,
-                            padding: '0 16px',
-                            borderRadius: 11,
-                            background: selected ? '#0E2646' : '#FFFFFF',
-                            color: selected ? '#FFFFFF' : '#1A1A1A',
-                            border: `1px solid ${selected ? '#0E2646' : '#D4D4D0'}`,
-                            fontFamily: 'inherit',
-                            fontSize: 15,
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {s.display_label}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {shows('preg_timing') && (
-                <div>
-                  {fieldLabel('Month bred', 'shows for a bred stage')}
-                  <button
-                    type="button"
-                    onClick={() => setMonthOpen(true)}
-                    style={{ height: 46, padding: '0 14px', display: 'inline-flex', alignItems: 'center', gap: 10, borderRadius: 11, background: '#FFFFFF', border: '1px solid #D4D4D0', fontFamily: 'inherit', cursor: 'pointer' }}
-                  >
-                    <CalendarIcon size={17} color="#717182" />
-                    <span style={{ fontSize: 15, fontWeight: 700, color: draft.pregTiming ? '#1A1A1A' : '#9A9AA6' }}>{draft.pregTiming ?? 'Pick month'}</span>
-                    <ChevronDown size={16} color="#9A9AA6" />
-                  </button>
-                </div>
-              )}
-
-              {shows('fetal_sex') && (
-                <div>
-                  {fieldLabel('Fetal sex')}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {['Heifer', 'Bull'].map((fx) => {
-                      const selected = draft.fetalSex === fx
-                      return (
-                        <button
-                          key={fx}
-                          type="button"
-                          onClick={() => patchDraft({ fetalSex: selected ? null : fx })}
-                          style={{ height: 40, padding: '0 16px', borderRadius: 999, background: selected ? '#0E2646' : '#FFFFFF', color: selected ? '#FFFFFF' : '#1A1A1A', border: `1px solid ${selected ? '#0E2646' : '#D4D4D0'}`, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
-                        >
-                          {fx}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
+              {orderedFields.map((k) => renderField(k))}
             </div>
           </div>
         )}
@@ -365,22 +370,7 @@ export function CaptureForm({
                 <button
                   type="button"
                   onClick={onTapSort}
-                  style={{
-                    flexShrink: 0,
-                    height: 42,
-                    padding: draft.sortPenId ? '0 13px' : '0 15px 0 13px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 7,
-                    borderRadius: 999,
-                    background: draft.sortPenId ? '#2E9486' : '#E1F5EE',
-                    border: `1px solid ${draft.sortPenId ? '#2E9486' : '#55BAAA'}`,
-                    color: draft.sortPenId ? '#FFFFFF' : '#1A6B5E',
-                    fontFamily: 'inherit',
-                    fontSize: 14,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
+                  style={{ flexShrink: 0, height: 42, padding: draft.sortPenId ? '0 13px' : '0 15px 0 13px', display: 'inline-flex', alignItems: 'center', gap: 7, borderRadius: 999, background: draft.sortPenId ? '#2E9486' : '#E1F5EE', border: `1px solid ${draft.sortPenId ? '#2E9486' : '#55BAAA'}`, color: draft.sortPenId ? '#FFFFFF' : '#1A6B5E', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
                 >
                   <SortIcon size={15} color={draft.sortPenId ? '#FFFFFF' : '#2E9486'} sw={2.2} />
                   Sort
@@ -399,21 +389,7 @@ export function CaptureForm({
                       key={q.id}
                       type="button"
                       onClick={() => toggleQuickNote(q.label)}
-                      style={{
-                        height: 42,
-                        padding: on && flag ? '0 13px 0 14px' : '0 16px',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 7,
-                        borderRadius: 999,
-                        background: on ? (flag ? '#FEF3C7' : '#0E2646') : '#FFFFFF',
-                        border: `1px solid ${on ? (flag ? '#F59E0B' : '#0E2646') : '#D4D4D0'}`,
-                        color: on ? (flag ? '#7A4A06' : '#FFFFFF') : '#1A1A1A',
-                        fontFamily: 'inherit',
-                        fontSize: 14,
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                      }}
+                      style={{ height: 42, padding: on && flag ? '0 13px 0 14px' : '0 16px', display: 'inline-flex', alignItems: 'center', gap: 7, borderRadius: 999, background: on ? (flag ? '#FEF3C7' : '#0E2646') : '#FFFFFF', border: `1px solid ${on ? (flag ? '#F59E0B' : '#0E2646') : '#D4D4D0'}`, color: on ? (flag ? '#7A4A06' : '#FFFFFF') : '#1A1A1A', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
                     >
                       {on && flag && <FlagIcon size={13} color="#B45309" sw={2.4} />}
                       {q.label}
@@ -455,7 +431,7 @@ export function CaptureForm({
       <div style={{ flexShrink: 0, background: '#FFFFFF', borderTop: '1px solid #E4E4DE', padding: '12px 16px 18px', boxShadow: '0 -6px 18px rgba(8,18,40,0.06)' }}>
         <button
           type="button"
-          onClick={() => void handleSave()}
+          onClick={() => void onSaveNext()}
           disabled={saving}
           style={{ width: '100%', height: 56, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9, borderRadius: 13, background: '#F3D12A', color: '#0E2646', border: 'none', fontFamily: 'inherit', fontSize: 18, fontWeight: 800, cursor: saving ? 'default' : 'pointer', letterSpacing: '-0.01em', opacity: saving ? 0.7 : 1 }}
         >
@@ -487,6 +463,7 @@ function PillField({
   expanded,
   setExpanded,
   alwaysAll = false,
+  requiredEmpty = false,
 }: {
   label: string
   options: { id: string; value: string; label: string; is_pinned: boolean }[]
@@ -495,6 +472,7 @@ function PillField({
   expanded: boolean
   setExpanded: (b: boolean) => void
   alwaysAll?: boolean
+  requiredEmpty?: boolean
 }) {
   const pinned = options.filter((o) => o.is_pinned)
   const hasMore = options.length > pinned.length
@@ -516,7 +494,7 @@ function PillField({
 
   return (
     <div>
-      {fieldLabel(label)}
+      {fieldLabel(label, undefined, requiredEmpty)}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
         {shown.map(pill)}
         {!alwaysAll && hasMore && (
