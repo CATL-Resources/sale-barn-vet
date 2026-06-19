@@ -597,7 +597,9 @@ export type Database = {
           barn_id: string
           created_at: string
           created_by: string | null
+          customer_number: string | null
           deleted_at: string | null
+          email: string | null
           id: string
           name: string
           phone: string | null
@@ -610,7 +612,9 @@ export type Database = {
           barn_id: string
           created_at?: string
           created_by?: string | null
+          customer_number?: string | null
           deleted_at?: string | null
+          email?: string | null
           id?: string
           name: string
           phone?: string | null
@@ -623,7 +627,9 @@ export type Database = {
           barn_id?: string
           created_at?: string
           created_by?: string | null
+          customer_number?: string | null
           deleted_at?: string | null
+          email?: string | null
           id?: string
           name?: string
           phone?: string | null
@@ -637,6 +643,84 @@ export type Database = {
             columns: ["barn_id"]
             isOneToOne: false
             referencedRelation: "barn"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      party_location: {
+        Row: {
+          address: string | null
+          barn_id: string
+          city: string | null
+          country: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          is_default: boolean
+          is_physical: boolean
+          is_po_box: boolean
+          label: string | null
+          party_id: string
+          premise_id: string | null
+          state: string | null
+          updated_at: string
+          version: number
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          barn_id?: string
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_default?: boolean
+          is_physical?: boolean
+          is_po_box?: boolean
+          label?: string | null
+          party_id: string
+          premise_id?: string | null
+          state?: string | null
+          updated_at?: string
+          version?: number
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          barn_id?: string
+          city?: string | null
+          country?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          is_default?: boolean
+          is_physical?: boolean
+          is_po_box?: boolean
+          label?: string | null
+          party_id?: string
+          premise_id?: string | null
+          state?: string | null
+          updated_at?: string
+          version?: number
+          zip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "party_location_barn_id_fkey"
+            columns: ["barn_id"]
+            isOneToOne: false
+            referencedRelation: "barn"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "party_location_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "party"
             referencedColumns: ["id"]
           },
         ]

@@ -8,8 +8,8 @@ type Client = SupabaseClient<Database>
 // disambiguated by its FK constraint name.
 const PEN_WORK_SELECT = `
   *,
-  seller:party!pen_work_seller_party_id_fkey(id,name),
-  buyer:party!pen_work_buyer_party_id_fkey(id,name),
+  seller:party!pen_work_seller_party_id_fkey(id,name,customer_number),
+  buyer:party!pen_work_buyer_party_id_fkey(id,name,customer_number),
   buyerNumber:buyer_number!pen_work_buyer_number_id_fkey(id,number,typical_destination,typical_state),
   workType:work_type!pen_work_work_type_id_fkey(id,name,vet_charge,sol_charge),
   animalType:animal_type!pen_work_animal_type_id_fkey(id,name),
@@ -71,5 +71,26 @@ export async function fetchSpecialCharges(
     .order('created_at', { ascending: true })
     .returns<SpecialChargeFull[]>()
   if (error) throw error
+  return data ?? []
+}
+
+/** All sale days for the barn, most recent first (the day selector). */
+export async function fetchSaleDays(supabase: Client) {
+  const { data } = await supabase
+    .from('sale_day')
+    .select('id, sale_date, status, notes')
+    .is('deleted_at', null)
+    .order('sale_date', { ascending: false })
+  return data ?? []
+}
+
+/** Existing pens for a sale day (the pen picker). */
+export async function fetchPens(supabase: Client, saleDayId: string) {
+  const { data } = await supabase
+    .from('pen')
+    .select('id, pen_number')
+    .eq('sale_day_id', saleDayId)
+    .is('deleted_at', null)
+    .order('pen_number')
   return data ?? []
 }
