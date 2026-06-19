@@ -4,6 +4,8 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
+- **work-orders:** build the office Work Orders screen _(2026-06-19, `7f596ee`)_
+- **work-orders:** migration — work-order origin + special-charge link _(2026-06-19, `ac27ef3`)_
 - **login:** rebuild the sign-in screen in the ChuteSide look _(2026-06-19, `fcdd535`)_
 - **settings:** make Barn Preferences editable behind one Save _(2026-06-19, `85a236f`)_
 - customer import — schema + data + idempotent load script _(2026-06-19, `61c2629`)_
@@ -20,6 +22,10 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 - refresh TODO.md — customer list loaded, plus what's left _(2026-06-19, `c3e8074`)_
 - add TODO.md with capture status and next steps _(2026-06-18, `6e9523d`)_
 - refresh St. Onge field list in capture brief (body color now off) _(2026-06-18, `3d08d33`)_
+
+## Tooling
+
+- add a changelog script so npm run changelog works _(2026-06-19, `db43609`)_
 
 ## Other
 
