@@ -4,7 +4,8 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **home:** build the Home / Sale Days landing screen _(2026-06-19, `5d8be33`)_
+- **pen-card:** printable DYMO pen card label from a work order _(2026-06-19, `bdd7aaf`)_
+- **home:** build the Home / Sale Days landing screen _(2026-06-19, `4b35d20`)_
 - **work-list:** chute Barn Work List + bind Capture to a work order _(2026-06-19, `7527d9b`)_
 - **work-orders:** build the office Work Orders screen _(2026-06-19, `742e0f0`)_
 - **work-orders:** migration — work-order origin + special-charge link _(2026-06-19, `bbd4948`)_
