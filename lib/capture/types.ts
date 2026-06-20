@@ -43,6 +43,9 @@ export type BatchInfo = {
   sellerName: string
   animalTypeId: string | null
   headStarted: number | null
+  // The office's expected head, carried so Capture can freeze head_started from
+  // it on the first animal when the office order never set a started count.
+  headExpected: number | null
 }
 
 /** A shared, all-day sort pen and its running count across every batch. */

@@ -4,7 +4,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **work-orders:** Animal list with copy / CSV export for health papers _(2026-06-20, `629610e`)_
 - **find:** global animal search by EID / back tag / tag number _(2026-06-20, `5d57631`)_
 - **work-orders:** Work Cows — office + chute share one start path, plus delete _(2026-06-20, `b2e60a2`)_
 - **work-orders:** cancel/reset fix, fast customer search, inline location + customer edit _(2026-06-20, `6a8a429`)_
@@ -23,6 +22,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
+- **capture:** freeze head_started on the first animal of a bound order _(2026-06-20, `6eed353`)_
 - **work-orders:** close the edit panel; pen-first row + three-dots menu _(2026-06-20, `abe7e7b`)_
 - **capture:** stop the field cards from clipping their rows _(2026-06-19, `a749dc6`)_
 
@@ -41,6 +41,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Work Orders: Animal list with copy / CSV export for health papers _(2026-06-20, `af37735`)_
 - drop "Scan the next cow", close-out returns to Work Orders, Print label in row menu _(2026-06-20, `cca98c4`)_
 - hide the Age field for chute ID jobs _(2026-06-20, `fb4fd74`)_
 - Settings prefs: field options store + age/ID flexibility, seed St. Onge defaults _(2026-06-17, `3d38126`)_
