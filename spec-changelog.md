@@ -33,3 +33,8 @@
 - Added origin on pen_work (office | chute | received_phone) to support a future receiving-by-phone module.
 - pen + pen_work: updated_at triggers, barn_id auto-fill, RLS member policies, created_by default; security advisor clean.
 - Home + Capture temporarily stubbed (they referenced the dropped tables); Buyers PR closed/superseded. Real screens to be re-issued against the new model.
+
+## 2026-06-20 — Capture freezes the started count for office orders
+- When the chute opens Capture on an office work order, the order's started count now freezes on the FIRST animal saved, if it wasn't set yet. The job reads "in progress" from that point, no matter how Capture was reached (not only through the "Work Cows" tap).
+- The freeze only fills an empty started count — it never overwrites a count that's already there, so a resumed job is left alone.
+- No bill changes: the bill is figured from the worked count, not the started count, and the frozen charge columns are never touched. Chute walk-in batches are unaffected (they set their started count when the batch begins).
