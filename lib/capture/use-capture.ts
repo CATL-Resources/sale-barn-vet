@@ -261,6 +261,7 @@ export function useCapture(
           sellerName,
           animalTypeId: null,
           headStarted: input.headStarted,
+          headExpected: null,
         })
         setWorked(0)
         setSorted(0)
@@ -403,6 +404,23 @@ export function useCapture(
         if (idRows.length) {
           const { error: ie } = await supabase.from('identifier').insert(idRows)
           if (ie) throw ie
+        }
+
+        // Freeze the started count on the first animal of a bound office order
+        // whose head was never set. We set head_started from the office's
+        // expected head so the order reads "in progress". The ".is(head_started,
+        // null)" guard means we never overwrite a count that's already there, and
+        // we never touch the frozen charge columns (the office froze the bill at
+        // order creation). For chute-started batches headExpected is null, so this
+        // is skipped.
+        if (batch.headStarted == null && batch.headExpected != null) {
+          const frozen = batch.headExpected
+          await supabase
+            .from('pen_work')
+            .update({ head_started: frozen })
+            .eq('id', batch.penWorkId)
+            .is('head_started', null)
+          setBatch((b) => (b ? { ...b, headStarted: frozen } : b))
         }
 
         setWorked((w) => w + 1)

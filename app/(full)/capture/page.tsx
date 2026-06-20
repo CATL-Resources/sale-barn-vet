@@ -14,6 +14,7 @@ type PwRow = {
   seller_party_id: string | null
   buyer_party_id: string | null
   head_started: number | null
+  head_expected: number | null
   head_worked: number | null
   workType: { id: string; name: string; includes_preg_check: boolean } | null
   seller: { id: string; name: string } | null
@@ -51,7 +52,7 @@ export default async function CapturePage({
     const { data: rows } = await supabase
       .from('pen_work')
       .select(
-        `id, sale_day_id, pen_id, work_type_id, animal_type_id, seller_party_id, buyer_party_id, head_started, head_worked,
+        `id, sale_day_id, pen_id, work_type_id, animal_type_id, seller_party_id, buyer_party_id, head_started, head_expected, head_worked,
          workType:work_type!pen_work_work_type_id_fkey(id,name,includes_preg_check),
          seller:party!pen_work_seller_party_id_fkey(id,name),
          buyer:party!pen_work_buyer_party_id_fkey(id,name),
@@ -83,6 +84,7 @@ export default async function CapturePage({
         sellerName: owner?.name ?? '',
         animalTypeId: pw.animal_type_id,
         headStarted: pw.head_started,
+        headExpected: pw.head_expected,
       }
       initialBatch = { batch, worked: pw.head_worked ?? count ?? 0 }
     }
