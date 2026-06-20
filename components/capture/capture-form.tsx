@@ -313,26 +313,17 @@ export function CaptureForm({
           {shows('eid') && (
             <div style={{ marginBottom: 9 }}>
               {active ? (
-                <>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                    <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA' }}>EID</div>
-                    <div style={{ flex: 1, minWidth: 0, height: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '0 13px', borderRadius: 11, background: '#E1F5EE', border: '1px solid #55BAAA' }}>
-                      <ScanIcon size={19} color="#2E9486" />
-                      <span style={{ flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#1A6B5E', fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{draft.eid}</span>
-                      <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: '#2E9486' }}>SCANNED</span>
-                      <button type="button" aria-label="Clear EID" onClick={() => patchDraft({ eid: '' })} style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
-                        <XIcon size={15} color="#2E9486" sw={2.2} />
-                      </button>
-                    </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA' }}>EID</div>
+                  <div style={{ flex: 1, minWidth: 0, height: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '0 13px', borderRadius: 11, background: '#E1F5EE', border: '1px solid #55BAAA' }}>
+                    <ScanIcon size={19} color="#2E9486" />
+                    <span style={{ flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#1A6B5E', fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{draft.eid}</span>
+                    <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: '#2E9486' }}>SCANNED</span>
+                    <button type="button" aria-label="Clear EID" onClick={() => patchDraft({ eid: '' })} style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
+                      <XIcon size={15} color="#2E9486" sw={2.2} />
+                    </button>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 60, flexShrink: 0, fontSize: 12, fontWeight: 700, color: '#8FA8CC' }}>Next</div>
-                    <div style={{ flex: 1, minWidth: 0, height: 42, display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', borderRadius: 10, background: 'rgba(255,255,255,0.10)', border: '1px dashed rgba(255,255,255,0.4)' }}>
-                      {scanInput('Scan the next cow', true)}
-                      <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: '#F3D12A' }}>READER ON</span>
-                    </div>
-                  </div>
-                </>
+                </div>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA' }}>EID</div>
