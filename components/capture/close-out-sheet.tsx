@@ -1,10 +1,12 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import type { CaptureApi } from '@/lib/capture/use-capture'
 import { AlertIcon, CloseOutIcon, SortIcon } from './icons'
 import { BottomSheet, SheetHeader } from './sheets'
 
 export function CloseOutSheet({ api, onClose }: { api: CaptureApi; onClose: () => void }) {
+  const router = useRouter()
   const { batch, worked, sorted, stageTally, sortPens, bootstrap, saving, closeBatch } = api
   if (!batch) return null
 
@@ -14,9 +16,16 @@ export function CloseOutSheet({ api, onClose }: { api: CaptureApi; onClose: () =
     .filter((s) => (stageTally[s.stage_code] ?? 0) > 0)
     .map((s) => ({ label: s.display_label, count: stageTally[s.stage_code] ?? 0 }))
 
+  // Closing a pen sends the crew back to the Work Orders list for this sale day,
+  // where the board already floats anything still to do up to the top and drops
+  // the pen we just finished to the bottom. (It used to land on "new batch".)
   async function close() {
+    const saleDayId = batch!.saleDayId
     const ok = await closeBatch()
-    if (ok) onClose()
+    if (ok) {
+      onClose()
+      router.push(`/work-orders/${saleDayId}`)
+    }
   }
 
   return (

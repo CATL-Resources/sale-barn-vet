@@ -22,11 +22,13 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
-- **work-orders:** close the edit panel; pen-first row + three-dots menu _(2026-06-20, `58f8a09`)_
+- **capture:** drop "Scan the next cow"; close-out returns to Work Orders _(2026-06-20, `0399f84`)_
+- **work-orders:** close the edit panel; pen-first row + three-dots menu _(2026-06-20, `abe7e7b`)_
 - **capture:** stop the field cards from clipping their rows _(2026-06-19, `a749dc6`)_
 
 ## Docs
 
+- update CHANGELOG for the Work Orders panel + row fixes _(2026-06-20, `e2359d9`)_
 - update CHANGELOG for the Work Orders fixes _(2026-06-20, `561afdb`)_
 - update CHANGELOG for the Work Orders screen _(2026-06-19, `8228b2b`)_
 - refresh TODO.md — customer list loaded, plus what's left _(2026-06-19, `c3e8074`)_
@@ -39,7 +41,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
-- hide the Age field for chute ID jobs _(2026-06-20, `fba17eb`)_
+- hide the Age field for chute ID jobs _(2026-06-20, `fb4fd74`)_
 - Settings prefs: field options store + age/ID flexibility, seed St. Onge defaults _(2026-06-17, `3d38126`)_
 - St. Onge capture form: turn off age, breed, fetal sex (settings-driven) _(2026-06-17, `ece0ea1`)_
 - Capture screen design brief (preg fields + quick notes) _(2026-06-17, `43adb01`)_

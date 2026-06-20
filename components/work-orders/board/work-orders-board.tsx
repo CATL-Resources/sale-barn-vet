@@ -243,6 +243,10 @@ export function WorkOrdersBoard({
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: '#fff', border: 'none', borderBottom: `1px solid ${LINE}`, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: NAVY, cursor: 'pointer', textAlign: 'left' }}>
               <span style={{ fontSize: 14 }}>✎</span>Edit work order
             </button>
+            <button type="button" onClick={() => { const id = rowMenu.pw.id; setRowMenu(null); window.open(`/print/pen-card/${id}`, '_blank', 'noopener,noreferrer,width=720,height=520') }}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: '#fff', border: 'none', borderBottom: `1px solid ${LINE}`, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: NAVY, cursor: 'pointer', textAlign: 'left' }}>
+              <span style={{ fontSize: 14 }}>🖨</span>Print label
+            </button>
             <button type="button" onClick={() => { const pw = rowMenu.pw; setRowMenu(null); void onDelete(pw) }}
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: '#fff', border: 'none', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: '#C0392B', cursor: 'pointer', textAlign: 'left' }}>
               <span style={{ fontSize: 14 }}>🗑</span>Delete
