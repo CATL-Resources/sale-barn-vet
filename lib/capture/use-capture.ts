@@ -76,6 +76,9 @@ export function useCapture(
   const [sortPens, setSortPens] = useState<SortPen[]>([])
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState<ToastMsg>(null)
+  // Bumped whenever a scan fills an identifier, so the form can move the cursor
+  // to the first empty field for manual entry.
+  const [focusTick, setFocusTick] = useState(0)
 
   const flash = useCallback((kind: ToastKind, message: string) => {
     setToast({ kind, message })
@@ -131,6 +134,24 @@ export function useCapture(
   )
 
   const required = useCallback((key: string): boolean => resolved.get(key)?.is_required ?? false, [resolved])
+
+  // The barn's official ID (EID here). It's an identifier, so when it's the
+  // official ID it HARD-BLOCKS the save — you can't record an animal with no
+  // official tag. EID barn -> eid; Metal -> metal_tag; Both -> both.
+  const officialIdKeys = useMemo(() => {
+    const t = bootstrap.barn.official_id_type
+    const keys = new Set<string>()
+    if (t === 'EID' || t === 'Both') keys.add('eid')
+    if (t === 'Metal' || t === 'Both') keys.add('metal_tag')
+    return keys
+  }, [bootstrap.barn.official_id_type])
+
+  // EID is hard-required when it's shown and either marked required or it's the
+  // barn's official ID.
+  const eidRequired = useCallback(
+    (): boolean => shows('eid') && (required('eid') || officialIdKeys.has('eid')),
+    [shows, required, officialIdKeys],
+  )
 
   const fieldLabel = useCallback(
     (key: string): string => resolved.get(key)?.display_label || FIELD_LABELS[key] || key,
@@ -313,31 +334,9 @@ export function useCapture(
     [],
   )
 
-  // The first required + shown field with no value, by label (null = all good).
-  const requiredMissing = useCallback(
-    (eidValue: string): string | null => {
-      if (!batch) return null
-      const order = ['eid', 'back_tag', 'visual_tag', 'metal_tag', 'age', 'breed', 'hide_color', 'preg_stage', 'preg_timing', 'fetal_sex']
-      for (const key of order) {
-        if (!required(key) || !shows(key)) continue
-        const present =
-          key === 'eid' ? !!eidValue.trim()
-          : key === 'back_tag' ? !!draft.backTag.trim()
-          : key === 'visual_tag' ? !!draft.visualTag.trim()
-          : key === 'metal_tag' ? !!draft.metalTag.trim()
-          : key === 'age' ? !!draft.ageDesignation
-          : key === 'breed' ? !!draft.breed
-          : key === 'hide_color' ? !!draft.color
-          : key === 'preg_stage' ? !!draft.pregStatus
-          : key === 'preg_timing' ? !!draft.pregTiming
-          : key === 'fetal_sex' ? !!draft.fetalSex
-          : true
-        if (!present) return fieldLabel(key)
-      }
-      return null
-    },
-    [batch, required, shows, draft, fieldLabel],
-  )
+  // Observational required fields (age, breed, color, preg…) are soft: a blank
+  // one shows the REQUIRED chip on the field but never blocks the save, so
+  // "Not checked" is still a complete record. Only the official EID hard-blocks.
 
   // Is this EID already on a non-deleted animal in the current batch?
   const isDuplicateEid = useCallback(
@@ -445,16 +444,22 @@ export function useCapture(
     [batch, saving, bootstrap.barn.official_id_type, barnId, draft, userId, shows, supabase, flash],
   )
 
-  /** Deliberate Save & next: check required, save, then open a fresh record. */
+  /**
+   * Deliberate Save & next. Hard-block on a missing or duplicate official EID;
+   * then save and open a fresh record. Observational required fields are soft —
+   * the REQUIRED chip flags them but they never block the save, so "Not checked"
+   * is still a complete record.
+   */
   const saveNext = useCallback(
     async (eidOverride?: string): Promise<boolean> => {
       if (!batch) return false
       const ev = (eidOverride ?? draft.eid).trim()
-      const missing = requiredMissing(ev)
-      if (missing) {
-        flash('warn', `${missing} needed to save`)
+      // HARD: the official EID is an identifier — no animal saves without it.
+      if (eidRequired() && !ev) {
+        flash('error', 'Scan or type the EID before saving')
         return false
       }
+      // HARD: the same EID can't be in this batch twice.
       if (ev && (await isDuplicateEid(ev))) {
         flash('warn', 'This tag is already in this batch')
         return false
@@ -463,36 +468,65 @@ export function useCapture(
       if (ok) setDraft(emptyDraft())
       return ok
     },
-    [batch, draft.eid, requiredMissing, isDuplicateEid, buildAndInsert, flash],
+    [batch, draft.eid, eidRequired, isDuplicateEid, buildAndInsert, flash],
   )
 
-  /**
-   * An EID scan. EMPTY record -> fill the EID and wait. ACTIVE record -> this is
-   * the next cow: save the current one (when required fields are satisfied) and
-   * carry the new tag in. The identifying scan never saves its own record.
-   */
-  const handleScan = useCallback(
+  // Manual EID entry (typed into the EID box, not scanned). Fill and wait, same
+  // hard refuse on a duplicate. Shape isn't checked here — the operator typed it
+  // straight into the EID field on purpose.
+  const commitEid = useCallback(
     async (value: string): Promise<void> => {
       if (!batch) return
       const v = value.trim()
-      if (!v) return
-      if (v === draft.eid.trim() || (await isDuplicateEid(v))) {
+      if (!v || v === draft.eid.trim()) return
+      if (await isDuplicateEid(v)) {
         flash('warn', 'This tag is already in this batch')
         return
       }
-      if (!draft.eid.trim()) {
-        patchDraft({ eid: v })
-        return
-      }
-      const missing = requiredMissing(draft.eid)
-      if (missing) {
-        flash('warn', `${missing} needed before the next cow`)
-        return
-      }
-      const ok = await buildAndInsert(draft.eid)
-      if (ok) setDraft({ ...emptyDraft(), eid: v })
+      patchDraft({ eid: v })
+      setFocusTick((n) => n + 1)
     },
-    [batch, draft.eid, isDuplicateEid, requiredMissing, buildAndInsert, patchDraft, flash],
+    [batch, draft.eid, isDuplicateEid, patchDraft, flash],
+  )
+
+  /**
+   * A screen-level scan, sorted by what it looks like — not by which field has
+   * focus. It fills the right field and WAITS (never auto-submits):
+   *   - 15 digits starting 840        -> primary EID
+   *   - 15 digits NOT starting 840    -> secondary (900) EID — no field yet: skip
+   *   - anything else (e.g. 46MA1234) -> back tag barcode
+   * A duplicate EID in the batch is hard-refused.
+   */
+  const routeScan = useCallback(
+    async (raw: string): Promise<void> => {
+      if (!batch) return
+      const code = raw.trim()
+      if (!code) return
+      const fifteenDigits = /^\d{15}$/.test(code)
+
+      if (fifteenDigits && code.startsWith('840')) {
+        if (code === draft.eid.trim()) return
+        if (await isDuplicateEid(code)) {
+          flash('warn', 'This tag is already in this batch')
+          return
+        }
+        patchDraft({ eid: code })
+        setFocusTick((n) => n + 1)
+        return
+      }
+
+      if (fifteenDigits) {
+        // Non-840 15-digit = a secondary (900-series) EID. No secondary field
+        // exists yet, so skip it rather than misfile it as a back tag.
+        flash('warn', 'Secondary EID isn’t set up yet — scan skipped')
+        return
+      }
+
+      // Everything else is the back tag barcode.
+      patchDraft({ backTag: code })
+      setFocusTick((n) => n + 1)
+    },
+    [batch, draft.eid, isDuplicateEid, patchDraft, flash],
   )
 
   const closeBatch = useCallback(async (): Promise<boolean> => {
@@ -539,7 +573,10 @@ export function useCapture(
     toggleQuickNote,
     startBatch,
     saveNext,
-    handleScan,
+    routeScan,
+    commitEid,
+    eidRequired,
+    focusTick,
     closeBatch,
     clearSort,
     chooseSortPen,
