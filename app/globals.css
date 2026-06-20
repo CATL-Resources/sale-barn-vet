@@ -81,9 +81,13 @@ button {
 .sbv-frame.sbv-frame--task {
   height: 100dvh;
 }
+/* On wider screens keep the device-frame look, but never let the frame grow
+   taller than the screen — otherwise the whole page scrolls and the bottom
+   save bar drops below the fold (it stops looking sticky). Cap it to the
+   viewport (minus the 24px top/bottom margin) so only the inner body scrolls. */
 @media (min-width: 430px) {
   .sbv-frame.sbv-frame--task {
-    height: 844px;
+    height: min(844px, calc(100dvh - 48px));
   }
 }
 
@@ -163,11 +167,33 @@ button {
   transform: translateX(0);
 }
 
+/* Overlay mode: when mounted outside the 390px phone frame (the wide office
+   screens), pin the scrim and drawer to the viewport so the menu still works. */
+.sbv-scrim[data-fixed='true'],
+.sbv-drawer[data-fixed='true'] {
+  position: fixed;
+}
+
 .sbv-drawer-head {
   background: var(--navy);
   padding: 18px 16px 16px;
   border-radius: 17px 0 0 0;
   flex-shrink: 0;
+}
+
+/* Clickable "Sale Barn Vet" wordmark — a soft gold halo on hover/focus so it
+   reads as a button back to Home. */
+.sbv-brandhome {
+  border-radius: 8px;
+  padding: 3px 7px;
+  margin: -3px -7px;
+  transition: box-shadow 160ms var(--ease), background 160ms var(--ease);
+  outline: none;
+}
+.sbv-brandhome:hover,
+.sbv-brandhome:focus-visible {
+  background: rgba(243, 209, 42, 0.12);
+  box-shadow: 0 0 0 3px rgba(243, 209, 42, 0.5);
 }
 
 .sbv-navrow {

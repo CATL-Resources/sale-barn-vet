@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { NavMenu } from '@/components/ui/nav-menu'
 import type { Barn, SaleDay } from '@/lib/work-orders/types'
 
 const NAVY = '#0E2646'
@@ -15,9 +16,8 @@ function fullDate(iso: string) {
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 // One big, tappable choice on the hub.
-function HubCard({ href, icon, badge, badgeBg, badgeColor, title, sub }: {
+function HubCard({ href, badge, badgeBg, badgeColor, title, sub }: {
   href: string
-  icon: string
   badge: string
   badgeBg: string
   badgeColor: string
@@ -26,12 +26,9 @@ function HubCard({ href, icon, badge, badgeBg, badgeColor, title, sub }: {
 }) {
   return (
     <Link href={href} className="press-card" style={{ flex: '1 1 300px', minWidth: 260, background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 18, padding: 22, display: 'flex', flexDirection: 'column', gap: 14, textDecoration: 'none', boxShadow: '0 1px 2px rgba(14,38,70,0.05)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{ width: 56, height: 56, flexShrink: 0, borderRadius: 16, background: badgeBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }} aria-hidden>{icon}</span>
-        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: badgeColor, background: badgeBg, borderRadius: 999, padding: '4px 11px' }}>{badge}</span>
-      </div>
+      <span style={{ alignSelf: 'flex-start', fontSize: 11, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: badgeColor, background: badgeBg, borderRadius: 999, padding: '5px 12px' }}>{badge}</span>
       <div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: NAVY, letterSpacing: '-0.015em' }}>{title}</div>
+        <div style={{ fontSize: 23, fontWeight: 800, color: NAVY, letterSpacing: '-0.015em' }}>{title}</div>
         <div style={{ fontSize: 14, fontWeight: 500, color: MUTED, marginTop: 5, lineHeight: 1.5 }}>{sub}</div>
       </div>
       <div style={{ flex: 1 }} />
@@ -48,8 +45,8 @@ export function DayHub({ saleDay, barn }: { saleDay: SaleDay; barn: Barn }) {
   return (
     <div style={{ width: '100%', maxWidth: 820, margin: '0 auto', padding: 18, display: 'flex', flexDirection: 'column', gap: 18 }}>
       {/* HEADER */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <Link href="/" aria-label="Home" style={{ width: 40, height: 40, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 10, border: `1px solid ${BORDER}`, background: '#fff', color: NAVY, textDecoration: 'none', fontSize: 20 }}>‹</Link>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <NavMenu userLine={`${barn.name} · ${fullDate(saleDay.sale_date)}`} iconColor={NAVY} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 22, fontWeight: 800, color: NAVY, letterSpacing: '-0.015em' }}>{fullDate(saleDay.sale_date)}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
@@ -68,7 +65,6 @@ export function DayHub({ saleDay, barn }: { saleDay: SaleDay; barn: Barn }) {
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
         <HubCard
           href={`/work-orders/${saleDay.id}`}
-          icon="📋"
           badge="Office"
           badgeBg="#E7ECF5"
           badgeColor={NAVY}
@@ -77,7 +73,6 @@ export function DayHub({ saleDay, barn }: { saleDay: SaleDay; barn: Barn }) {
         />
         <HubCard
           href={`/work-list/${saleDay.id}`}
-          icon="🐄"
           badge="At the chute"
           badgeBg="#FBEFC2"
           badgeColor="#946A00"
