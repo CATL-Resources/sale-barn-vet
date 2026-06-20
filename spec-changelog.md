@@ -46,3 +46,8 @@
 - Sort: in progress first, then not started; within each, by pen number. Buyer number shows the typed text, then the linked buyer-number record.
 - Job detail (read-only): Products line is the job's special-charge descriptions joined with " · ", hidden when there are none; Notes box shows only when the work order has notes. "Start working / Open / Resume" opens Capture bound to that one work order.
 - Reachable from Home: each sale day now has a "Work list" button (chute) next to "Work orders" (office). Phone shows two header stat blocks and tap-to-detail; tablet shows inline Open / Resume.
+
+## 2026-06-20 — Chute flow fixes + one sale day per date; test data cleared
+- Closing out a pen now returns the crew to the chute Work list for the day (the "what's left" view), not the office Work Orders grid.
+- A barn can no longer have two sale days on the same date. The New sale day form points you at the existing day, and a database rule backs it up against races. Soft-deleted days don't count, so a date frees up again if its day is removed.
+- Cleared all test data from the live database (every sale day and everything under it: work orders, pens, animals, tags). The real customer list and all barn config were left untouched. Fresh start for real sale days.
