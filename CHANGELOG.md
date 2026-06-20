@@ -4,8 +4,9 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **work-orders:** cancel/reset fix, fast customer search, inline location + customer edit _(2026-06-20, `66611d1`)_
-- **work-orders:** migration — trigram indexes for fast customer search _(2026-06-20, `aabf5cd`)_
+- **work-orders:** Work Cows action (office + chute share one start path) + delete _(2026-06-20, `3882311`)_
+- **work-orders:** cancel/reset fix, fast customer search, inline location + customer edit _(2026-06-20, `6a8a429`)_
+- **work-orders:** migration — trigram indexes for fast customer search _(2026-06-20, `1b554fc`)_
 - **pen-card:** printable DYMO pen card label from a work order _(2026-06-19, `3fc5462`)_
 - **home:** build the Home / Sale Days landing screen _(2026-06-19, `4b35d20`)_
 - **work-list:** chute Barn Work List + bind Capture to a work order _(2026-06-19, `7527d9b`)_
@@ -24,6 +25,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Docs
 
+- update CHANGELOG for the Work Orders fixes _(2026-06-20, `561afdb`)_
 - update CHANGELOG for the Work Orders screen _(2026-06-19, `8228b2b`)_
 - refresh TODO.md — customer list loaded, plus what's left _(2026-06-19, `c3e8074`)_
 - add TODO.md with capture status and next steps _(2026-06-18, `6e9523d`)_
