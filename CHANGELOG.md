@@ -4,7 +4,8 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **work-orders:** Work Cows action (office + chute share one start path) + delete _(2026-06-20, `3882311`)_
+- **find:** global animal search by EID / back tag / tag number _(2026-06-20, `3b118e7`)_
+- **work-orders:** Work Cows — office + chute share one start path, plus delete _(2026-06-20, `b2e60a2`)_
 - **work-orders:** cancel/reset fix, fast customer search, inline location + customer edit _(2026-06-20, `6a8a429`)_
 - **work-orders:** migration — trigram indexes for fast customer search _(2026-06-20, `1b554fc`)_
 - **pen-card:** printable DYMO pen card label from a work order _(2026-06-19, `3fc5462`)_
