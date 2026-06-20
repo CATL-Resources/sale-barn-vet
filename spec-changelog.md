@@ -38,3 +38,11 @@
 - When the chute opens Capture on an office work order, the order's started count now freezes on the FIRST animal saved, if it wasn't set yet. The job reads "in progress" from that point, no matter how Capture was reached (not only through the "Work Cows" tap).
 - The freeze only fills an empty started count — it never overwrites a count that's already there, so a resumed job is left alone.
 - No bill changes: the bill is figured from the worked count, not the started count, and the frozen charge columns are never touched. Chute walk-in batches are unaffected (they set their started count when the batch begins).
+
+## 2026-06-20 — Barn Work List (chute view) built on the live worked count
+- The chute crew's read-only list of the office's work orders for a sale day, on phone and tablet. Reuses the office Work Orders read (same consignor / buyer / work type / animal type joins).
+- A job's "worked" number is now the live count of animals recorded on it (not the stored worked count that only fills in at close-out). That count alone sets the badge: nothing recorded yet = "Not started" / Open; one or more = "In progress" / Resume.
+- Header shows "N to work" (open jobs) and "Head left" (sum of expected minus worked, never below zero). Row head text reads "{expected} head" or "{worked} of {expected} head". Expected head falls back to the started count when the office left it blank.
+- Sort: in progress first, then not started; within each, by pen number. Buyer number shows the typed text, then the linked buyer-number record.
+- Job detail (read-only): Products line is the job's special-charge descriptions joined with " · ", hidden when there are none; Notes box shows only when the work order has notes. "Start working / Open / Resume" opens Capture bound to that one work order.
+- Reachable from Home: each sale day now has a "Work list" button (chute) next to "Work orders" (office). Phone shows two header stat blocks and tap-to-detail; tablet shows inline Open / Resume.

@@ -550,6 +550,16 @@ button {
 .wl-rowaction {
   display: none;
 }
+/* Header counts: the phone gets two stacked stat blocks; the tablet shows a
+   single inline line up in the title row. */
+.wl-stats-phone {
+  display: flex;
+  gap: 16px;
+  margin-top: 14px;
+}
+.wl-counts-tablet {
+  display: none;
+}
 @media (min-width: 720px) {
   .wl-wrap {
     padding: 18px;
@@ -563,5 +573,11 @@ button {
   }
   .wl-chevron {
     display: none;
+  }
+  .wl-stats-phone {
+    display: none;
+  }
+  .wl-counts-tablet {
+    display: inline-flex;
   }
 }
