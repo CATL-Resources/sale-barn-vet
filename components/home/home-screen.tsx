@@ -89,8 +89,10 @@ export function HomeScreen({ barnName, days, today }: { barnName: string; days: 
               {days.map((d) => {
                 const open = d.status === 'open'
                 return (
-                  <div key={d.id} className="press-card"
-                    style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 14, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', boxShadow: '0 1px 2px rgba(14,38,70,0.04)' }}>
+                  // One tap opens the day's hub, which then splits into the
+                  // office Work orders and the chute Work list.
+                  <Link key={d.id} href={`/day/${d.id}`} className="press-card"
+                    style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 14, padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', textDecoration: 'none', boxShadow: '0 1px 2px rgba(14,38,70,0.04)' }}>
                     <div style={{ flex: 1, minWidth: 200 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                         <span style={{ fontSize: 22, fontWeight: 700, color: TEXT, letterSpacing: '-0.015em' }}>{fullDate(d.sale_date)}</span>
@@ -101,17 +103,10 @@ export function HomeScreen({ barnName, days, today }: { barnName: string; days: 
                       </div>
                       {d.notes ? <div style={{ fontSize: 13, fontWeight: 500, color: MUTED, marginTop: 8 }}>{d.notes}</div> : null}
                     </div>
-                    {/* Two ways into a day: the chute Work list (phone/tablet at the
-                        chute) and the office Work orders screen. */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, flexWrap: 'wrap' }}>
-                      <Link href={`/work-list/${d.id}`} style={{ height: 42, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0 18px', borderRadius: 9, background: '#fff', border: `1px solid ${BORDER}`, color: NAVY, fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
-                        Work list<span style={{ color: '#A8AEC0' }}>›</span>
-                      </Link>
-                      <Link href={`/work-orders/${d.id}`} style={{ height: 42, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0 20px', borderRadius: 9, background: NAVY, color: '#fff', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
-                        {open ? 'Work orders' : 'View'}<span style={{ color: '#8FA8CC' }}>›</span>
-                      </Link>
-                    </div>
-                  </div>
+                    <span style={{ flexShrink: 0, height: 42, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0 20px', borderRadius: 9, background: NAVY, color: '#fff', fontSize: 14, fontWeight: 700 }}>
+                      {open ? 'Open' : 'View'}<span style={{ color: '#8FA8CC' }}>›</span>
+                    </span>
+                  </Link>
                 )
               })}
             </div>
