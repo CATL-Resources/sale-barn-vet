@@ -55,3 +55,9 @@
 ## 2026-06-20 — Sale-day hub: office vs. chute
 - Tapping a sale day on Home now opens a hub page for that day instead of jumping into one screen. The hub has two clear choices: "Work orders" (office — set up and bill the work) and "Work the cattle" (at the chute — work the pens into capture).
 - Replaces the two buttons that were crammed on every sale-day card. The office work-order list and the chute work list are now separate places you pick from the hub.
+
+## 2026-06-20 — Runs full screen from the home screen (installable app)
+- Added a web app manifest and the iOS tags so the site can be added to the iPhone home screen and open chromeless — no browser bar. Standalone display, app name "Sale Barn Vet", navy theme (#0E2646) over a cream background (#F5F5F0).
+- App icons: a navy "SBV" tile (SVG for the browser/Android, a generated PNG for the iOS home screen).
+- The status bar is translucent with white text over the navy header, and the app draws under the notch (viewport-fit=cover); the top bar pads itself so its buttons clear the notch.
+- The browser bar only disappears when opened from the home-screen icon. A normal browser tab still shows it — that's the operating system, expected.
