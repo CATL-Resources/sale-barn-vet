@@ -51,3 +51,7 @@
 - Closing out a pen now returns the crew to the chute Work list for the day (the "what's left" view), not the office Work Orders grid.
 - A barn can no longer have two sale days on the same date. The New sale day form points you at the existing day, and a database rule backs it up against races. Soft-deleted days don't count, so a date frees up again if its day is removed.
 - Cleared all test data from the live database (every sale day and everything under it: work orders, pens, animals, tags). The real customer list and all barn config were left untouched. Fresh start for real sale days.
+
+## 2026-06-20 — Sale-day hub: office vs. chute
+- Tapping a sale day on Home now opens a hub page for that day instead of jumping into one screen. The hub has two clear choices: "Work orders" (office — set up and bill the work) and "Work the cattle" (at the chute — work the pens into capture).
+- Replaces the two buttons that were crammed on every sale-day card. The office work-order list and the chute work list are now separate places you pick from the hub.

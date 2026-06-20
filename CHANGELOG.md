@@ -4,6 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
+- **home:** sale-day hub that splits into office vs. chute _(2026-06-20, `01f1bea`)_
 - **find:** global animal search by EID / back tag / tag number _(2026-06-20, `5d57631`)_
 - **work-orders:** Work Cows — office + chute share one start path, plus delete _(2026-06-20, `b2e60a2`)_
 - **work-orders:** cancel/reset fix, fast customer search, inline location + customer edit _(2026-06-20, `6a8a429`)_
@@ -22,12 +23,13 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
-- close-out returns to the chute Work list; block duplicate sale days _(2026-06-20, `7816916`)_
+- close-out returns to the chute Work list; block duplicate sale days _(2026-06-20, `054da35`)_
 - **work-orders:** close the edit panel; pen-first row + three-dots menu _(2026-06-20, `abe7e7b`)_
 - **capture:** stop the field cards from clipping their rows _(2026-06-19, `a749dc6`)_
 
 ## Docs
 
+- log the chute flow + sale day fixes and the test-data wipe _(2026-06-20, `6816a18`)_
 - update CHANGELOG for the Work Orders panel + row fixes _(2026-06-20, `e2359d9`)_
 - update CHANGELOG for the Work Orders fixes _(2026-06-20, `561afdb`)_
 - update CHANGELOG for the Work Orders screen _(2026-06-19, `8228b2b`)_
@@ -41,7 +43,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
-- one active sale day per date per barn _(2026-06-20, `458d448`)_
+- one active sale day per date per barn _(2026-06-20, `64b23f3`)_
 - Barn Work List (chute view): live worked count, phone/tablet layouts, reachable from Home _(2026-06-20, `5f0dd0a`)_
 - freeze the started count on the first animal of a bound office order _(2026-06-20, `a1f7fdb`)_
 - Work Orders: Animal list with copy / CSV export for health papers _(2026-06-20, `af37735`)_
