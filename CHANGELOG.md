@@ -4,7 +4,9 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **pen-card:** printable DYMO pen card label from a work order _(2026-06-19, `bdd7aaf`)_
+- **work-orders:** cancel/reset fix, fast customer search, inline location + customer edit _(2026-06-20, `66611d1`)_
+- **work-orders:** migration — trigram indexes for fast customer search _(2026-06-20, `aabf5cd`)_
+- **pen-card:** printable DYMO pen card label from a work order _(2026-06-19, `3fc5462`)_
 - **home:** build the Home / Sale Days landing screen _(2026-06-19, `4b35d20`)_
 - **work-list:** chute Barn Work List + bind Capture to a work order _(2026-06-19, `7527d9b`)_
 - **work-orders:** build the office Work Orders screen _(2026-06-19, `742e0f0`)_
