@@ -16,15 +16,16 @@ export function CloseOutSheet({ api, onClose }: { api: CaptureApi; onClose: () =
     .filter((s) => (stageTally[s.stage_code] ?? 0) > 0)
     .map((s) => ({ label: s.display_label, count: stageTally[s.stage_code] ?? 0 }))
 
-  // Closing a pen sends the crew back to the Work Orders list for this sale day,
-  // where the board already floats anything still to do up to the top and drops
-  // the pen we just finished to the bottom. (It used to land on "new batch".)
+  // Closing a pen sends the crew back to the chute Work list for this sale day —
+  // the "what's left to work" view they came from — not the office Work Orders
+  // grid. The list already floats anything still to do up to the top and drops
+  // the pen we just finished off the bottom (it's complete now).
   async function close() {
     const saleDayId = batch!.saleDayId
     const ok = await closeBatch()
     if (ok) {
       onClose()
-      router.push(`/work-orders/${saleDayId}`)
+      router.push(`/work-list/${saleDayId}`)
     }
   }
 
