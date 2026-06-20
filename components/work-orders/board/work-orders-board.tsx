@@ -8,6 +8,7 @@ import type { AnimalType, Barn, PenWorkFull, SaleDay, SpecialChargeFull, WorkTyp
 import { startCapture } from '@/lib/work-orders/start-capture'
 import { deleteWorkOrder } from '@/app/(office)/work-orders/actions'
 import { WorkOrderForm } from './work-order-form'
+import { AnimalListModal } from './animal-list-modal'
 
 const NAVY = '#0E2646'
 const GOLD = '#F3D12A'
@@ -54,6 +55,7 @@ export function WorkOrdersBoard({
   const [notesOpen, setNotesOpen] = useState<Record<string, boolean>>({})
   const [dayMenu, setDayMenu] = useState(false)
   const [rowMenu, setRowMenu] = useState<{ pw: PenWorkFull; x: number; y: number } | null>(null)
+  const [animalList, setAnimalList] = useState<{ penWorkId: string; title: string } | null>(null)
   const [toast, setToast] = useState<string | null>(null)
 
   function flash(msg: string) {
@@ -88,6 +90,10 @@ export function WorkOrdersBoard({
     e.stopPropagation()
     const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
     setRowMenu({ pw, x: r.right, y: r.bottom })
+  }
+  function animalTitle(pw: PenWorkFull) {
+    const p = pw.buyer_party_id ? pw.buyer : pw.seller
+    return `${pw.pen?.pen_number ? `Pen ${pw.pen.pen_number}` : 'No pen'} · ${p?.name ?? '—'}`
   }
   function onSaved(msg: string) { setFormOpen(false); flash(msg); router.refresh() }
   // "Work Cows" — shared with the chute list: mark started, open Capture bound to it.
@@ -243,6 +249,10 @@ export function WorkOrdersBoard({
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: '#fff', border: 'none', borderBottom: `1px solid ${LINE}`, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: NAVY, cursor: 'pointer', textAlign: 'left' }}>
               <span style={{ fontSize: 14 }}>✎</span>Edit work order
             </button>
+            <button type="button" onClick={() => { const pw = rowMenu.pw; setRowMenu(null); setAnimalList({ penWorkId: pw.id, title: animalTitle(pw) }) }}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: '#fff', border: 'none', borderBottom: `1px solid ${LINE}`, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: NAVY, cursor: 'pointer', textAlign: 'left' }}>
+              <span style={{ fontSize: 14 }}>📋</span>Animal list
+            </button>
             <button type="button" onClick={() => { const id = rowMenu.pw.id; setRowMenu(null); window.open(`/print/pen-card/${id}`, '_blank', 'noopener,noreferrer,width=720,height=520') }}
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: '#fff', border: 'none', borderBottom: `1px solid ${LINE}`, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: NAVY, cursor: 'pointer', textAlign: 'left' }}>
               <span style={{ fontSize: 14 }}>🖨</span>Print label
@@ -277,6 +287,10 @@ export function WorkOrdersBoard({
         onClose={() => setFormOpen(false)}
         onSaved={onSaved}
       />
+
+      {animalList ? (
+        <AnimalListModal penWorkId={animalList.penWorkId} title={animalList.title} onClose={() => setAnimalList(null)} />
+      ) : null}
     </div>
   )
 }

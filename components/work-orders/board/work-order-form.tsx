@@ -15,6 +15,7 @@ import {
   type SpecialInput,
 } from '@/app/(office)/work-orders/actions'
 import { CustomerPopup, LocationEditor } from './customer-editing'
+import { AnimalListModal } from './animal-list-modal'
 
 const NAVY = '#0E2646'
 const GOLD = '#F3D12A'
@@ -78,6 +79,7 @@ export function WorkOrderForm({
   const [menu, setMenu] = useState<'work' | 'animal' | null>(null)
   const [popupPartyId, setPopupPartyId] = useState<string | null>(null)
   const [editingLoc, setEditingLoc] = useState<PartyLocation | 'new' | null>(null)
+  const [showAnimals, setShowAnimals] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, startSaving] = useTransition()
   const [, startSearch] = useTransition()
@@ -89,7 +91,7 @@ export function WorkOrderForm({
   useEffect(() => {
     if (open && !wasOpen.current) {
       setError(null); setMenu(null); setCQuery(''); setMatches([]); setStaged([])
-      setLocations([]); setPopupPartyId(null); setEditingLoc(null)
+      setLocations([]); setPopupPartyId(null); setEditingLoc(null); setShowAnimals(false)
       if (editing) {
         const isBuyer = !!editing.buyer_party_id
         const p = isBuyer ? editing.buyer : editing.seller
@@ -221,7 +223,12 @@ export function WorkOrderForm({
         <div style={{ height: 60, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '0 18px', borderBottom: `1px solid ${LINE}` }}>
           <span style={{ fontSize: 17, fontWeight: 800, color: NAVY, letterSpacing: '-0.01em' }}>{editing ? 'Edit work order' : 'New work order'}</span>
           <div style={{ flex: 1 }} />
-          {editing ? <PrintPenCardButton penWorkId={editing.id} /> : null}
+          {editing ? (
+            <button type="button" onClick={() => setShowAnimals(true)} style={{ height: 36, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0 12px', background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 8, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: NAVY, cursor: 'pointer' }}>
+              <span aria-hidden>📋</span>Animals
+            </button>
+          ) : null}
+          {editing ? <PrintPenCardButton penWorkId={editing.id} label="Print" /> : null}
           <button type="button" onClick={onClose} aria-label="Close" style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F1F2F4', border: 'none', borderRadius: 9, cursor: 'pointer', fontSize: 18, color: NAVY }}>✕</button>
         </div>
 
@@ -413,6 +420,14 @@ export function WorkOrderForm({
 
       {popupPartyId ? (
         <CustomerPopup partyId={popupPartyId} onClose={() => setPopupPartyId(null)} onChanged={onCustomerChanged} />
+      ) : null}
+
+      {showAnimals && editing ? (
+        <AnimalListModal
+          penWorkId={editing.id}
+          title={`${editing.pen?.pen_number ? `Pen ${editing.pen.pen_number}` : 'No pen'} · ${(editing.buyer_party_id ? editing.buyer : editing.seller)?.name ?? '—'}`}
+          onClose={() => setShowAnimals(false)}
+        />
       ) : null}
     </>
   )
