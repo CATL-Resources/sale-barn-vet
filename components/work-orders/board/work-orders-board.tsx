@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { deriveStatus, STATUS_LABEL, type WorkStatus } from '@/lib/work-orders/status'
 import type { AnimalType, Barn, PenWorkFull, SaleDay, SpecialChargeFull, WorkType } from '@/lib/work-orders/types'
+import { startCapture } from '@/lib/work-orders/start-capture'
+import { deleteWorkOrder } from '@/app/(office)/work-orders/actions'
 import { WorkOrderForm } from './work-order-form'
 
 const NAVY = '#0E2646'
@@ -15,7 +17,7 @@ const FAINT = '#9A9AA6'
 const BORDER = '#D4D4D0'
 const LINE = '#ECECE8'
 
-const GRID = '1fr 156px 84px 96px 118px 130px 122px'
+const GRID = '1fr 150px 80px 88px 110px 124px 196px'
 
 const STATUS_STYLE: Record<WorkStatus, { bg: string; border: string; color: string; dot: string }> = {
   not_started: { bg: '#F3F3F0', border: '#E4E4DE', color: '#717182', dot: '#C2C2CA' },
@@ -78,6 +80,13 @@ export function WorkOrdersBoard({
   function openNew() { setEditing(null); setFormOpen(true) }
   function openEdit(pw: PenWorkFull) { setEditing(pw); setFormOpen(true) }
   function onSaved(msg: string) { setFormOpen(false); flash(msg); router.refresh() }
+  // "Work Cows" — shared with the chute list: mark started, open Capture bound to it.
+  function onWorkCows(pw: PenWorkFull) { void startCapture(pw.id, (href) => router.push(href)) }
+  async function onDelete(pw: PenWorkFull) {
+    if (!window.confirm('Delete this work order? This can’t be undone from here.')) return
+    const res = await deleteWorkOrder(pw.id)
+    if (res.ok) { flash('Work order deleted'); router.refresh() } else { flash(res.error ?? 'Could not delete') }
+  }
 
   const isEmpty = penWorks.length === 0
   const f0 = (n: number) => n.toLocaleString('en-US')
@@ -164,7 +173,6 @@ export function WorkOrdersBoard({
                 const st = STATUS_STYLE[r.status]
                 const worked = r.status === 'not_started' ? '—' : r.status === 'in_progress' ? `${r.pw.head_worked ?? 0} of ${r.pw.head_expected ?? 0}` : String(r.pw.head_worked ?? 0)
                 const workedColor = r.status === 'not_started' ? '#C2C2CA' : r.status === 'in_progress' ? '#B45309' : TEXT
-                const actLabel = r.status === 'complete' ? 'View' : 'Open'
                 const nOpen = !!notesOpen[r.pw.id]
                 return (
                   <div key={r.pw.id} style={{ background: i % 2 === 1 ? '#FAFBFC' : '#fff', borderBottom: i < rows.length - 1 ? `1px solid ${LINE}` : 'none' }}>
@@ -186,8 +194,18 @@ export function WorkOrdersBoard({
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 10px', borderRight: '1px solid #EFF0F4' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 24, padding: '0 10px', borderRadius: 999, background: st.bg, border: `1px solid ${st.border}`, fontSize: 12, fontWeight: 700, color: st.color, whiteSpace: 'nowrap' }}><span style={{ width: 7, height: 7, borderRadius: 999, background: st.dot }} />{STATUS_LABEL[r.status]}</span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingLeft: 12 }}>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); openEdit(r.pw) }} style={{ height: 32, padding: '0 14px', borderRadius: 7, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', background: r.status === 'not_started' ? GOLD : r.status === 'in_progress' ? '#fff' : 'transparent', color: r.status === 'complete' ? MUTED : NAVY, border: r.status === 'not_started' ? 'none' : `1px solid ${r.status === 'in_progress' ? BORDER : '#E4E4DE'}` }}>{actLabel}</button>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, paddingLeft: 12 }}>
+                        {r.status !== 'complete' ? (
+                          <button type="button" onClick={(e) => { e.stopPropagation(); onWorkCows(r.pw) }} title="Mark started and open Capture bound to this order"
+                            style={{ height: 32, padding: '0 12px', borderRadius: 7, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', background: GOLD, color: NAVY, border: 'none', whiteSpace: 'nowrap' }}>Work Cows</button>
+                        ) : (
+                          <button type="button" onClick={(e) => { e.stopPropagation(); openEdit(r.pw) }}
+                            style={{ height: 32, padding: '0 12px', borderRadius: 7, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', background: 'transparent', color: MUTED, border: '1px solid #E4E4DE', whiteSpace: 'nowrap' }}>View</button>
+                        )}
+                        <button type="button" onClick={(e) => { e.stopPropagation(); openEdit(r.pw) }} aria-label="Edit work order"
+                          style={{ width: 30, height: 32, borderRadius: 7, background: '#fff', border: `1px solid ${BORDER}`, color: NAVY, fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>✎</button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); onDelete(r.pw) }} aria-label="Delete work order"
+                          style={{ width: 30, height: 32, borderRadius: 7, background: '#fff', border: '1px solid #F0C9C9', color: '#C0392B', fontSize: 14, cursor: 'pointer', flexShrink: 0 }}>🗑</button>
                       </div>
                     </div>
                     {nOpen && r.pw.notes ? (
