@@ -6,6 +6,7 @@ import { PrintPenCardButton } from '@/components/pen-card/print-pen-card-button'
 import type { AnimalType, Barn, PenWorkFull, SpecialChargeFull, WorkType } from '@/lib/work-orders/types'
 import {
   createParty,
+  getPartyDetail,
   getPartyLocations,
   saveWorkOrder,
   searchParties,
@@ -13,6 +14,7 @@ import {
   type PartyMatch,
   type SpecialInput,
 } from '@/app/(office)/work-orders/actions'
+import { CustomerPopup, LocationEditor } from './customer-editing'
 
 const NAVY = '#0E2646'
 const GOLD = '#F3D12A'
@@ -74,34 +76,39 @@ export function WorkOrderForm({
   const [notes, setNotes] = useState('')
   const [staged, setStaged] = useState<StagedSpecial[]>([])
   const [menu, setMenu] = useState<'work' | 'animal' | null>(null)
+  const [popupPartyId, setPopupPartyId] = useState<string | null>(null)
+  const [editingLoc, setEditingLoc] = useState<PartyLocation | 'new' | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [saving, startSaving] = useTransition()
   const [, startSearch] = useTransition()
 
-  // (Re)initialize whenever the panel opens or the editing target changes.
-  const initKey = `${open}:${editing?.id ?? 'new'}`
-  const lastInit = useRef('')
+  // Reset every time the panel opens: a cancelled form reopens clean, and an
+  // edit opens prefilled from its order. (The previous keying skipped the reset
+  // on a second "new", so it reopened dirty — fixed here.)
+  const wasOpen = useRef(false)
   useEffect(() => {
-    if (!open || lastInit.current === initKey) return
-    lastInit.current = initKey
-    setError(null); setMenu(null); setCQuery(''); setMatches([]); setStaged([]); setLocations([])
-    if (editing) {
-      const isBuyer = !!editing.buyer_party_id
-      const p = isBuyer ? editing.buyer : editing.seller
-      setRole(isBuyer ? 'buyer' : 'seller')
-      setBuyerNo(editing.buyer_number_text ?? '')
-      setParty(p ? { id: p.id, name: p.name, customer_number: p.customer_number } : null)
-      setOriginLocationId(editing.origin_location_id)
-      setWorkTypeId(editing.work_type_id)
-      setAnimalTypeId(editing.animal_type_id)
-      setHeadExpected(editing.head_expected != null ? String(editing.head_expected) : '')
-      setPenText(editing.pen?.pen_number ?? '')
-      setNotes(editing.notes ?? '')
-    } else {
-      setRole('seller'); setBuyerNo(''); setParty(null); setOriginLocationId(null)
-      setWorkTypeId(null); setAnimalTypeId(null); setHeadExpected(''); setPenText(''); setNotes('')
+    if (open && !wasOpen.current) {
+      setError(null); setMenu(null); setCQuery(''); setMatches([]); setStaged([])
+      setLocations([]); setPopupPartyId(null); setEditingLoc(null)
+      if (editing) {
+        const isBuyer = !!editing.buyer_party_id
+        const p = isBuyer ? editing.buyer : editing.seller
+        setRole(isBuyer ? 'buyer' : 'seller')
+        setBuyerNo(editing.buyer_number_text ?? '')
+        setParty(p ? { id: p.id, name: p.name, customer_number: p.customer_number } : null)
+        setOriginLocationId(editing.origin_location_id)
+        setWorkTypeId(editing.work_type_id)
+        setAnimalTypeId(editing.animal_type_id)
+        setHeadExpected(editing.head_expected != null ? String(editing.head_expected) : '')
+        setPenText(editing.pen?.pen_number ?? '')
+        setNotes(editing.notes ?? '')
+      } else {
+        setRole('seller'); setBuyerNo(''); setParty(null); setOriginLocationId(null)
+        setWorkTypeId(null); setAnimalTypeId(null); setHeadExpected(''); setPenText(''); setNotes('')
+      }
     }
-  }, [open, initKey, editing])
+    wasOpen.current = open
+  }, [open, editing])
 
   // Debounced customer search.
   useEffect(() => {
@@ -159,6 +166,25 @@ export function WorkOrderForm({
       setError(res.error)
     }
   }
+
+  async function onLocationSaved(loc: PartyLocation) {
+    setEditingLoc(null)
+    if (!party) return
+    setLocations(await getPartyLocations(party.id))
+    setOriginLocationId(loc.id) // a just-added / edited location becomes the order's origin
+  }
+
+  async function onCustomerChanged() {
+    if (party && popupPartyId === party.id) {
+      const d = await getPartyDetail(party.id)
+      if (d) setParty({ id: d.id, name: d.name, customer_number: d.customer_number })
+      setLocations(await getPartyLocations(party.id))
+    }
+    if (cQuery.trim()) setMatches(await searchParties(cQuery))
+  }
+
+  const locSub = (l: PartyLocation) =>
+    [l.city, l.state].filter(Boolean).join(', ') + (l.zip ? ` ${l.zip}` : '')
 
   function onSave() {
     setError(null)
@@ -226,6 +252,7 @@ export function WorkOrderForm({
                 <span style={{ fontSize: 15, fontWeight: 800, color: NAVY }}>{party.name}</span>
                 {party.customer_number ? <span style={{ fontSize: 11, fontWeight: 700, color: NAVY, background: GOLD, borderRadius: 999, padding: '2px 9px' }}>#{party.customer_number}</span> : null}
                 <div style={{ flex: 1 }} />
+                <button type="button" onClick={() => setPopupPartyId(party.id)} style={{ height: 32, padding: '0 12px', background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 8, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: NAVY, cursor: 'pointer' }}>Info</button>
                 <button type="button" onClick={() => setParty(null)} style={{ height: 32, padding: '0 12px', background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 8, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: NAVY, cursor: 'pointer' }}>Change</button>
               </div>
             ) : (
@@ -233,15 +260,21 @@ export function WorkOrderForm({
                 <input value={cQuery} onChange={(e) => setCQuery(e.target.value)} placeholder="Search name or customer #" style={{ ...input, fontWeight: 500 }} />
                 {(matches.length > 0 || cQuery.trim()) ? (
                   <div style={{ marginTop: 7, border: '1px solid #E4E4DE', borderRadius: 10, overflow: 'hidden' }}>
-                    {matches.map((m) => (
-                      <button key={m.id} type="button" onClick={() => { setParty({ id: m.id, name: m.name, customer_number: m.customer_number }); setMatches([]); setCQuery('') }}
-                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, padding: '10px 12px', background: '#fff', border: 'none', borderBottom: `1px solid ${LINE}`, fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left' }}>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>{m.name}</span>
-                        {m.customer_number ? <span style={{ fontSize: 11, fontWeight: 700, color: MUTED, background: '#F1F2F4', border: '1px solid #E4E4DE', borderRadius: 999, padding: '2px 8px' }}>#{m.customer_number}</span> : null}
-                        <span style={{ flex: 1 }} />
-                        <span style={{ fontSize: 12, fontWeight: 600, color: FAINT }}>{m.state ?? ''}</span>
-                      </button>
-                    ))}
+                    {matches.map((m) => {
+                      const place = [m.city, m.state].filter(Boolean).join(', ')
+                      return (
+                        <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px 6px 12px', borderBottom: `1px solid ${LINE}`, background: '#fff' }}>
+                          <button type="button" onClick={() => { setParty({ id: m.id, name: m.name, customer_number: m.customer_number }); setMatches([]); setCQuery('') }}
+                            style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 9, padding: '4px 0', background: 'transparent', border: 'none', fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left' }}>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: TEXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</span>
+                            {m.customer_number ? <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: MUTED, background: '#F1F2F4', border: '1px solid #E4E4DE', borderRadius: 999, padding: '2px 8px' }}>#{m.customer_number}</span> : null}
+                            <span style={{ flex: 1 }} />
+                            <span style={{ flexShrink: 0, fontSize: 12, fontWeight: 600, color: FAINT, whiteSpace: 'nowrap' }}>{place}</span>
+                          </button>
+                          <button type="button" onClick={() => setPopupPartyId(m.id)} aria-label="Customer info" style={{ flexShrink: 0, width: 28, height: 28, borderRadius: 7, border: `1px solid ${BORDER}`, background: '#fff', color: NAVY, fontSize: 13, fontWeight: 800, fontStyle: 'italic', cursor: 'pointer' }}>i</button>
+                        </div>
+                      )
+                    })}
                     <button type="button" onClick={onAddCustomer} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '11px 12px', background: '#fff', border: 'none', fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left' }}>
                       <span style={{ fontSize: 16, fontWeight: 800, color: TEAL }}>+</span>
                       <span style={{ fontSize: 13, fontWeight: 700, color: TEAL }}>{cQuery.trim() ? `Add “${cQuery.trim()}” as new customer` : 'Add new customer'}</span>
@@ -254,27 +287,35 @@ export function WorkOrderForm({
 
           {/* Location */}
           {party ? (
-            <Section label="Location" hint="Where the cattle are coming from.">
+            <Section label="Location" hint="Where the cattle are coming from. PO box allowed.">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {locations.map((l) => {
-                  const sel = originLocationId === l.id
-                  const lineText = l.address || l.label || 'Location'
-                  const sub = [l.city, l.state].filter(Boolean).join(', ') + (l.zip ? ` ${l.zip}` : '')
-                  return (
-                    <button key={l.id} type="button" onClick={() => setOriginLocationId(l.id)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '11px 12px', background: sel ? '#EEF1F6' : '#fff', border: sel ? `1px solid ${NAVY}` : `1px solid ${BORDER}`, borderRadius: 10, fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left' }}>
-                      <span style={{ width: 18, height: 18, borderRadius: 999, flexShrink: 0, border: sel ? `5px solid ${NAVY}` : `1.5px solid #C2C2CA`, background: '#fff' }} />
-                      <span style={{ flex: 1, minWidth: 0 }}>
-                        <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: TEXT }}>{lineText}</span>
-                        <span style={{ display: 'block', fontSize: 12, fontWeight: 500, color: l.is_po_box ? AMBER : MUTED, marginTop: 1 }}>
-                          {l.is_po_box ? `${sub} · not a physical origin for health papers` : sub}
+                {locations.map((l) =>
+                  editingLoc !== null && editingLoc !== 'new' && editingLoc.id === l.id ? (
+                    <LocationEditor key={l.id} partyId={party.id} location={l} onSaved={onLocationSaved} onCancel={() => setEditingLoc(null)} />
+                  ) : (
+                    <div key={l.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <button type="button" onClick={() => setOriginLocationId(l.id)}
+                        style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 11, padding: '11px 12px', background: originLocationId === l.id ? '#EEF1F6' : '#fff', border: originLocationId === l.id ? `1px solid ${NAVY}` : `1px solid ${BORDER}`, borderRadius: 10, fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left' }}>
+                        <span style={{ width: 18, height: 18, borderRadius: 999, flexShrink: 0, border: originLocationId === l.id ? `5px solid ${NAVY}` : `1.5px solid #C2C2CA`, background: '#fff' }} />
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ display: 'block', fontSize: 14, fontWeight: 700, color: TEXT }}>{l.address || l.label || 'Location'}</span>
+                          <span style={{ display: 'block', fontSize: 12, fontWeight: 500, color: l.is_po_box ? AMBER : MUTED, marginTop: 1 }}>
+                            {l.is_po_box ? `${locSub(l)} · not a physical origin for health papers` : locSub(l)}
+                          </span>
                         </span>
-                      </span>
-                      <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: l.is_po_box ? AMBER : TEAL, background: l.is_po_box ? '#FDF1DC' : '#E1F5EE', border: `1px solid ${l.is_po_box ? '#F1D9A8' : '#9BD9CC'}`, borderRadius: 999, padding: '2px 9px' }}>{l.is_po_box ? 'PO box' : 'Physical'}</span>
-                    </button>
-                  )
-                })}
-                {locations.length === 0 ? <span style={{ fontSize: 13, color: FAINT }}>No locations on file for this customer.</span> : null}
+                        <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: l.is_po_box ? AMBER : TEAL, background: l.is_po_box ? '#FDF1DC' : '#E1F5EE', border: `1px solid ${l.is_po_box ? '#F1D9A8' : '#9BD9CC'}`, borderRadius: 999, padding: '2px 9px' }}>{l.is_po_box ? 'PO box' : 'Physical'}</span>
+                      </button>
+                      <button type="button" onClick={() => setEditingLoc(l)} aria-label="Edit location" style={{ flexShrink: 0, width: 34, height: 34, borderRadius: 8, border: `1px solid ${BORDER}`, background: '#fff', color: NAVY, fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>✎</button>
+                    </div>
+                  ),
+                )}
+                {editingLoc === 'new' ? (
+                  <LocationEditor partyId={party.id} onSaved={onLocationSaved} onCancel={() => setEditingLoc(null)} />
+                ) : null}
+                {locations.length === 0 && editingLoc !== 'new' ? <span style={{ fontSize: 13, color: FAINT }}>No locations on file — add the real one.</span> : null}
+                {editingLoc === null ? (
+                  <button type="button" onClick={() => setEditingLoc('new')} style={{ height: 36, padding: '0 12px', borderRadius: 9, border: `1px dashed ${BORDER}`, background: '#FBFBFA', color: TEAL, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left' }}>+ Add location</button>
+                ) : null}
               </div>
             </Section>
           ) : null}
@@ -369,6 +410,10 @@ export function WorkOrderForm({
           </button>
         </div>
       </div>
+
+      {popupPartyId ? (
+        <CustomerPopup partyId={popupPartyId} onClose={() => setPopupPartyId(null)} onChanged={onCustomerChanged} />
+      ) : null}
     </>
   )
 }

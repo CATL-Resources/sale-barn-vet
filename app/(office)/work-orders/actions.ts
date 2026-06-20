@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
-export type PartyMatch = { id: string; name: string; customer_number: string | null; state: string | null }
+export type PartyMatch = { id: string; name: string; customer_number: string | null; city: string | null; state: string | null }
 export type PartyLocation = {
   id: string
   label: string | null
@@ -13,6 +13,7 @@ export type PartyLocation = {
   city: string | null
   state: string | null
   zip: string | null
+  premise_id: string | null
   is_po_box: boolean
   is_physical: boolean
   is_default: boolean
@@ -48,14 +49,34 @@ export async function searchParties(query: string): Promise<PartyMatch[]> {
   // Strip characters that would break a PostgREST or() filter.
   const q = query.trim().replace(/[,()*%\\]/g, ' ').trim()
   if (!q) return []
-  const { data } = await supabase
+  const { data: parties } = await supabase
     .from('party')
-    .select('id, name, customer_number, state')
+    .select('id, name, customer_number')
     .is('deleted_at', null)
     .or(`name.ilike.%${q}%,customer_number.ilike.${q}%`)
     .order('name')
-    .limit(8)
-  return data ?? []
+    .limit(30)
+  const list = parties ?? []
+  if (list.length === 0) return []
+
+  // City + state from each customer's default location (fall back to any) — so
+  // the office can tell two same-named customers apart.
+  const { data: locs } = await supabase
+    .from('party_location')
+    .select('party_id, city, state, is_default')
+    .in('party_id', list.map((p) => p.id))
+    .is('deleted_at', null)
+  const place = new Map<string, { city: string | null; state: string | null }>()
+  for (const l of locs ?? []) {
+    if (!place.has(l.party_id) || l.is_default) place.set(l.party_id, { city: l.city, state: l.state })
+  }
+  return list.map((p) => ({
+    id: p.id,
+    name: p.name,
+    customer_number: p.customer_number,
+    city: place.get(p.id)?.city ?? null,
+    state: place.get(p.id)?.state ?? null,
+  }))
 }
 
 /** Add a new customer (no customer number yet — auto-numbering is a separate TODO). */
@@ -73,7 +94,7 @@ export async function createParty(
     .select('id, name, customer_number, state')
     .single()
   if (error) return { ok: false, error: error.message }
-  return { ok: true, party: data }
+  return { ok: true, party: { ...data, city: null } }
 }
 
 /** Every location on file for a customer — including PO boxes (none are hidden or blocked). */
@@ -81,7 +102,7 @@ export async function getPartyLocations(partyId: string): Promise<PartyLocation[
   const supabase = createClient()
   const { data } = await supabase
     .from('party_location')
-    .select('id, label, address, city, state, zip, is_po_box, is_physical, is_default')
+    .select('id, label, address, city, state, zip, premise_id, is_po_box, is_physical, is_default')
     .eq('party_id', partyId)
     .is('deleted_at', null)
     .order('is_default', { ascending: false })
@@ -180,4 +201,96 @@ export async function saveWorkOrder(input: WorkOrderInput): Promise<SaveResult> 
 
   revalidatePath(`/work-orders/${input.saleDayId}`)
   return { ok: true, id: penWorkId }
+}
+
+export type LocationInput = {
+  id?: string | null
+  partyId: string
+  label: string | null
+  address: string | null
+  city: string | null
+  state: string | null
+  zip: string | null
+  premiseId: string | null
+  isPoBox: boolean
+  isDefault: boolean
+}
+
+const LOC_COLUMNS = 'id, label, address, city, state, zip, premise_id, is_po_box, is_physical, is_default'
+
+/**
+ * Add or edit a location for a customer — used both inline on the work order and
+ * in the customer popup. A PO box is allowed and stays on file; it's just marked
+ * not-physical (never blocked). Only one default per customer.
+ */
+export async function upsertLocation(
+  input: LocationInput,
+): Promise<{ ok: true; location: PartyLocation } | { ok: false; error: string }> {
+  const supabase = createClient()
+  const row = {
+    party_id: input.partyId,
+    label: input.label?.trim() || null,
+    address: input.address?.trim() || null,
+    city: input.city?.trim() || null,
+    state: input.state?.trim() || null,
+    zip: input.zip?.trim() || null,
+    premise_id: input.premiseId?.trim() || null,
+    is_po_box: input.isPoBox,
+    is_physical: !input.isPoBox,
+    is_default: input.isDefault,
+  }
+  if (input.isDefault) {
+    await supabase.from('party_location').update({ is_default: false }).eq('party_id', input.partyId).is('deleted_at', null)
+  }
+  if (input.id) {
+    const { data, error } = await supabase.from('party_location').update(row).eq('id', input.id).select(LOC_COLUMNS).single()
+    if (error) return { ok: false, error: error.message }
+    return { ok: true, location: data }
+  }
+  const { data, error } = await supabase.from('party_location').insert(row).select(LOC_COLUMNS).single()
+  if (error) return { ok: false, error: error.message }
+  return { ok: true, location: data }
+}
+
+/**
+ * Edit a customer's own details. The customer number is the stable identity and
+ * is never changed here.
+ */
+export async function updateParty(input: {
+  id: string
+  name: string
+  phone: string | null
+  email: string | null
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = createClient()
+  if (!input.name.trim()) return { ok: false, error: 'Name is required.' }
+  const { error } = await supabase
+    .from('party')
+    .update({ name: input.name.trim(), phone: input.phone?.trim() || null, email: input.email?.trim() || null })
+    .eq('id', input.id)
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
+}
+
+export type PartyDetail = {
+  id: string
+  name: string
+  customer_number: string | null
+  phone: string | null
+  email: string | null
+  locations: PartyLocation[]
+}
+
+/** Full info for the customer popup (details + every location). */
+export async function getPartyDetail(partyId: string): Promise<PartyDetail | null> {
+  const supabase = createClient()
+  const { data: p } = await supabase
+    .from('party')
+    .select('id, name, customer_number, phone, email')
+    .eq('id', partyId)
+    .is('deleted_at', null)
+    .maybeSingle()
+  if (!p) return null
+  const locations = await getPartyLocations(partyId)
+  return { ...p, locations }
 }
