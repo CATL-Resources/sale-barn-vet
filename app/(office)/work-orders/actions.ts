@@ -305,3 +305,71 @@ export async function getPartyDetail(partyId: string): Promise<PartyDetail | nul
   const locations = await getPartyLocations(partyId)
   return { ...p, locations }
 }
+
+// One animal recorded on a work order, with its tags pulled out so the office
+// can copy/paste them onto health papers.
+export type PenWorkAnimal = {
+  animalId: string
+  eid: string | null
+  backTag: string | null
+  visualTag: string | null
+  metalTag: string | null
+  color: string | null
+  breed: string | null
+  age: string | null
+  pregStatus: string | null
+  pregTiming: string | null
+  sortPen: string | null
+}
+
+/**
+ * Every animal worked under one work order, in the order they went through the
+ * chute, with EID / back tag / tag # / metal tag pulled onto each row. Read-only;
+ * RLS scopes to the barn. This is the source for the "Animal list" export.
+ */
+export async function getPenWorkAnimals(penWorkId: string): Promise<PenWorkAnimal[]> {
+  const supabase = createClient()
+  const { data: animals } = await supabase
+    .from('animal')
+    .select('id, color, breed, age_designation, preg_status, preg_timing, pen, created_at')
+    .eq('pen_work_id', penWorkId)
+    .is('deleted_at', null)
+    .order('created_at')
+  const list = animals ?? []
+  if (list.length === 0) return []
+
+  const ids = list.map((a) => a.id)
+  const { data: idents } = await supabase
+    .from('identifier')
+    .select('animal_id, type, value')
+    .in('animal_id', ids)
+    .is('deleted_at', null)
+
+  type Tags = { eid: string | null; backTag: string | null; visualTag: string | null; metalTag: string | null }
+  const tagsByAnimal = new Map<string, Tags>()
+  for (const it of idents ?? []) {
+    const cur = tagsByAnimal.get(it.animal_id) ?? { eid: null, backTag: null, visualTag: null, metalTag: null }
+    if (it.type === 'eid') cur.eid = it.value
+    else if (it.type === 'back_tag') cur.backTag = it.value
+    else if (it.type === 'visual_tag') cur.visualTag = it.value
+    else if (it.type === 'metal_tag') cur.metalTag = it.value
+    tagsByAnimal.set(it.animal_id, cur)
+  }
+
+  return list.map((a) => {
+    const t = tagsByAnimal.get(a.id) ?? { eid: null, backTag: null, visualTag: null, metalTag: null }
+    return {
+      animalId: a.id,
+      eid: t.eid,
+      backTag: t.backTag,
+      visualTag: t.visualTag,
+      metalTag: t.metalTag,
+      color: a.color,
+      breed: a.breed,
+      age: a.age_designation,
+      pregStatus: a.preg_status,
+      pregTiming: a.preg_timing,
+      sortPen: a.pen,
+    }
+  })
+}
