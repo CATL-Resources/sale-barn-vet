@@ -9,29 +9,34 @@ const NAV = [
   { label: 'Capture', href: '/capture' },
   { label: 'Sellers', href: '/sellers' },
   { label: 'Buyers', href: '/buyers' },
-  { label: 'Settings', href: '/settings' },
+  { label: 'Barn Settings', href: '/settings' },
 ]
 
 export function Drawer({
   open,
   onClose,
   userLine,
+  fixed = false,
 }: {
   open: boolean
   onClose: () => void
   userLine: string
+  // When the drawer is mounted outside the 390px phone frame (e.g. the wide
+  // office screens), overlay the whole viewport instead of the frame.
+  fixed?: boolean
 }) {
   const pathname = usePathname()
 
   return (
     <>
-      <div className="sbv-scrim" data-open={open} onClick={onClose} aria-hidden={!open} />
-      <aside className="sbv-drawer" data-open={open} aria-hidden={!open}>
+      <div className="sbv-scrim" data-open={open} data-fixed={fixed} onClick={onClose} aria-hidden={!open} />
+      <aside className="sbv-drawer" data-open={open} data-fixed={fixed} aria-hidden={!open}>
         <div className="sbv-drawer-head">
-          <div style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.01em' }}>
+          {/* The wordmark goes Home — clickable, with a gold halo on hover/focus. */}
+          <Link href="/" onClick={onClose} className="sbv-brandhome" style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.01em', textDecoration: 'none', display: 'inline-block' }}>
             <span style={{ color: '#FFFFFF' }}>Sale Barn </span>
             <span style={{ color: '#F3D12A' }}>Vet</span>
-          </div>
+          </Link>
           <div
             style={{
               color: '#55BAAA',

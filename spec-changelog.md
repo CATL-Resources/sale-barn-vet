@@ -55,3 +55,10 @@
 ## 2026-06-20 — Sale-day hub: office vs. chute
 - Tapping a sale day on Home now opens a hub page for that day instead of jumping into one screen. The hub has two clear choices: "Work orders" (office — set up and bill the work) and "Work the cattle" (at the chute — work the pens into capture).
 - Replaces the two buttons that were crammed on every sale-day card. The office work-order list and the chute work list are now separate places you pick from the hub.
+
+## 2026-06-20 — Menu on every screen, with Barn Settings
+- The hamburger menu (top-left of the header) now opens the real slide-out menu on every screen, including the office Work orders, the chute Work list, and the day hub. Before, on those screens the icon just jumped Home and the menu was nowhere to be found.
+- The menu now lists Home, Capture, Sellers, Buyers, and Barn Settings, plus Sign out. Tapping Barn Settings opens the settings screen (view only for now — editing is a separate build).
+- The "Sale Barn Vet" wordmark is now a button back to Home, with a soft gold halo when you hover or focus it.
+- Dropped the emoji icons from the day hub's two cards — cleaner, just the label and a short line.
+- On the capture screen, the "Save & next" button stays put at the bottom instead of dropping below the fold and making you scroll. The capture screen no longer grows taller than the screen.
