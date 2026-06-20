@@ -16,8 +16,11 @@ const MUTED = '#717182'
 const FAINT = '#9A9AA6'
 const BORDER = '#D4D4D0'
 const LINE = '#ECECE8'
+const TEAL = '#0E7C86'
 
-const GRID = '1fr 150px 80px 88px 110px 124px 196px'
+// Pen first (kept apart from the EXP head count so the two numbers don't blur
+// together), then consignor, work type, expected head, worked, status, actions.
+const GRID = '84px 1fr 150px 88px 110px 124px 150px'
 
 const STATUS_STYLE: Record<WorkStatus, { bg: string; border: string; color: string; dot: string }> = {
   not_started: { bg: '#F3F3F0', border: '#E4E4DE', color: '#717182', dot: '#C2C2CA' },
@@ -50,6 +53,7 @@ export function WorkOrdersBoard({
   const [editing, setEditing] = useState<PenWorkFull | null>(null)
   const [notesOpen, setNotesOpen] = useState<Record<string, boolean>>({})
   const [dayMenu, setDayMenu] = useState(false)
+  const [rowMenu, setRowMenu] = useState<{ pw: PenWorkFull; x: number; y: number } | null>(null)
   const [toast, setToast] = useState<string | null>(null)
 
   function flash(msg: string) {
@@ -79,6 +83,12 @@ export function WorkOrdersBoard({
 
   function openNew() { setEditing(null); setFormOpen(true) }
   function openEdit(pw: PenWorkFull) { setEditing(pw); setFormOpen(true) }
+  // Open the little three-dots menu anchored under the button that was tapped.
+  function openRowMenu(e: React.MouseEvent, pw: PenWorkFull) {
+    e.stopPropagation()
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    setRowMenu({ pw, x: r.right, y: r.bottom })
+  }
   function onSaved(msg: string) { setFormOpen(false); flash(msg); router.refresh() }
   // "Work Cows" — shared with the chute list: mark started, open Capture bound to it.
   function onWorkCows(pw: PenWorkFull) { void startCapture(pw.id, (href) => router.push(href)) }
@@ -166,7 +176,7 @@ export function WorkOrdersBoard({
             {/* TABLE */}
             <div style={{ background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 13, overflow: 'hidden' }}>
               <div style={{ display: 'grid', gridTemplateColumns: GRID, height: 34, padding: '0 18px', background: '#F1F3F8', borderBottom: '1px solid #DEE3EC', fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', color: MUTED }}>
-                <HeadCell>CONSIGNOR</HeadCell><HeadCell pad>WORK TYPE</HeadCell><HeadCell pad>PEN</HeadCell>
+                <HeadCell pad>PEN</HeadCell><HeadCell pad>CONSIGNOR</HeadCell><HeadCell pad>WORK TYPE</HeadCell>
                 <HeadCell end>EXP</HeadCell><HeadCell end>WORKED</HeadCell><HeadCell center>STATUS</HeadCell><div />
               </div>
               {rows.map((r, i) => {
@@ -177,7 +187,8 @@ export function WorkOrdersBoard({
                 return (
                   <div key={r.pw.id} style={{ background: i % 2 === 1 ? '#FAFBFC' : '#fff', borderBottom: i < rows.length - 1 ? `1px solid ${LINE}` : 'none' }}>
                     <div onClick={() => openEdit(r.pw)} style={{ display: 'grid', gridTemplateColumns: GRID, alignItems: 'stretch', minHeight: 46, padding: '0 18px', cursor: 'pointer' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0, paddingRight: 10, borderRight: '1px solid #EFF0F4' }}>
+                      <Cell pad weight={800} size={16} color={NAVY}>{r.pw.pen?.pen_number ?? '—'}</Cell>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0, padding: '0 10px 0 12px', borderRight: '1px solid #EFF0F4' }}>
                         <span style={{ fontSize: 14, fontWeight: 700, color: TEXT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</span>
                         <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap', color: r.isBuyer ? '#946A00' : NAVY, background: r.isBuyer ? '#FBEFC2' : '#E7ECF5', border: `1px solid ${r.isBuyer ? '#EBD489' : '#CBD5E8'}` }}>{r.isBuyer ? `Buyer #${r.pw.buyer_number_text ?? '—'}` : 'Seller'}</span>
                         {r.custNo ? <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 600, color: FAINT, whiteSpace: 'nowrap' }}>#{r.custNo}</span> : null}
@@ -188,8 +199,7 @@ export function WorkOrdersBoard({
                         ) : null}
                       </div>
                       <Cell pad ellipsis color={r.pw.workType ? TEXT : FAINT} weight={600} size={13}>{r.pw.workType?.name ?? '—'}</Cell>
-                      <Cell pad weight={700} size={13}>{r.pw.pen?.pen_number ?? '—'}</Cell>
-                      <Cell end weight={600} size={13}>{r.pw.head_expected ?? 0}</Cell>
+                      <Cell end weight={800} size={15} color={TEAL}>{r.pw.head_expected ?? 0}</Cell>
                       <Cell end weight={700} size={13} color={workedColor}>{worked}</Cell>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 10px', borderRight: '1px solid #EFF0F4' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 24, padding: '0 10px', borderRadius: 999, background: st.bg, border: `1px solid ${st.border}`, fontSize: 12, fontWeight: 700, color: st.color, whiteSpace: 'nowrap' }}><span style={{ width: 7, height: 7, borderRadius: 999, background: st.dot }} />{STATUS_LABEL[r.status]}</span>
@@ -202,10 +212,8 @@ export function WorkOrdersBoard({
                           <button type="button" onClick={(e) => { e.stopPropagation(); openEdit(r.pw) }}
                             style={{ height: 32, padding: '0 12px', borderRadius: 7, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', background: 'transparent', color: MUTED, border: '1px solid #E4E4DE', whiteSpace: 'nowrap' }}>View</button>
                         )}
-                        <button type="button" onClick={(e) => { e.stopPropagation(); openEdit(r.pw) }} aria-label="Edit work order"
-                          style={{ width: 30, height: 32, borderRadius: 7, background: '#fff', border: `1px solid ${BORDER}`, color: NAVY, fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>✎</button>
-                        <button type="button" onClick={(e) => { e.stopPropagation(); onDelete(r.pw) }} aria-label="Delete work order"
-                          style={{ width: 30, height: 32, borderRadius: 7, background: '#fff', border: '1px solid #F0C9C9', color: '#C0392B', fontSize: 14, cursor: 'pointer', flexShrink: 0 }}>🗑</button>
+                        <button type="button" onClick={(e) => openRowMenu(e, r.pw)} aria-label="More actions"
+                          style={{ width: 32, height: 32, borderRadius: 7, background: rowMenu?.pw.id === r.pw.id ? '#EEF1F6' : '#fff', border: `1px solid ${BORDER}`, color: NAVY, fontSize: 17, fontWeight: 800, lineHeight: 1, cursor: 'pointer', flexShrink: 0 }}>⋯</button>
                       </div>
                     </div>
                     {nOpen && r.pw.notes ? (
@@ -225,6 +233,23 @@ export function WorkOrdersBoard({
           </>
         )}
       </div>
+
+      {/* ROW MENU (edit / delete) */}
+      {rowMenu ? (
+        <>
+          <div onClick={() => setRowMenu(null)} style={{ position: 'fixed', inset: 0, zIndex: 90 }} />
+          <div style={{ position: 'fixed', top: rowMenu.y + 4, left: Math.max(12, rowMenu.x - 168), zIndex: 91, width: 168, background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 10, boxShadow: '0 12px 28px rgba(14,38,70,0.18)', overflow: 'hidden' }}>
+            <button type="button" onClick={() => { const pw = rowMenu.pw; setRowMenu(null); openEdit(pw) }}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: '#fff', border: 'none', borderBottom: `1px solid ${LINE}`, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: NAVY, cursor: 'pointer', textAlign: 'left' }}>
+              <span style={{ fontSize: 14 }}>✎</span>Edit work order
+            </button>
+            <button type="button" onClick={() => { const pw = rowMenu.pw; setRowMenu(null); void onDelete(pw) }}
+              style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: '#fff', border: 'none', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: '#C0392B', cursor: 'pointer', textAlign: 'left' }}>
+              <span style={{ fontSize: 14 }}>🗑</span>Delete
+            </button>
+          </div>
+        </>
+      ) : null}
 
       {/* TOAST */}
       {toast ? (

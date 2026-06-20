@@ -212,10 +212,10 @@ export function WorkOrderForm({
     <>
       <div
         onClick={onClose}
-        style={{ position: 'absolute', inset: 0, zIndex: 50, background: 'rgba(14,38,70,0.4)', transition: 'opacity 220ms ease', opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none' }}
+        style={{ position: 'fixed', inset: 0, zIndex: 1050, background: 'rgba(14,38,70,0.4)', transition: 'opacity 220ms ease', opacity: open ? 1 : 0, visibility: open ? 'visible' : 'hidden', pointerEvents: open ? 'auto' : 'none' }}
       />
       <div
-        style={{ position: 'absolute', top: 0, right: 0, bottom: 0, zIndex: 60, width: 'min(468px, 92vw)', background: '#fff', borderLeft: `1px solid ${BORDER}`, boxShadow: '-16px 0 40px rgba(14,38,70,0.18)', display: 'flex', flexDirection: 'column', transform: open ? 'translateX(0)' : 'translateX(100%)', transition: 'transform 260ms cubic-bezier(0.2,0.7,0.2,1)' }}
+        style={{ position: 'fixed', top: 0, right: 0, bottom: 0, zIndex: 1060, width: 'min(468px, 92vw)', background: '#fff', borderLeft: `1px solid ${BORDER}`, boxShadow: '-16px 0 40px rgba(14,38,70,0.18)', display: 'flex', flexDirection: 'column', transform: open ? 'translateX(0)' : 'translateX(100%)', visibility: open ? 'visible' : 'hidden', pointerEvents: open ? 'auto' : 'none', transition: 'transform 260ms cubic-bezier(0.2,0.7,0.2,1), visibility 260ms' }}
         aria-hidden={!open}
       >
         <div style={{ height: 60, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '0 18px', borderBottom: `1px solid ${LINE}` }}>
