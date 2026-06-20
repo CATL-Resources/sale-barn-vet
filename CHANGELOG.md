@@ -4,7 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **find:** global animal search by EID / back tag / tag number _(2026-06-20, `3b118e7`)_
+- **find:** global animal search by EID / back tag / tag number _(2026-06-20, `5d57631`)_
 - **work-orders:** Work Cows — office + chute share one start path, plus delete _(2026-06-20, `b2e60a2`)_
 - **work-orders:** cancel/reset fix, fast customer search, inline location + customer edit _(2026-06-20, `6a8a429`)_
 - **work-orders:** migration — trigram indexes for fast customer search _(2026-06-20, `1b554fc`)_
@@ -22,6 +22,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
+- **work-orders:** close the edit panel; pen-first row + three-dots menu _(2026-06-20, `58f8a09`)_
 - **capture:** stop the field cards from clipping their rows _(2026-06-19, `a749dc6`)_
 
 ## Docs
@@ -38,6 +39,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- hide the Age field for chute ID jobs _(2026-06-20, `fba17eb`)_
 - Settings prefs: field options store + age/ID flexibility, seed St. Onge defaults _(2026-06-17, `3d38126`)_
 - St. Onge capture form: turn off age, breed, fetal sex (settings-driven) _(2026-06-17, `ece0ea1`)_
 - Capture screen design brief (preg fields + quick notes) _(2026-06-17, `43adb01`)_
