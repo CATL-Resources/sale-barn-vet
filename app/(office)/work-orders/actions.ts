@@ -281,6 +281,17 @@ export type PartyDetail = {
   locations: PartyLocation[]
 }
 
+/** Soft-delete a work order (set deleted_at). Per-barn RLS scopes the write. */
+export async function deleteWorkOrder(penWorkId: string): Promise<{ ok: boolean; error?: string }> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('pen_work')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', penWorkId)
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
+}
+
 /** Full info for the customer popup (details + every location). */
 export async function getPartyDetail(partyId: string): Promise<PartyDetail | null> {
   const supabase = createClient()

@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { deriveStatus, STATUS_LABEL, type WorkStatus } from '@/lib/work-orders/status'
 import type { Barn, PenWorkFull, SaleDay } from '@/lib/work-orders/types'
-import { startWorkOrder } from '@/app/(office)/work-list/actions'
+import { startCapture } from '@/lib/work-orders/start-capture'
 
 const NAVY = '#0E2646'
 const GOLD = '#F3D12A'
@@ -63,8 +63,7 @@ export function WorkListScreen({ saleDay, barn, penWorks }: { saleDay: SaleDay; 
 
   function go(pw: PenWorkFull) {
     startGo(async () => {
-      await startWorkOrder(pw.id)
-      router.push(`/capture?penWork=${pw.id}`)
+      await startCapture(pw.id, (href) => router.push(href))
     })
   }
 
