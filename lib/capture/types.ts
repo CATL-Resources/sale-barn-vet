@@ -54,6 +54,7 @@ export type SortPen = { id: string; pen_number: string; count: number }
 /** The form for the one animal currently in the chute. */
 export type AnimalDraft = {
   eid: string
+  eid2: string
   backTag: string
   visualTag: string
   metalTag: string
@@ -70,6 +71,7 @@ export type AnimalDraft = {
 
 export const emptyDraft = (): AnimalDraft => ({
   eid: '',
+  eid2: '',
   backTag: '',
   visualTag: '',
   metalTag: '',
