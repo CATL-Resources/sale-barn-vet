@@ -27,7 +27,7 @@ function fullDate(iso: string) {
 
 const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
 
-export function HomeScreen({ barnName, days, today }: { barnName: string; days: Day[]; today: string }) {
+export function HomeScreen({ days, today }: { days: Day[]; today: string }) {
   const router = useRouter()
   const [modalOpen, setModalOpen] = useState(false)
   const [date, setDate] = useState(today)
@@ -50,19 +50,8 @@ export function HomeScreen({ barnName, days, today }: { barnName: string; days: 
   const countLabel = days.length === 1 ? '1 day' : `${days.length} days`
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--page)', display: 'flex', flexDirection: 'column' }}>
-      {/* TOP BAR */}
-      <div style={{ background: NAVY, height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <div style={{ textAlign: 'center' }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', letterSpacing: '-0.01em' }}>{barnName}</div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 3 }}>
-            <span style={{ width: 6, height: 6, borderRadius: 999, background: GOLD }} />
-            <span style={{ fontSize: 12, fontWeight: 600, color: '#8FA8CC', letterSpacing: '0.01em' }}>Sale Barn Vet</span>
-          </div>
-        </div>
-      </div>
-
-      {/* CONTENT */}
+    <div style={{ background: 'var(--page)', minHeight: '100%' }}>
+      {/* CONTENT (the shared header sits above this, from the layout) */}
       <div style={{ width: '100%', maxWidth: 1120, margin: '0 auto', padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {days.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '72px 24px', background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 16, marginTop: 24 }}>

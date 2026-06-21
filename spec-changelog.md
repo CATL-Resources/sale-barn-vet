@@ -79,3 +79,10 @@
 - A required EID is now a hard stop: you can't save or move to the next animal without a real EID — no override. The EID box shows a REQUIRED tag.
 - The other "required" fields (preg stage, age, color, …) stay soft: they show the REQUIRED tag but don't block the save, so "Not checked" is still a complete record.
 - The EID and back tag never get a filled-in default; they start empty.
+
+## 2026-06-21 — One shared header on every screen
+- Built a single header used by every screen, replacing each screen's own top bar. Before, some screens (like Sale Days / Home) had no menu at all; now none can be missing it.
+- The header is a navy bar: a hamburger on the left (opens the menu), the current barn name centered (pulled from the barn record, not hardcoded), and the "Sale Barn Vet" wordmark on the right that taps Home — lit with a soft gold glow, no box.
+- The menu drawer is short on purpose: Home and Barn Settings (plus Sign out). Barn Settings opens the settings screen, view-only for now. Room to add more later.
+- Each screen keeps its own controls (Capture's progress + Close-out, the Work List counts, the Work Orders "Consignor" button) as a slim strip just below the shared header — nothing was lost.
+- Removed the old one-off per-screen hamburgers and headers so there's exactly one header style and one menu across the app.

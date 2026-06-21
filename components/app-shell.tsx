@@ -1,35 +1,15 @@
-'use client'
-
-import { useState, type ReactNode } from 'react'
-import { TopBar } from '@/components/ui/top-bar'
-import { Drawer } from '@/components/ui/drawer'
+import type { ReactNode } from 'react'
+import { AppHeader } from '@/components/ui/app-header'
 
 /**
- * The authenticated app frame every screen mounts into: navy top bar + slide-out
- * nav drawer, constrained to the 390px page over the canvas.
+ * The authenticated app frame for the 390px phone screens: the one shared
+ * header over the scrolling body.
  */
-export function AppShell({
-  barnName,
-  userEmail,
-  statusLabel,
-  children,
-}: {
-  barnName: string
-  userEmail: string
-  statusLabel: string
-  children: ReactNode
-}) {
-  const [drawerOpen, setDrawerOpen] = useState(false)
-
+export function AppShell({ barnName, children }: { barnName: string; children: ReactNode }) {
   return (
     <div className="sbv-canvas">
       <div className="sbv-frame">
-        <TopBar title={barnName} status={statusLabel} onMenu={() => setDrawerOpen(true)} />
-        <Drawer
-          open={drawerOpen}
-          onClose={() => setDrawerOpen(false)}
-          userLine={userEmail || barnName}
-        />
+        <AppHeader barnName={barnName} />
         <main className="sbv-scroll">{children}</main>
       </div>
     </div>
