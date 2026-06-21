@@ -138,3 +138,8 @@
 - Built one shared modal with three set widths — small (460), medium (480), and large (760). Pointed the New sale day box (small), the Add buyer/consignor box (small), the Work List pen detail (medium, kept as a top sheet), and the animal list (large) at it, replacing four different hand-set widths.
 - Left for a later pass (to keep this change focused): the customer edit box, the slide-in work-order form, the office board's smaller buttons, and the login/settings "Save" button still use their own styles. The unused old work-orders-screen file was left alone.
 - Look and behavior are the same — this just removes the duplicate copies. The capture save still saves the same way; scanning and the required-EID block are untouched.
+
+## 2026-06-21 — Foundation 3b: one "required" marker (the gold star)
+- Required fields were marked two different ways on the capture screen: a small gold star (on the EID and the tags) and an amber "REQUIRED" pill (on the observed fields like age and stage). Now there is one marker — the gold star — used everywhere.
+- Barn Settings now shows that same gold star next to a field that's switched to required, so the settings list and the chute screen agree at a glance.
+- Nothing about what's required changed: the EID still hard-blocks a save when it's required and empty, and the observed fields still only nudge (the star shows when a required one is still empty). This was a look-only change to the marker.
