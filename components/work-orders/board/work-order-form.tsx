@@ -212,7 +212,7 @@ export function WorkOrderForm({
         aria-hidden={!open}
       >
         <div style={{ height: 60, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, padding: '0 18px', borderBottom: `1px solid ${colors.rowDivider}` }}>
-          <span style={{ fontSize: 17, fontWeight: 800, color: colors.navy, letterSpacing: '-0.01em' }}>{editing ? 'Edit work order' : 'New work order'}</span>
+          <span style={{ fontSize: 17, fontWeight: 800, color: colors.navy, letterSpacing: '-0.01em' }}>{editing ? 'Edit Work Order' : 'New Work Order'}</span>
           <div style={{ flex: 1 }} />
           {editing ? (
             <button type="button" onClick={() => setShowAnimals(true)} style={{ height: 36, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0 12px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 8, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: colors.navy, cursor: 'pointer' }}>
@@ -312,7 +312,7 @@ export function WorkOrderForm({
                 ) : null}
                 {locations.length === 0 && editingLoc !== 'new' ? <span style={{ fontSize: 13, color: colors.textPlaceholder }}>No locations on file — add the real one.</span> : null}
                 {editingLoc === null ? (
-                  <button type="button" onClick={() => setEditingLoc('new')} style={{ height: 36, padding: '0 12px', borderRadius: 9, border: `1px dashed ${colors.border}`, background: '#FBFBFA', color: colors.teal, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left' }}>+ Add location</button>
+                  <button type="button" onClick={() => setEditingLoc('new')} style={{ height: 36, padding: '0 12px', borderRadius: 9, border: `1px dashed ${colors.border}`, background: '#FBFBFA', color: colors.teal, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left' }}>+ Add Location</button>
                 ) : null}
               </div>
             </Section>
@@ -321,11 +321,11 @@ export function WorkOrderForm({
           {/* Work type + Animal type */}
           <div style={{ display: 'flex', gap: 12 }}>
             <div style={{ flex: 1 }}>
-              <Dropdown label="Work type" value={wt?.name ?? null} open={menu === 'work'} onToggle={() => setMenu(menu === 'work' ? null : 'work')}
+              <Dropdown label="Work Type" value={wt?.name ?? null} open={menu === 'work'} onToggle={() => setMenu(menu === 'work' ? null : 'work')}
                 options={workTypes.map((w) => ({ id: w.id, label: w.name }))} onPick={(id) => { setWorkTypeId(id); setMenu(null) }} />
             </div>
             <div style={{ flex: 1 }}>
-              <Dropdown label="Animal type" value={animalTypes.find((a) => a.id === animalTypeId)?.name ?? null} open={menu === 'animal'} onToggle={() => setMenu(menu === 'animal' ? null : 'animal')}
+              <Dropdown label="Animal Type" value={animalTypes.find((a) => a.id === animalTypeId)?.name ?? null} open={menu === 'animal'} onToggle={() => setMenu(menu === 'animal' ? null : 'animal')}
                 options={animalTypes.map((a) => ({ id: a.id, label: a.name }))} onPick={(id) => { setAnimalTypeId(id); setMenu(null) }} />
             </div>
           </div>
@@ -333,7 +333,7 @@ export function WorkOrderForm({
           {/* Expected head + Pen */}
           <div style={{ display: 'flex', gap: 12 }}>
             <div style={{ flex: 1 }}>
-              <div style={fieldLabel as React.CSSProperties}>Expected head</div>
+              <div style={fieldLabel as React.CSSProperties}>Expected Head</div>
               <input value={headExpected} onChange={(e) => setHeadExpected(e.target.value.replace(/[^0-9]/g, ''))} inputMode="numeric" placeholder="0" style={{ ...input, fontWeight: 700, color: colors.navy }} />
             </div>
             <div style={{ flex: 1 }}>
@@ -359,7 +359,7 @@ export function WorkOrderForm({
           </Section>
 
           {/* Special charges */}
-          <Section label="Special charges" hint="one-offs on this work order" right={<span style={{ fontSize: 13, fontWeight: 800, color: colors.navy }}>{formatUsd(specialsTotal)}</span>}>
+          <Section label="Special Charges" hint="one-offs on this work order" right={<span style={{ fontSize: 13, fontWeight: 800, color: colors.navy }}>{formatUsd(specialsTotal)}</span>}>
             <div style={{ border: '1px solid #E4E4DE', borderRadius: 10, overflow: 'hidden' }}>
               {existingSpecials.map((sp) => (
                 <div key={sp.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderBottom: `1px solid ${colors.rowDivider}` }}>
@@ -404,7 +404,7 @@ export function WorkOrderForm({
           <button type="button" onClick={onClose} style={{ height: 44, padding: '0 18px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 9, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: colors.navy, cursor: 'pointer' }}>Cancel</button>
           <div style={{ flex: 1 }} />
           <button type="button" onClick={onSave} disabled={saving} style={{ height: 44, padding: '0 22px', background: colors.gold, border: 'none', borderRadius: 9, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: colors.navy, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1 }}>
-            {saving ? 'Saving…' : editing ? 'Save changes' : 'Create work order'}
+            {saving ? 'Saving…' : editing ? 'Save Changes' : 'Create Work Order'}
           </button>
         </div>
       </div>

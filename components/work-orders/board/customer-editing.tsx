@@ -68,12 +68,12 @@ export function LocationEditor({ partyId, location, onSaved, onCancel }: {
         <input value={premiseId} onChange={(e) => setPremiseId(e.target.value)} placeholder="Premise ID (optional)" style={inp} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <Toggle on={isPoBox} onToggle={() => setIsPoBox((v) => !v)}>PO box</Toggle>
+        <Toggle on={isPoBox} onToggle={() => setIsPoBox((v) => !v)}>PO Box</Toggle>
         <Toggle on={isDefault} onToggle={() => setIsDefault((v) => !v)}>Default</Toggle>
         {isPoBox ? <span style={{ fontSize: 11, fontWeight: 600, color: colors.bronze }}>Not a physical origin</span> : null}
         <div style={{ flex: 1 }} />
         <button type="button" onClick={onCancel} style={{ height: 34, padding: '0 12px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 8, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: colors.textMuted, cursor: 'pointer' }}>Cancel</button>
-        <button type="button" onClick={save} disabled={saving} style={{ height: 34, padding: '0 14px', background: colors.gold, border: 'none', borderRadius: 8, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: colors.navy, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Saving…' : 'Save location'}</button>
+        <button type="button" onClick={save} disabled={saving} style={{ height: 34, padding: '0 14px', background: colors.gold, border: 'none', borderRadius: 8, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: colors.navy, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Saving…' : 'Save Location'}</button>
       </div>
     </div>
   )
@@ -152,7 +152,7 @@ export function CustomerPopup({ partyId, onClose, onChanged }: {
           <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto' }}>
             {error ? <div style={{ fontSize: 13, fontWeight: 600, color: '#B42318' }}>{error}</div> : null}
             <Field label="Name"><input value={name} onChange={(e) => setName(e.target.value)} style={inp} /></Field>
-            <Field label="Customer number">
+            <Field label="Customer Number">
               <div style={{ ...inp, display: 'flex', alignItems: 'center', color: colors.textMuted, background: '#F4F4F2' }}>{detail.customer_number ?? '— none —'}</div>
             </Field>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -175,7 +175,7 @@ export function CustomerPopup({ partyId, onClose, onChanged }: {
                 ) : null}
                 {detail.locations.length === 0 && editingLoc !== 'new' ? <span style={{ fontSize: 13, color: colors.textPlaceholder }}>No locations on file.</span> : null}
                 {editingLoc === null ? (
-                  <button type="button" onClick={() => setEditingLoc('new')} style={{ height: 36, padding: '0 12px', borderRadius: 9, border: `1px dashed ${colors.border}`, background: '#FBFBFA', color: colors.teal, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left' }}>+ Add location</button>
+                  <button type="button" onClick={() => setEditingLoc('new')} style={{ height: 36, padding: '0 12px', borderRadius: 9, border: `1px dashed ${colors.border}`, background: '#FBFBFA', color: colors.teal, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left' }}>+ Add Location</button>
                 ) : null}
               </div>
             </div>

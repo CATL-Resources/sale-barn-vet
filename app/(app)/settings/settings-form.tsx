@@ -21,16 +21,16 @@ import type {
 
 const FIELD_LABELS: Record<string, string> = {
   eid: 'EID',
-  metal_tag: 'Metal tag',
-  back_tag: 'Back tag',
+  metal_tag: 'Metal Tag',
+  back_tag: 'Back Tag',
   visual_tag: 'Tag #',
-  hide_color: 'Body color',
+  hide_color: 'Body Color',
   age: 'Age',
   breed: 'Breed',
-  preg_stage: 'Preg stage',
-  preg_timing: 'Month bred',
-  fetal_sex: 'Fetal sex',
-  quick_notes: 'Quick notes',
+  preg_stage: 'Preg Stage',
+  preg_timing: 'Month Bred',
+  fetal_sex: 'Fetal Sex',
+  quick_notes: 'Quick Notes',
   notes: 'Notes',
 }
 
@@ -51,7 +51,7 @@ const MONTHS_FULL = [
 
 const ID_TYPES: { v: string; label: string }[] = [
   { v: 'EID', label: 'Official EID' },
-  { v: 'METAL', label: 'Official metal' },
+  { v: 'METAL', label: 'Official Metal' },
   { v: 'BOTH', label: 'Either' },
 ]
 
@@ -372,9 +372,9 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
   return (
     <div style={{ padding: '16px 16px 96px', display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', color: colors.navy }}>Settings</h1>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', color: colors.navy }}>Barn Settings</h1>
         <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted, lineHeight: 1.45 }}>
-          Your barn’s setup. Edit anything below, then press <strong>Save changes</strong>. The capture screen shows whatever you turn on here, in this order.
+          Your barn’s setup. Edit anything below, then press <strong>Save Changes</strong>. The capture screen shows whatever you turn on here, in this order.
         </p>
       </div>
 
@@ -384,11 +384,11 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
           <Caption>Only a barn admin can change these. You can view them, but Save will skip the barn-level fields.</Caption>
         ) : null}
         <RowShell first>
-          <span style={labelCell}>Barn name</span>
+          <span style={labelCell}>Barn Name</span>
           <TextField ariaLabel="Barn name" value={barn.name} onChange={(v) => setBarn((b) => ({ ...b, name: v }))} />
         </RowShell>
         <RowShell first={false}>
-          <span style={labelCell}>Official ID that counts</span>
+          <span style={labelCell}>Official ID That Counts</span>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'flex-end' }}>
             {ID_TYPES.map((t) => (
               <TogglePill key={t.v} on={barn.official_id_type === t.v} onToggle={() => setBarn((b) => ({ ...b, official_id_type: t.v }))}>
@@ -398,17 +398,17 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
           </div>
         </RowShell>
         <RowShell first={false}>
-          <span style={labelCell}>Admin fee</span>
+          <span style={labelCell}>Admin Fee</span>
           <NumField ariaLabel="Admin fee percent" step={0.1} suffix="%" value={round(barn.admin_fee_rate * 100, 4)} onChange={(v) => setBarn((b) => ({ ...b, admin_fee_rate: v == null ? 0 : round(v / 100, 6) }))} />
         </RowShell>
         <RowShell first={false}>
-          <span style={labelCell}>Sales tax</span>
+          <span style={labelCell}>Sales Tax</span>
           <NumField ariaLabel="Sales tax percent" step={0.1} suffix="%" value={round(barn.sales_tax_rate * 100, 4)} onChange={(v) => setBarn((b) => ({ ...b, sales_tax_rate: v == null ? 0 : round(v / 100, 6) }))} />
         </RowShell>
       </SectionCard>
 
       {/* ---- Capture fields ---- */}
-      <SectionCard title={`Capture fields · ${shownCount} on`}>
+      <SectionCard title={`Capture Fields · ${shownCount} on`}>
         <Caption>Switch a field on or off, mark it required, set its order, and give it a default. The chute screen follows this list.</Caption>
         <div>
           {[...fields].sort(byOrder).map((f, i) => (
@@ -436,7 +436,7 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
       </SectionCard>
 
       {/* ---- Age ---- */}
-      <SectionCard title="Age — tag color → age">
+      <SectionCard title="Age — Tag Color → Age">
         <RowShell first>
           <span style={{ flex: '1 1 0%', fontSize: 13, fontWeight: 600, color: colors.textMuted }}>Allow a numeric age too</span>
           <Switch on={barn.age_numeric_enabled} onToggle={() => setBarn((b) => ({ ...b, age_numeric_enabled: !b.age_numeric_enabled }))} label="Numeric age" />
@@ -453,7 +453,7 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
                 <Switch on={a.active} onToggle={() => patchAge(a.id, { active: !a.active })} label="Age row on" />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, marginLeft: 70 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted }}>code</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted }}>Code</span>
                 <TextField ariaLabel="Age code" placeholder="1yr" width={70} value={a.age_code} onChange={(v) => patchAge(a.id, { age_code: v })} />
                 <NumField ariaLabel="Min years" prefix="min" value={a.age_min_years} onChange={(v) => patchAge(a.id, { age_min_years: v })} />
                 <NumField ariaLabel="Max years" prefix="max" value={a.age_max_years} onChange={(v) => patchAge(a.id, { age_max_years: v })} />
@@ -461,7 +461,7 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
             </div>
           ))}
         </div>
-        <AddButton onClick={addAge}>+ Add age color</AddButton>
+        <AddButton onClick={addAge}>+ Add Age Color</AddButton>
       </SectionCard>
 
       {/* ---- Pregnancy ---- */}
@@ -493,11 +493,11 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
       </SectionCard>
 
       {/* ---- Breed + Body color option lists ---- */}
-      <OptionList title="Breed choices" caption="A fixed pick list — never free text. Pin the ones that show up front; turn a choice off to retire it." list={breeds} fieldKey="breed" patchOpt={patchOpt} reorder={reorderOption} add={addOption} />
-      <OptionList title="Body color choices" caption="Off at St. Onge, but the list is here for any barn that turns it on. Strict pick list — never free text." list={bodyColors} fieldKey="hide_color" patchOpt={patchOpt} reorder={reorderOption} add={addOption} />
+      <OptionList title="Breed Choices" caption="A fixed pick list — never free text. Pin the ones that show up front; turn a choice off to retire it." list={breeds} fieldKey="breed" patchOpt={patchOpt} reorder={reorderOption} add={addOption} />
+      <OptionList title="Body Color Choices" caption="Off at St. Onge, but the list is here for any barn that turns it on. Strict pick list — never free text." list={bodyColors} fieldKey="hide_color" patchOpt={patchOpt} reorder={reorderOption} add={addOption} />
 
       {/* ---- Work types & rates ---- */}
-      <SectionCard title="Work types & rates">
+      <SectionCard title="Work Types & Rates">
         <Caption>Per-head charges. A preg tag means the preg fields show for that work. Turn a work type off to retire it.</Caption>
         <div>
           {workTypes.map((w, i) => (
@@ -519,7 +519,7 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
       </SectionCard>
 
       {/* ---- Quick notes (read-only) ---- */}
-      <SectionCard title="Quick notes">
+      <SectionCard title="Quick Notes">
         <Caption>The tap labels at the chute. Editing these comes later — shown here for reference.</Caption>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {data.quickNotes.map((n) => (
@@ -541,7 +541,7 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
             </button>
           ) : null}
           <button type="button" onClick={onSave} disabled={saving || !dirty} className="sbv-gold-btn" style={{ width: 'auto', height: 44, padding: '0 22px', fontSize: 15, opacity: saving || !dirty ? 0.55 : 1 }}>
-            {saving ? 'Saving…' : 'Save changes'}
+            {saving ? 'Saving…' : 'Save Changes'}
           </button>
         </div>
       ) : null}
@@ -577,7 +577,7 @@ function OptionList({
         ))}
         {list.length === 0 ? <span style={{ fontSize: 13, color: '#9A9AA6' }}>None yet.</span> : null}
       </div>
-      <AddButton onClick={() => add(fieldKey)}>+ Add choice</AddButton>
+      <AddButton onClick={() => add(fieldKey)}>+ Add Choice</AddButton>
     </SectionCard>
   )
 }

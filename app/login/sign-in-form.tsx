@@ -20,7 +20,7 @@ function SubmitButton() {
   const { pending } = useFormStatus()
   return (
     <button type="submit" className="sbv-gold-btn login-submit" disabled={pending} aria-busy={pending}>
-      {pending ? 'Signing in…' : 'Sign in'}
+      {pending ? 'Signing in…' : 'Sign In'}
     </button>
   )
 }

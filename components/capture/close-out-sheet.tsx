@@ -31,7 +31,7 @@ export function CloseOutSheet({ api, onClose }: { api: CaptureApi; onClose: () =
 
   return (
     <BottomSheet open onClose={onClose}>
-      <SheetHeader title="Close out batch" onClose={onClose} />
+      <SheetHeader title="Close Out Batch" onClose={onClose} />
       <div style={{ overflowY: 'auto', padding: '0 18px 22px' }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: '#717182', marginBottom: 16 }}>
           {batch.penNumber ? `Pen ${batch.penNumber} · ` : ''}
@@ -80,14 +80,14 @@ export function CloseOutSheet({ api, onClose }: { api: CaptureApi; onClose: () =
           style={{ width: '100%', height: 56, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9, borderRadius: 13, background: '#F3D12A', color: '#0E2646', border: 'none', fontFamily: 'inherit', fontSize: 17, fontWeight: 800, cursor: saving ? 'default' : 'pointer', letterSpacing: '-0.01em', marginBottom: 10, opacity: saving ? 0.7 : 1 }}
         >
           <CloseOutIcon size={19} color="#0E2646" sw={2.6} />
-          Close out {worked} head
+          Close Out {worked} head
         </button>
         <button
           type="button"
           onClick={onClose}
           style={{ width: '100%', height: 50, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 13, background: '#FFFFFF', color: '#0E2646', border: '1px solid #D4D4D0', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
         >
-          Keep working
+          Keep Working
         </button>
       </div>
     </BottomSheet>

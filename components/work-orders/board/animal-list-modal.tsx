@@ -93,7 +93,7 @@ export function AnimalListModal({ penWorkId, title, onClose }: { penWorkId: stri
         {/* header */}
         <div style={{ flexShrink: 0, padding: '16px 18px', borderBottom: `1px solid ${colors.rowDivider}`, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 17, fontWeight: 800, color: colors.navy, letterSpacing: '-0.01em' }}>Animal list</div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: colors.navy, letterSpacing: '-0.01em' }}>Animal List</div>
             <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted, marginTop: 2 }}>{title} · {count} {count === 1 ? 'animal' : 'animals'}</div>
           </div>
           <button type="button" onClick={onClose} aria-label="Close" style={{ width: 36, height: 36, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F1F2F4', border: 'none', borderRadius: 9, cursor: 'pointer', fontSize: 18, color: colors.navy }}>✕</button>
@@ -101,7 +101,7 @@ export function AnimalListModal({ penWorkId, title, onClose }: { penWorkId: stri
 
         {/* toolbar */}
         <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 9, padding: '12px 18px', borderBottom: `1px solid ${colors.rowDivider}`, background: '#FAFBFC', flexWrap: 'wrap' }}>
-          <button type="button" onClick={copyTable} disabled={count === 0} style={{ ...btn, opacity: count === 0 ? 0.5 : 1 }}>📋 Copy table</button>
+          <button type="button" onClick={copyTable} disabled={count === 0} style={{ ...btn, opacity: count === 0 ? 0.5 : 1 }}>📋 Copy Table</button>
           <button type="button" onClick={copyEids} disabled={count === 0} style={{ ...btn, opacity: count === 0 ? 0.5 : 1 }}>📋 Copy EIDs</button>
           <button type="button" onClick={downloadCsv} disabled={count === 0} style={{ ...btn, opacity: count === 0 ? 0.5 : 1 }}>⭳ Download CSV</button>
           <div style={{ flex: 1 }} />
@@ -114,7 +114,7 @@ export function AnimalListModal({ penWorkId, title, onClose }: { penWorkId: stri
             <div style={{ padding: '40px 20px', textAlign: 'center', fontSize: 14, color: colors.textMuted }}>Loading…</div>
           ) : rows.length === 0 ? (
             <div style={{ padding: '48px 20px', textAlign: 'center' }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: colors.navy }}>No animals recorded yet</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: colors.navy }}>No Animals Recorded Yet</div>
               <div style={{ fontSize: 13, color: colors.textMuted, marginTop: 4 }}>Animals show here as the crew works this pen at the chute.</div>
             </div>
           ) : (

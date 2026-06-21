@@ -19,7 +19,7 @@ export function deriveStatus(pw: {
 }
 
 export const STATUS_LABEL: Record<WorkStatus, string> = {
-  not_started: 'Not started',
-  in_progress: 'In progress',
+  not_started: 'Not Started',
+  in_progress: 'In Progress',
   complete: 'Complete',
 }

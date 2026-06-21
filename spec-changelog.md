@@ -143,3 +143,9 @@
 - Required fields were marked two different ways on the capture screen: a small gold star (on the EID and the tags) and an amber "REQUIRED" pill (on the observed fields like age and stage). Now there is one marker — the gold star — used everywhere.
 - Barn Settings now shows that same gold star next to a field that's switched to required, so the settings list and the chute screen agree at a glance.
 - Nothing about what's required changed: the EID still hard-blocks a save when it's required and empty, and the observed fields still only nudge (the star shows when a required one is still empty). This was a look-only change to the marker.
+
+## 2026-06-21 — Foundation 4a: Title Case for the on-screen labels
+- Put the short on-screen labels in Title Case so they read the same everywhere: headings, tab names, menu items, buttons, field labels, section titles, status chips, and modal titles. Examples: "Work orders" → "Work Orders", "Back tag" → "Back Tag", "New sale day" → "New Sale Day", "Not started" → "Not Started", "Start working" → "Start Working", "Sign out" → "Sign Out". Small joining words (a, the, of, to, in, on, by, or, and) stay lowercase unless they lead.
+- The Settings page heading now says "Barn Settings", matching the menu item.
+- Left in normal sentence case (on purpose): full sentences and helper text, empty-state descriptions, input placeholders, and the running count read-outs (e.g. "5 of 8 head", "2 pens to work · 145 head left").
+- Left untouched: the office work-order table's all-caps column headers (PEN, CONSIGNOR, WORK TYPE…), and every data value — work type names, animal type names, pen numbers, customer names, and field keys. Only the words shown on screen changed; nothing about the data or behavior.

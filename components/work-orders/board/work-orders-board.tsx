@@ -105,7 +105,7 @@ export function WorkOrdersBoard({
       <div style={{ background: colors.navy, minHeight: 60, display: 'flex', alignItems: 'center', gap: 4, padding: '0 18px 0 8px', flexShrink: 0 }}>
         <Link href="/" aria-label="Home" style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', textDecoration: 'none', fontSize: 20 }}>≡</Link>
         <div style={{ display: 'flex', alignItems: 'center', gap: 2, alignSelf: 'stretch' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0 14px', fontSize: 14, fontWeight: 700, color: '#fff', borderBottom: `3px solid ${colors.gold}` }}>Work orders</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', padding: '0 14px', fontSize: 14, fontWeight: 700, color: '#fff', borderBottom: `3px solid ${colors.gold}` }}>Work Orders</span>
           <Link href="/buyers" style={{ display: 'inline-flex', alignItems: 'center', padding: '0 14px', fontSize: 14, fontWeight: 700, color: '#8FA8CC', textDecoration: 'none' }}>Buyers</Link>
           <Link href="/sellers" style={{ display: 'inline-flex', alignItems: 'center', padding: '0 14px', fontSize: 14, fontWeight: 700, color: '#8FA8CC', textDecoration: 'none' }}>Sellers</Link>
         </div>
@@ -119,7 +119,7 @@ export function WorkOrdersBoard({
       <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 'var(--content-max)', width: '100%', margin: '0 auto' }}>
         {/* HEADING */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-          <span style={{ fontSize: 24, fontWeight: 800, color: colors.navy, letterSpacing: '-0.015em' }}>Work orders</span>
+          <span style={{ fontSize: 24, fontWeight: 800, color: colors.navy, letterSpacing: '-0.015em' }}>Work Orders</span>
           <span style={{ fontSize: 14, fontWeight: 600, color: colors.textPlaceholder }}>{barn.name} · {longDate(saleDay.sale_date)}</span>
         </div>
 
@@ -149,7 +149,7 @@ export function WorkOrdersBoard({
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search customer or buyer #" style={{ flex: 1, minWidth: 0, border: 'none', background: 'transparent', fontSize: 14, fontWeight: 500, color: colors.textPrimary, outline: 'none', fontFamily: 'inherit' }} />
           </div>
           <button type="button" onClick={openNew} style={{ height: 40, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0 16px', borderRadius: 9, background: colors.gold, color: colors.navy, border: 'none', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-            <span style={{ fontSize: 17, fontWeight: 800 }}>+</span>New work order
+            <span style={{ fontSize: 17, fontWeight: 800 }}>+</span>New Work Order
           </button>
         </div>
 
@@ -158,7 +158,7 @@ export function WorkOrdersBoard({
             <div style={{ width: 56, height: 56, borderRadius: 14, background: '#EEF1F6', border: '1px solid #DEE3EC', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 4, fontSize: 24 }}>🗒</div>
             <div style={{ fontSize: 19, fontWeight: 700, color: colors.navy }}>No work orders for this sale day yet.</div>
             <div style={{ fontSize: 14, fontWeight: 500, color: colors.textMuted, marginBottom: 6 }}>Set up the first one before the crew starts working cattle.</div>
-            <button type="button" onClick={openNew} style={{ height: 40, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0 16px', borderRadius: 9, background: colors.gold, color: colors.navy, border: 'none', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}><span style={{ fontSize: 17, fontWeight: 800 }}>+</span>New work order</button>
+            <button type="button" onClick={openNew} style={{ height: 40, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0 16px', borderRadius: 9, background: colors.gold, color: colors.navy, border: 'none', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}><span style={{ fontSize: 17, fontWeight: 800 }}>+</span>New Work Order</button>
           </div>
         ) : (
           <>
@@ -166,8 +166,8 @@ export function WorkOrdersBoard({
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#EEF1F6', border: '1px solid #DEE3EC', borderRadius: 11, padding: '11px 16px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: colors.navy }}>{penWorks.length} work orders · {counts.pens} pens · {f0(counts.head)} head expected</span>
               <span style={{ flex: 1 }} />
-              <SummaryCount dot="#C2C2CA" n={counts.not_started} label="Not started" />
-              <SummaryCount dot="#F59E0B" n={counts.in_progress} label="In progress" />
+              <SummaryCount dot="#C2C2CA" n={counts.not_started} label="Not Started" />
+              <SummaryCount dot="#F59E0B" n={counts.in_progress} label="In Progress" />
               <SummaryCount dot="#55BAAA" n={counts.complete} label="Complete" />
             </div>
 
@@ -239,15 +239,15 @@ export function WorkOrdersBoard({
           <div style={{ position: 'fixed', top: rowMenu.y + 4, left: Math.max(12, rowMenu.x - 168), zIndex: 91, width: 168, background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 10, boxShadow: '0 12px 28px rgba(14,38,70,0.18)', overflow: 'hidden' }}>
             <button type="button" onClick={() => { const pw = rowMenu.pw; setRowMenu(null); openEdit(pw) }}
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: '#fff', border: 'none', borderBottom: `1px solid ${colors.rowDivider}`, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: colors.navy, cursor: 'pointer', textAlign: 'left' }}>
-              <span style={{ fontSize: 14 }}>✎</span>Edit work order
+              <span style={{ fontSize: 14 }}>✎</span>Edit Work Order
             </button>
             <button type="button" onClick={() => { const pw = rowMenu.pw; setRowMenu(null); setAnimalList({ penWorkId: pw.id, title: animalTitle(pw) }) }}
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: '#fff', border: 'none', borderBottom: `1px solid ${colors.rowDivider}`, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: colors.navy, cursor: 'pointer', textAlign: 'left' }}>
-              <span style={{ fontSize: 14 }}>📋</span>Animal list
+              <span style={{ fontSize: 14 }}>📋</span>Animal List
             </button>
             <button type="button" onClick={() => { const id = rowMenu.pw.id; setRowMenu(null); window.open(`/print/pen-card/${id}`, '_blank', 'noopener,noreferrer,width=720,height=520') }}
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: '#fff', border: 'none', borderBottom: `1px solid ${colors.rowDivider}`, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: colors.navy, cursor: 'pointer', textAlign: 'left' }}>
-              <span style={{ fontSize: 14 }}>🖨</span>Print label
+              <span style={{ fontSize: 14 }}>🖨</span>Print Label
             </button>
             <button type="button" onClick={() => { const pw = rowMenu.pw; setRowMenu(null); void onDelete(pw) }}
               style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: '#fff', border: 'none', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: '#C0392B', cursor: 'pointer', textAlign: 'left' }}>
