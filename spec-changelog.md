@@ -62,3 +62,9 @@
 - The "Sale Barn Vet" wordmark is now a button back to Home, with a soft gold halo when you hover or focus it.
 - Dropped the emoji icons from the day hub's two cards — cleaner, just the label and a short line.
 - On the capture screen, the "Save & next" button stays put at the bottom instead of dropping below the fold and making you scroll. The capture screen no longer grows taller than the screen.
+
+## 2026-06-20 — Runs full screen from the home screen (installable app)
+- Added a web app manifest and the iOS tags so the site can be added to the iPhone home screen and open chromeless — no browser bar. Standalone display, app name "Sale Barn Vet", navy theme (#0E2646) over a cream background (#F5F5F0).
+- App icons: a navy "SBV" tile (SVG for the browser/Android, a generated PNG for the iOS home screen).
+- The status bar is translucent with white text over the navy header, and the app draws under the notch (viewport-fit=cover); the top bar pads itself so its buttons clear the notch.
+- The browser bar only disappears when opened from the home-screen icon. A normal browser tab still shows it — that's the operating system, expected.
