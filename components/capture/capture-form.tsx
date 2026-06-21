@@ -244,7 +244,7 @@ export function CaptureForm({
       case 'preg_timing':
         return (
           <div key="preg_timing">
-            {fieldLabel('Month bred', 'shows for a bred stage', required('preg_timing') && !draft.pregTiming)}
+            {fieldLabel('Month Bred', 'shows for a bred stage', required('preg_timing') && !draft.pregTiming)}
             <button
               type="button"
               onClick={() => setMonthOpen(true)}
@@ -259,7 +259,7 @@ export function CaptureForm({
       case 'fetal_sex':
         return (
           <div key="fetal_sex">
-            {fieldLabel('Fetal sex', undefined, required('fetal_sex') && !draft.fetalSex)}
+            {fieldLabel('Fetal Sex', undefined, required('fetal_sex') && !draft.fetalSex)}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {['Heifer', 'Bull'].map((fx) => {
                 const selected = draft.fetalSex === fx
@@ -391,9 +391,9 @@ export function CaptureForm({
               )}
             </div>
           )}
-          {shows('back_tag') && navyInput('backTag', 'Back tag', 'Scan the back tag barcode')}
+          {shows('back_tag') && navyInput('backTag', 'Back Tag', 'Scan the back tag barcode')}
           {shows('visual_tag') && navyInput('visualTag', 'Tag #', 'Type the tag number')}
-          {shows('metal_tag') && navyInput('metalTag', 'Metal tag', 'Type the metal tag')}
+          {shows('metal_tag') && navyInput('metalTag', 'Metal Tag', 'Type the metal tag')}
 
           {/* On-demand secondary EID — off the normal flow. Tap to open, then a
               non-840 EID scan (or typing) fills it. For the rare two-EID cow. */}
@@ -491,7 +491,7 @@ export function CaptureForm({
               style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', background: '#FFFFFF', border: '1px solid #D4D4D0', borderRadius: 14, cursor: 'pointer', fontFamily: 'inherit' }}
             >
               <PencilIcon size={16} color="#9A9AA6" />
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#9A9AA6' }}>Add a note</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#9A9AA6' }}>Add a Note</span>
             </button>
           ))}
         </div>

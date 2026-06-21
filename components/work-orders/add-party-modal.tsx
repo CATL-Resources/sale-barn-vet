@@ -91,7 +91,7 @@ export function AddPartyModal({
       <form onSubmit={submit}>
         <div style={{ background: colors.navy, padding: '14px 18px' }}>
           <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF' }}>
-            {isBuyer ? 'Add buyer' : 'Add consignor'}
+            {isBuyer ? 'Add Buyer' : 'Add Consignor'}
           </div>
         </div>
 

@@ -87,7 +87,7 @@ export function StartBatch({
   return (
     <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       <ScreenHeader
-        title="New batch"
+        title="New Batch"
         back={
           <Link href="/" aria-label="Back" style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF' }}>
             <ChevronLeft size={22} color="#FFFFFF" />
@@ -99,7 +99,7 @@ export function StartBatch({
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16 }}>
         <button type="button" style={fieldBtn} onClick={() => setPicker('saleDay')}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: '#717182' }}>Sale day</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#717182' }}>Sale Day</div>
             <div style={{ fontSize: 16, fontWeight: 700, color: '#1A1A1A', marginTop: 1 }}>{saleDayLabel}</div>
           </div>
           <ChevronRight size={20} color="#9A9AA6" />
@@ -116,7 +116,7 @@ export function StartBatch({
         </button>
 
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#1A1A1A', marginBottom: 8 }}>Work type</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#1A1A1A', marginBottom: 8 }}>Work Type</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
             {bootstrap.workTypes.map((wt) => {
               const selected = wt.id === workTypeId
@@ -171,7 +171,7 @@ export function StartBatch({
 
         <div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, marginBottom: 8 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#1A1A1A' }}>Head expected</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#1A1A1A' }}>Head Expected</div>
             <div style={{ fontSize: 12, fontWeight: 500, color: '#9A9AA6' }}>optional</div>
           </div>
           <input
@@ -222,14 +222,14 @@ export function StartBatch({
             opacity: saving ? 0.7 : 1,
           }}
         >
-          Start working
+          Start Working
           <ChevronRight size={20} color="#0E2646" sw={2.6} />
         </button>
       </div>
 
       <OptionPicker
         open={picker === 'saleDay'}
-        title="Sale day"
+        title="Sale Day"
         options={saleDayOptions}
         selectedId={saleDayId ?? 'TODAY_NEW'}
         onPick={(id) => {
@@ -245,7 +245,7 @@ export function StartBatch({
         options={penOptions}
         selectedId={pen.id}
         searchable
-        createLabel="Use pen"
+        createLabel="Use Pen"
         onCreate={(text) => {
           setPen({ id: null, number: text })
           setPicker(null)

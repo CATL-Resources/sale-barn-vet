@@ -59,11 +59,11 @@ export function CaptureScreen({
 
       <OptionPicker
         open={sortSheetOpen}
-        title="Sort into pen"
+        title="Sort Into Pen"
         options={sortOptions}
         selectedId={api.draft.sortPenId}
         searchable
-        createLabel="New pen"
+        createLabel="New Pen"
         onCreate={(text) => {
           void api.createSortPen(text)
           setSortSheetOpen(false)

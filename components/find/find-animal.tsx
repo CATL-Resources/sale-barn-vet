@@ -7,7 +7,7 @@ import { useEffect, useState, useTransition, type ReactNode } from 'react'
 import { searchAnimals, type AnimalMatch } from '@/app/(office)/find/actions'
 
 const TAG_LABEL: Record<string, string> = {
-  eid: 'EID', back_tag: 'Back tag', visual_tag: 'Tag #', metal_tag: 'Metal tag',
+  eid: 'EID', back_tag: 'Back Tag', visual_tag: 'Tag #', metal_tag: 'Metal Tag',
 }
 
 function shortDate(iso: string) {
@@ -38,7 +38,7 @@ export function FindAnimal() {
 
   return (
     <>
-      <ScreenHeader title="Find animal" subtitle="Search every sale day by EID, back tag, or tag number." />
+      <ScreenHeader title="Find Animal" subtitle="Search every sale day by EID, back tag, or tag number." />
       <AppContainer style={{ paddingTop: 18, paddingBottom: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 9, height: 48, background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 11, padding: '0 14px' }}>
         <span style={{ color: colors.textPlaceholder, fontSize: 16 }}>⌕</span>
@@ -55,7 +55,7 @@ export function FindAnimal() {
         <p style={{ fontSize: 13, color: colors.textPlaceholder, margin: '4px 2px' }}>Type at least 2 characters. A full scanned EID lands exactly; a few digits of a tag matches partials.</p>
       ) : searched && results.length === 0 && !pending ? (
         <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: '40px 20px', textAlign: 'center' }}>
-          <div style={{ fontSize: 16, fontWeight: 700, color: colors.navy }}>No animal found</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: colors.navy }}>No Animal Found</div>
           <div style={{ fontSize: 13, color: colors.textMuted, marginTop: 4 }}>Nothing matches “{q.trim()}” on any sale day.</div>
         </div>
       ) : (

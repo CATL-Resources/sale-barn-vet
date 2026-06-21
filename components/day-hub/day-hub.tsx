@@ -49,7 +49,7 @@ export function DayHub({ saleDay, barn }: { saleDay: SaleDay; barn: Barn }) {
         }
       />
       <AppContainer style={{ paddingTop: 18, paddingBottom: 18, display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <div style={{ fontSize: 15, fontWeight: 600, color: colors.textPrimary }}>Where are you working?</div>
+      <div style={{ fontSize: 15, fontWeight: 600, color: colors.textPrimary }}>Where Are You Working?</div>
 
       {/* TWO PATHS */}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
@@ -58,15 +58,15 @@ export function DayHub({ saleDay, barn }: { saleDay: SaleDay; barn: Barn }) {
           badge="Office"
           badgeBg="#E7ECF5"
           badgeColor={colors.navy}
-          title="Work orders"
+          title="Work Orders"
           sub="Set up and bill the day's work — consignors, buyers, pens, and charges."
         />
         <HubCard
           href={`/work-list/${saleDay.id}`}
-          badge="At the chute"
+          badge="At the Chute"
           badgeBg="#FBEFC2"
           badgeColor="#946A00"
-          title="Work the cattle"
+          title="Work the Cattle"
           sub="Work through the day's pens one job at a time, straight into capture."
         />
       </div>

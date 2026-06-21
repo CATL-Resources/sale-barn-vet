@@ -71,7 +71,7 @@ export function Drawer({
         <div style={{ padding: '14px 16px 16px', borderTop: '1px solid #ECECE8', flexShrink: 0 }}>
           <form action={signOut}>
             <button type="submit" className="sbv-signout">
-              Sign out
+              Sign Out
             </button>
           </form>
         </div>
