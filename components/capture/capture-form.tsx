@@ -142,9 +142,11 @@ export function CaptureForm({
   }
 
   // --- identity inputs (typed tags) ---
-  const navyInput = (key: 'backTag' | 'visualTag' | 'metalTag', label: string, placeholder: string) => (
+  const navyInput = (key: 'backTag' | 'visualTag' | 'metalTag', label: string, placeholder: string) => {
+    const fieldKey = key === 'backTag' ? 'back_tag' : key === 'visualTag' ? 'visual_tag' : 'metal_tag'
+    return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 9 }}>
-      <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA' }}>{label}</div>
+      <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>{label}{required(fieldKey) && <ReqStar />}</div>
       <input
         ref={(el) => { idRefs.current[key] = el }}
         value={draft[key]}
@@ -166,7 +168,8 @@ export function CaptureForm({
         }}
       />
     </div>
-  )
+    )
+  }
 
   const scanInput = (placeholder: string, dashed: boolean) => (
     <input
@@ -300,10 +303,12 @@ export function CaptureForm({
             <ChevronLeft size={22} color="#FFFFFF" />
           </a>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 19, fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em' }}>{batch.workTypeName}</div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#55BAAA', marginTop: 1 }}>
-              {batch.sellerName}{batch.penNumber ? ` · Pen ${batch.penNumber}` : ''}
+            {/* Pen + consignor/buyer are what the crew looks for, so they lead;
+                the work type is the quieter second line. */}
+            <div style={{ fontSize: 19, fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {batch.penNumber ? `Pen ${batch.penNumber}` : 'No pen'}{batch.sellerName ? ` · ${batch.sellerName}` : ''}
             </div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#55BAAA', marginTop: 1 }}>{batch.workTypeName}</div>
           </div>
           <button
             type="button"
@@ -396,9 +401,9 @@ export function CaptureForm({
               )}
             </div>
           )}
-          {shows('back_tag') && navyInput('backTag', 'Back tag', 'Optional · scan barcode')}
-          {shows('visual_tag') && navyInput('visualTag', 'Tag #', 'Type if no tag scanned')}
-          {shows('metal_tag') && navyInput('metalTag', 'Metal tag', 'Optional')}
+          {shows('back_tag') && navyInput('backTag', 'Back tag', 'Scan the back tag barcode')}
+          {shows('visual_tag') && navyInput('visualTag', 'Tag #', 'Type the tag number')}
+          {shows('metal_tag') && navyInput('metalTag', 'Metal tag', 'Type the metal tag')}
 
           {/* On-demand secondary EID — off the normal flow. Tap to open, then a
               non-840 EID scan (or typing) fills it. For the rare two-EID cow. */}

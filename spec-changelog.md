@@ -92,3 +92,9 @@
 - The menu drawer is short on purpose: Home and Barn Settings (plus Sign out). Barn Settings opens the settings screen, view-only for now. Room to add more later.
 - Each screen keeps its own controls (Capture's progress + Close-out, the Work List counts, the Work Orders "Consignor" button) as a slim strip just below the shared header — nothing was lost.
 - Removed the old one-off per-screen hamburgers and headers so there's exactly one header style and one menu across the app.
+
+## 2026-06-21 — Capture polish + Barn Settings: identifiers, required, clearer labels
+- Capture header now leads with the pen and the consignor/buyer name (big and bold); the work type drops to the quieter second line. The pen and the name are what the crew looks for.
+- Barn Settings no longer offers a "Default value" box for the EID or the tags (eid, back tag, tag #, metal tag) — you can't pre-fill a tag.
+- The "Required" setting now shows on the capture screen: a required tag (back tag, tag #, metal tag) gets the same gold star the EID has, so Barn Settings and the chute screen agree.
+- Clearer placeholders: the back tag says "Scan the back tag barcode"; the tag number says "Type the tag number" (it's typed, not scanned); the metal tag says "Type the metal tag".
