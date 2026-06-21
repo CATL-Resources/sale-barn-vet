@@ -68,3 +68,14 @@
 - App icons: a navy "SBV" tile (SVG for the browser/Android, a generated PNG for the iOS home screen).
 - The status bar is translucent with white text over the navy header, and the app draws under the notch (viewport-fit=cover); the top bar pads itself so its buttons clear the notch.
 - The browser bar only disappears when opened from the home-screen icon. A normal browser tab still shows it — that's the operating system, expected.
+
+## 2026-06-20 — Capture: scans sorted by shape, and a required EID really stops a no-EID record
+- The wand now drops each scan in the right box by what the scan looks like, not by which field the cursor is in. Per animal: scan the EID, then scan the back tag, and both land correctly — no tabbing.
+  - 15 digits starting 840 → the EID box.
+  - 15 digits not starting 840 → a secondary EID box (none set up yet, so that scan is skipped rather than misfiled).
+  - anything else (the back tag barcode, like 46MA1234) → the back tag box.
+  - After the tags are filled, the cursor drops on the first empty field for typing.
+- A scan still fills the box and waits — it never saves the record on its own. The same EID twice in one batch is still refused.
+- A required EID is now a hard stop: you can't save or move to the next animal without a real EID — no override. The EID box shows a REQUIRED tag.
+- The other "required" fields (preg stage, age, color, …) stay soft: they show the REQUIRED tag but don't block the save, so "Not checked" is still a complete record.
+- The EID and back tag never get a filled-in default; they start empty.
