@@ -58,17 +58,28 @@ button {
 
 /* Full width on phone and tablet — edge to edge, no border/box. Only capped on
    large desktop monitors so rows don't stretch absurdly wide. The background
-   matches the page, so there's no visible frame. */
+   matches the page, so there's no visible frame. One content width (the same
+   --content-max the shared container uses). */
 .sbv-frame {
   position: relative;
   width: 100%;
-  max-width: 1100px;
+  max-width: var(--content-max);
   min-height: 100dvh;
   margin: 0 auto;
   background: var(--page);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* The one shared content container (AppContainer). One max width app-wide,
+   centered, with comfortable horizontal padding + notch safe area. */
+.sbv-container {
+  width: 100%;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
 }
 
 /* Full-screen task frame (Capture): lock to the dynamic viewport height at every
@@ -583,9 +594,9 @@ button {
 /* ---- Barn work list (chute; phone + tablet) ---- */
 .wl-wrap {
   width: 100%;
-  max-width: 880px;
+  max-width: var(--content-max);
   margin: 0 auto;
-  padding: 14px;
+  padding: 14px max(14px, env(safe-area-inset-left)) 14px max(14px, env(safe-area-inset-right));
   display: flex;
   flex-direction: column;
   gap: 12px;

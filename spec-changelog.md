@@ -115,3 +115,8 @@
 - Reconciled the teal that had drifted into three shades (#55BAAA, #2E9486, #0E7C86) down to one brand teal (#55BAAA) everywhere. A few screens that were using the darker teals now show the lighter brand teal.
 - Added sizing tokens: one content max width (1200px, also a --content-max CSS variable) and phone/tablet/desktop breakpoints. These are defined now; the shared container that uses them comes next.
 - Tokens only — no layout, header, button, card, or modal changes.
+
+## 2026-06-21 — Foundation 1b: one shared content container
+- Replaced the five different page widths (1280 / 1160 / 1120 / 1100 / 820) with one shared width — every screen now uses --content-max (1200px) and fills phone and tablet, capping only on a large desktop. Built a shared AppContainer (the chute Day Hub and Find use it; the others share the same width token).
+- The route-group layouts now own the shell: full height (100dvh) and the cream background live in the layout, so screens stop re-declaring them. The office Work Orders board no longer sets its own height/background/width, and the Work List detail no longer re-declares full height.
+- Horizontal padding respects the notch safe area. Layout only — no text, data, or save-path changes.

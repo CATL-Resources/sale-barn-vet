@@ -44,7 +44,7 @@ export function HomeScreen({ days, today }: { days: Day[]; today: string }) {
   return (
     <div style={{ background: 'var(--page)', minHeight: '100%' }}>
       {/* CONTENT (the shared header sits above this, from the layout) */}
-      <div style={{ width: '100%', maxWidth: 1120, margin: '0 auto', padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ width: '100%', maxWidth: 'var(--content-max)', margin: '0 auto', padding: 22, display: 'flex', flexDirection: 'column', gap: 16 }}>
         {days.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '72px 24px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 16, marginTop: 24 }}>
             <div style={{ width: 56, height: 56, borderRadius: 14, background: '#EEF1F6', border: '1px solid #DEE3EC', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 6, fontSize: 24 }}>🗓</div>

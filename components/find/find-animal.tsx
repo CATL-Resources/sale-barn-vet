@@ -1,6 +1,7 @@
 'use client'
 
 import { colors } from '@/components/ui/tokens'
+import { AppContainer } from '@/components/ui/app-container'
 import { useEffect, useState, useTransition, type ReactNode } from 'react'
 import { searchAnimals, type AnimalMatch } from '@/app/(office)/find/actions'
 
@@ -35,7 +36,7 @@ export function FindAnimal() {
   }, [q])
 
   return (
-    <div style={{ width: '100%', maxWidth: 760, margin: '0 auto', padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <AppContainer style={{ paddingTop: 18, paddingBottom: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div>
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', color: colors.navy }}>Find animal</h1>
         <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>Search every sale day by EID, back tag, or tag number.</p>
@@ -97,6 +98,6 @@ export function FindAnimal() {
           </div>
         </>
       )}
-    </div>
+    </AppContainer>
   )
 }
