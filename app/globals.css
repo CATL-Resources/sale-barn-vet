@@ -396,6 +396,49 @@ button {
   transform: rotate(90deg);
 }
 
+/* ---- The one button (primary / secondary / outline) ----
+   The look (colour + press) lives here; each spot sets its own size inline. */
+.sbv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: inherit;
+  font-weight: 700;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 150ms, transform 150ms var(--ease);
+}
+.sbv-btn--full {
+  width: 100%;
+}
+.sbv-btn:disabled,
+.sbv-btn[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: default;
+}
+.sbv-btn:not(:disabled):active {
+  transform: scale(0.99);
+}
+.sbv-btn--primary {
+  background: var(--gold);
+  color: var(--navy);
+}
+.sbv-btn--primary:not(:disabled):active {
+  background: var(--gold-pressed);
+}
+.sbv-btn--secondary {
+  background: var(--navy);
+  color: var(--white);
+}
+.sbv-btn--outline {
+  background: var(--white);
+  color: var(--navy);
+  border-color: var(--border);
+}
+
 /* ---- Gold CTA ---- */
 .sbv-gold-btn {
   width: 100%;
