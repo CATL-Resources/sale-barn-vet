@@ -10,28 +10,20 @@ import { OptionPicker, type Option } from './sheets'
 import { ScreenHeader } from '@/components/ui/screen-header'
 import { SectionCard } from '@/components/ui/section-card'
 import { Button } from '@/components/ui/button'
+import { RequiredMark } from '@/components/ui/required-mark'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 // Fields inside the white "Fields" card, rendered in resolved sort_order.
 const CARD_FIELDS = ['age', 'breed', 'hide_color', 'preg_stage', 'preg_timing', 'fetal_sex'] as const
 
-const RequiredChip = () => (
-  <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: '#B45309', background: '#FEF3C7', border: '1px solid #F2C879', borderRadius: 999, padding: '2px 8px' }}>
-    REQUIRED
-  </span>
-)
-
 const fieldLabel = (label: string, hint?: string, requiredEmpty?: boolean) => (
   <div style={{ display: 'flex', alignItems: 'baseline', gap: 7, marginBottom: 8 }}>
     <div style={{ fontSize: 13, fontWeight: 700, color: '#1A1A1A' }}>{label}</div>
     {hint && <div style={{ fontSize: 12, fontWeight: 500, color: '#9A9AA6' }}>{hint}</div>}
-    {requiredEmpty && <RequiredChip />}
+    {requiredEmpty && <RequiredMark />}
   </div>
 )
-
-// A small gold star that marks the EID as a required field.
-const ReqStar = () => <span style={{ color: '#F3D12A', fontSize: 12, fontWeight: 800, lineHeight: 1 }}>★</span>
 
 const isEid15 = (v: string) => /^\d{15}$/.test(v.trim())
 
@@ -142,7 +134,7 @@ export function CaptureForm({
     const fieldKey = key === 'backTag' ? 'back_tag' : key === 'visualTag' ? 'visual_tag' : 'metal_tag'
     return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 9 }}>
-      <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>{label}{required(fieldKey) && <ReqStar />}</div>
+      <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>{label}{required(fieldKey) && <RequiredMark />}</div>
       <input
         ref={(el) => { idRefs.current[key] = el }}
         value={draft[key]}
@@ -370,7 +362,7 @@ export function CaptureForm({
             <div style={{ marginBottom: 9 }}>
               {active ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <ReqStar />}</div>
+                  <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <RequiredMark />}</div>
                   <div style={{ flex: 1, minWidth: 0, minHeight: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '6px 13px', borderRadius: 11, background: isEid15(draft.eid) ? '#E1F5EE' : '#FEF3C7', border: `1px solid ${isEid15(draft.eid) ? '#55BAAA' : '#F2C879'}` }}>
                     <ScanIcon size={19} color={isEid15(draft.eid) ? '#55BAAA' : '#B45309'} />
                     <EidNumber v={draft.eid} head={isEid15(draft.eid) ? '#55BAAA' : '#92580C'} tail={isEid15(draft.eid) ? '#0E2646' : '#7A4A06'} />
@@ -382,7 +374,7 @@ export function CaptureForm({
                 </div>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <ReqStar />}</div>
+                  <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <RequiredMark />}</div>
                   <div style={{ flex: 1, minWidth: 0, height: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '0 13px', borderRadius: 11, background: '#FFFFFF', border: '2px solid #55BAAA', boxShadow: '0 0 0 3px rgba(85,186,170,0.35)' }}>
                     <ScanIcon size={19} color="#55BAAA" />
                     {scanInput('Scan or type EID', false)}

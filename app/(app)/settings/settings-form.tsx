@@ -4,6 +4,7 @@ import { colors } from '@/components/ui/tokens'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { SectionCard } from '@/components/ui/section-card'
+import { RequiredMark } from '@/components/ui/required-mark'
 import { saveSettings } from './actions'
 import type {
   AgeDesignation,
@@ -414,8 +415,9 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
             <div key={f.id} style={{ padding: '10px 0', borderTop: i === 0 ? 'none' : `1px solid ${colors.rowDivider}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Reorder canUp={i > 0} canDown={i < fields.length - 1} onUp={() => setFields((xs) => reordered(xs, f.id, 'up'))} onDown={() => setFields((xs) => reordered(xs, f.id, 'down'))} />
-                <span style={{ flex: '1 1 0%', fontSize: 14, fontWeight: 600, color: f.is_displayed ? colors.textPrimary : '#9A9AA6' }}>
+                <span style={{ flex: '1 1 0%', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 14, fontWeight: 600, color: f.is_displayed ? colors.textPrimary : '#9A9AA6' }}>
                   {f.display_label || FIELD_LABELS[f.field_key] || f.field_key}
+                  {f.is_required && <RequiredMark />}
                 </span>
                 <TogglePill on={f.is_required} onToggle={() => patchField(f.id, { is_required: !f.is_required })}>Required</TogglePill>
                 <Switch on={f.is_displayed} onToggle={() => patchField(f.id, { is_displayed: !f.is_displayed })} label={`Show ${f.field_key}`} />
