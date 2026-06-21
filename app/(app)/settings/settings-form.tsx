@@ -426,9 +426,13 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
                 <TogglePill on={f.is_required} onToggle={() => patchField(f.id, { is_required: !f.is_required })}>Required</TogglePill>
                 <Switch on={f.is_displayed} onToggle={() => patchField(f.id, { is_displayed: !f.is_displayed })} label={`Show ${f.field_key}`} />
               </div>
-              <div style={{ marginTop: 8, marginLeft: 70 }}>
-                <TextField ariaLabel={`Default value for ${f.field_key}`} placeholder="Default value (optional)" value={f.default_value ?? ''} onChange={(v) => patchField(f.id, { default_value: v === '' ? null : v })} />
-              </div>
+              {/* Identifiers (EID, the tags) never get a default — you can't
+                  pre-fill a tag, so no default-value box for them. */}
+              {!['eid', 'back_tag', 'visual_tag', 'metal_tag'].includes(f.field_key) && (
+                <div style={{ marginTop: 8, marginLeft: 70 }}>
+                  <TextField ariaLabel={`Default value for ${f.field_key}`} placeholder="Default value (optional)" value={f.default_value ?? ''} onChange={(v) => patchField(f.id, { default_value: v === '' ? null : v })} />
+                </div>
+              )}
             </div>
           ))}
           {fields.length === 0 ? <Caption>No capture fields set up.</Caption> : null}

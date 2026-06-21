@@ -85,3 +85,9 @@
 - Dropped the "REQUIRED" word in the EID box. A small gold star sits next to the "EID" label instead.
 - The whole EID number is shown in the box now (no cutoff), with the last four digits bolded so it's easy to match against a tag.
 - Added an on-demand "2nd EID" slot for the rare cow with two EID tags. It stays out of the normal flow — tap "+ 2nd EID" to open it, then a non-840 EID scan (or typing) fills it. It's saved as a non-official secondary EID. Until it's opened, a non-840 EID scan nudges you to open it instead of being misfiled.
+
+## 2026-06-21 — Capture polish + Barn Settings: identifiers, required, clearer labels
+- Capture header now leads with the pen and the consignor/buyer name (big and bold); the work type drops to the quieter second line. The pen and the name are what the crew looks for.
+- Barn Settings no longer offers a "Default value" box for the EID or the tags (eid, back tag, tag #, metal tag) — you can't pre-fill a tag.
+- The "Required" setting now shows on the capture screen: a required tag (back tag, tag #, metal tag) gets the same gold star the EID has, so Barn Settings and the chute screen agree.
+- Clearer placeholders: the back tag says "Scan the back tag barcode"; the tag number says "Type the tag number" (it's typed, not scanned); the metal tag says "Type the metal tag".
