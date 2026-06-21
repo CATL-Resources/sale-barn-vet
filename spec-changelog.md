@@ -80,6 +80,12 @@
 - The other "required" fields (preg stage, age, color, …) stay soft: they show the REQUIRED tag but don't block the save, so "Not checked" is still a complete record.
 - The EID and back tag never get a filled-in default; they start empty.
 
+## 2026-06-21 — Capture EID field: 15-digit check, star marker, full number, and a second-EID slot
+- The EID now has to be a full 15 digits to save. A scanned tag is always 15; this catches a mistyped or short EID and blocks the save with a clear message. While typing, a small "n/15" counter shows the digit count.
+- Dropped the "REQUIRED" word in the EID box. A small gold star sits next to the "EID" label instead.
+- The whole EID number is shown in the box now (no cutoff), with the last four digits bolded so it's easy to match against a tag.
+- Added an on-demand "2nd EID" slot for the rare cow with two EID tags. It stays out of the normal flow — tap "+ 2nd EID" to open it, then a non-840 EID scan (or typing) fills it. It's saved as a non-official secondary EID. Until it's opened, a non-840 EID scan nudges you to open it instead of being misfiled.
+
 ## 2026-06-21 — One shared header on every screen
 - Built a single header used by every screen, replacing each screen's own top bar. Before, some screens (like Sale Days / Home) had no menu at all; now none can be missing it.
 - The header is a navy bar: a hamburger on the left (opens the menu), the current barn name centered (pulled from the barn record, not hardcoded), and the "Sale Barn Vet" wordmark on the right that taps Home — lit with a soft gold glow, no box.

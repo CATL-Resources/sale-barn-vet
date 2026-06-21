@@ -34,6 +34,23 @@ const fieldLabel = (label: string, hint?: string, requiredEmpty?: boolean) => (
   </div>
 )
 
+// A small gold star that marks the EID as a required field.
+const ReqStar = () => <span style={{ color: '#F3D12A', fontSize: 12, fontWeight: 800, lineHeight: 1 }}>★</span>
+
+const isEid15 = (v: string) => /^\d{15}$/.test(v.trim())
+
+// The full EID number, with the last four digits bolded for quick matching.
+function EidNumber({ v, head, tail }: { v: string; head: string; tail: string }) {
+  const n = v.trim()
+  const cut = Math.max(0, n.length - 4)
+  return (
+    <span style={{ flex: 1, minWidth: 0, fontVariantNumeric: 'tabular-nums', wordBreak: 'break-all', fontSize: 15, lineHeight: 1.2 }}>
+      <span style={{ color: head, fontWeight: 600 }}>{n.slice(0, cut)}</span>
+      <span style={{ color: tail, fontWeight: 800 }}>{n.slice(cut)}</span>
+    </span>
+  )
+}
+
 export function CaptureForm({
   api,
   onOpenCloseOut,
@@ -43,7 +60,7 @@ export function CaptureForm({
   onOpenCloseOut: () => void
   onTapSort: () => void
 }) {
-  const { bootstrap, batch, draft, worked, sorted, sortPens, saving, resolved, shows, required, patchDraft, toggleQuickNote, saveNext, routeScan, commitEid, eidRequired, focusTick } = api
+  const { bootstrap, batch, draft, worked, sorted, sortPens, saving, resolved, shows, required, patchDraft, toggleQuickNote, saveNext, routeScan, commitEid, eidRequired, focusTick, secondaryEidOpen, setSecondaryEidOpen } = api
   const eidRef = useRef<HTMLInputElement>(null)
   const idRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const [eidType, setEidType] = useState('')
@@ -59,6 +76,11 @@ export function CaptureForm({
   useEffect(() => {
     if (draft.eid) setEidType('')
   }, [draft.eid])
+
+  // When the operator opens the secondary EID slot, drop the cursor in it.
+  useEffect(() => {
+    if (secondaryEidOpen) idRefs.current['eid2']?.focus()
+  }, [secondaryEidOpen])
 
   // After a scan fills an identifier, drop the cursor on the first empty
   // displayed field for manual entry (the back tag, then visual / metal tag).
@@ -345,24 +367,24 @@ export function CaptureForm({
             <div style={{ marginBottom: 9 }}>
               {active ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA' }}>EID</div>
-                  <div style={{ flex: 1, minWidth: 0, height: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '0 13px', borderRadius: 11, background: '#E1F5EE', border: '1px solid #55BAAA' }}>
-                    <ScanIcon size={19} color="#2E9486" />
-                    <span style={{ flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: '#1A6B5E', fontSize: 15, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{draft.eid}</span>
-                    <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: '#2E9486' }}>SCANNED</span>
+                  <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <ReqStar />}</div>
+                  <div style={{ flex: 1, minWidth: 0, minHeight: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '6px 13px', borderRadius: 11, background: isEid15(draft.eid) ? '#E1F5EE' : '#FEF3C7', border: `1px solid ${isEid15(draft.eid) ? '#55BAAA' : '#F2C879'}` }}>
+                    <ScanIcon size={19} color={isEid15(draft.eid) ? '#2E9486' : '#B45309'} />
+                    <EidNumber v={draft.eid} head={isEid15(draft.eid) ? '#2E9486' : '#92580C'} tail={isEid15(draft.eid) ? '#0E2646' : '#7A4A06'} />
+                    {!isEid15(draft.eid) && <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: '#B45309', fontVariantNumeric: 'tabular-nums' }}>{draft.eid.replace(/\D/g, '').length}/15</span>}
                     <button type="button" aria-label="Clear EID" onClick={() => patchDraft({ eid: '' })} style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
-                      <XIcon size={15} color="#2E9486" sw={2.2} />
+                      <XIcon size={15} color={isEid15(draft.eid) ? '#2E9486' : '#B45309'} sw={2.2} />
                     </button>
                   </div>
                 </div>
               ) : (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA' }}>EID</div>
+                  <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <ReqStar />}</div>
                   <div style={{ flex: 1, minWidth: 0, height: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '0 13px', borderRadius: 11, background: '#FFFFFF', border: '2px solid #55BAAA', boxShadow: '0 0 0 3px rgba(85,186,170,0.35)' }}>
                     <ScanIcon size={19} color="#2E9486" />
                     {scanInput('Scan or type EID', false)}
-                    {eidRequired() ? (
-                      <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: '#B45309', background: '#FEF3C7', border: '1px solid #F2C879', borderRadius: 999, padding: '2px 8px' }}>REQUIRED</span>
+                    {eidType.trim() && !isEid15(eidType) ? (
+                      <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: '#B45309', fontVariantNumeric: 'tabular-nums' }}>{eidType.replace(/\D/g, '').length}/15</span>
                     ) : (
                       <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: '#2E9486' }}>
                         <span style={{ width: 6, height: 6, borderRadius: 999, background: '#2E9486' }} />
@@ -377,6 +399,34 @@ export function CaptureForm({
           {shows('back_tag') && navyInput('backTag', 'Back tag', 'Optional · scan barcode')}
           {shows('visual_tag') && navyInput('visualTag', 'Tag #', 'Type if no tag scanned')}
           {shows('metal_tag') && navyInput('metalTag', 'Metal tag', 'Optional')}
+
+          {/* On-demand secondary EID — off the normal flow. Tap to open, then a
+              non-840 EID scan (or typing) fills it. For the rare two-EID cow. */}
+          {shows('eid') && (secondaryEidOpen || draft.eid2.trim() ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 9 }}>
+              <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA' }}>2nd EID</div>
+              <div style={{ flex: 1, minWidth: 0, height: 46, display: 'flex', alignItems: 'center', gap: 8, padding: '0 11px', borderRadius: 11, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)' }}>
+                <input
+                  ref={(el) => { idRefs.current['eid2'] = el }}
+                  value={draft.eid2}
+                  onChange={(e) => patchDraft({ eid2: e.target.value })}
+                  placeholder="Scan or type 2nd EID"
+                  style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, color: '#FFFFFF', fontVariantNumeric: 'tabular-nums' }}
+                />
+                <button type="button" aria-label="Remove second EID" onClick={() => { patchDraft({ eid2: '' }); setSecondaryEidOpen(false) }} style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
+                  <XIcon size={15} color="#C9D5EA" sw={2.2} />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setSecondaryEidOpen(true)}
+              style={{ marginTop: 4, height: 36, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 999, background: 'transparent', border: '1px dashed rgba(255,255,255,0.32)', color: '#C9D5EA', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+            >
+              + 2nd EID
+            </button>
+          ))}
         </div>
 
         {/* fields */}
