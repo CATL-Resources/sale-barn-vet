@@ -26,10 +26,12 @@ html,
 body {
   margin: 0;
   padding: 0;
+  /* Page background matches the app surface, so there's no contrasting frame
+     around the content (and no white flash on iOS overscroll). */
+  background: var(--page);
 }
 
 body {
-  background: var(--canvas);
   color: var(--text);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -43,52 +45,35 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
-/* ---- App frame: 390px page over the canvas ---- */
+/* ---- App shell: fills the screen on phone and tablet ---- */
 .sbv-canvas {
   min-height: 100dvh;
   display: flex;
   justify-content: center;
   align-items: stretch;
-  background: var(--canvas);
+  background: var(--page);
 }
 
+/* Full width on phone and tablet — edge to edge, no border/box. Only capped on
+   large desktop monitors so rows don't stretch absurdly wide. The background
+   matches the page, so there's no visible frame. */
 .sbv-frame {
   position: relative;
-  width: 390px;
-  max-width: 100%;
+  width: 100%;
+  max-width: 1100px;
   min-height: 100dvh;
+  margin: 0 auto;
   background: var(--page);
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-/* On wider screens, show it as the device frame from the handoff. */
-@media (min-width: 430px) {
-  .sbv-frame {
-    min-height: auto;
-    height: 844px;
-    margin: 24px 0;
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    box-shadow: 0 12px 32px rgba(14, 38, 70, 0.1);
-  }
-}
-
-/* Full-screen task frame (Capture): lock to the viewport height so the inner
-   body scrolls while the header and save bar stay put. Without a definite
-   height the nested flex scroll never bounds and the bottom gets clipped. */
+/* Full-screen task frame (Capture): lock to the dynamic viewport height at every
+   width, so the inner body scrolls while the header and save bar stay put and
+   there's no white gap at the bottom. */
 .sbv-frame.sbv-frame--task {
   height: 100dvh;
-}
-/* On wider screens keep the device-frame look, but never let the frame grow
-   taller than the screen — otherwise the whole page scrolls and the bottom
-   save bar drops below the fold (it stops looking sticky). Cap it to the
-   viewport (minus the 24px top/bottom margin) so only the inner body scrolls. */
-@media (min-width: 430px) {
-  .sbv-frame.sbv-frame--task {
-    height: min(844px, calc(100dvh - 48px));
-  }
 }
 
 .sbv-scroll {
