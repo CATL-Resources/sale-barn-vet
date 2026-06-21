@@ -155,6 +155,41 @@ button {
   text-shadow: 0 0 16px rgba(243, 209, 42, 0.75);
 }
 
+/* ---- Shared screen sub-header (one per screen) ----
+   A full-width navy bar with SQUARE corners that sits flush under the AppHeader,
+   so the two read as one continuous navy zone (no rounded notch, no gap). The
+   inner content lines up with the shared container width + padding. */
+.sbv-screenheader {
+  flex-shrink: 0;
+  background: var(--navy);
+}
+.sbv-screenheader-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+.sbv-screenheader-title {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sbv-screenheader-sub {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--teal);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .sbv-iconbtn {
   width: 44px;
   height: 44px;
@@ -623,11 +658,12 @@ button {
   display: none;
 }
 /* Header counts: the phone gets two stacked stat blocks; the tablet shows a
-   single inline line up in the title row. */
+   single inline line up in the title row. The stat blocks live in a navy strip
+   directly under the screen header, so they carry their own vertical padding. */
 .wl-stats-phone {
   display: flex;
   gap: 16px;
-  margin-top: 14px;
+  padding: 2px 0 16px;
 }
 .wl-counts-tablet {
   display: none;

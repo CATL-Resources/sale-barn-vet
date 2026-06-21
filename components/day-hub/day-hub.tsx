@@ -1,5 +1,6 @@
 import { colors } from '@/components/ui/tokens'
 import { AppContainer } from '@/components/ui/app-container'
+import { ScreenHeader } from '@/components/ui/screen-header'
 import Link from 'next/link'
 import type { Barn, SaleDay } from '@/lib/work-orders/types'
 
@@ -36,21 +37,18 @@ function HubCard({ href, badge, badgeBg, badgeColor, title, sub }: {
 export function DayHub({ saleDay, barn }: { saleDay: SaleDay; barn: Barn }) {
   const open = saleDay.status === 'open'
   return (
-    <AppContainer style={{ paddingTop: 18, paddingBottom: 18, display: 'flex', flexDirection: 'column', gap: 18 }}>
-      {/* HEADER */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 22, fontWeight: 800, color: colors.navy, letterSpacing: '-0.015em' }}>{fullDate(saleDay.sale_date)}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: colors.textPlaceholder }}>{barn.name}</span>
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 22, padding: '0 10px 0 8px', borderRadius: 999, background: open ? '#E1F5EE' : '#EAEAE4' }}>
-              <span style={{ width: 7, height: 7, borderRadius: 999, background: open ? colors.teal : '#A6A69E' }} />
-              <span style={{ fontSize: 12, fontWeight: 700, color: open ? colors.teal : colors.textMuted }}>{cap(saleDay.status)}</span>
-            </span>
-          </div>
-        </div>
-      </div>
-
+    <>
+      <ScreenHeader
+        title={fullDate(saleDay.sale_date)}
+        subtitle={barn.name}
+        right={
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 24, padding: '0 11px 0 9px', borderRadius: 999, background: open ? '#E1F5EE' : '#EAEAE4' }}>
+            <span style={{ width: 7, height: 7, borderRadius: 999, background: open ? colors.teal : '#A6A69E' }} />
+            <span style={{ fontSize: 12, fontWeight: 700, color: open ? colors.teal : colors.textMuted }}>{cap(saleDay.status)}</span>
+          </span>
+        }
+      />
+      <AppContainer style={{ paddingTop: 18, paddingBottom: 18, display: 'flex', flexDirection: 'column', gap: 18 }}>
       <div style={{ fontSize: 15, fontWeight: 600, color: colors.textPrimary }}>Where are you working?</div>
 
       {/* TWO PATHS */}
@@ -72,6 +70,7 @@ export function DayHub({ saleDay, barn }: { saleDay: SaleDay; barn: Barn }) {
           sub="Work through the day's pens one job at a time, straight into capture."
         />
       </div>
-    </AppContainer>
+      </AppContainer>
+    </>
   )
 }
