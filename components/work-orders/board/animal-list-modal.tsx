@@ -1,16 +1,8 @@
 'use client'
 
+import { colors } from '@/components/ui/tokens'
 import { useEffect, useState } from 'react'
 import { getPenWorkAnimals, type PenWorkAnimal } from '@/app/(office)/work-orders/actions'
-
-const NAVY = '#0E2646'
-const GOLD = '#F3D12A'
-const TEXT = '#1A1A1A'
-const MUTED = '#717182'
-const FAINT = '#9A9AA6'
-const BORDER = '#D4D4D0'
-const LINE = '#ECECE8'
-const TEAL = '#0E7C86'
 
 // Columns shown on screen and used for every copy/export, in this order.
 const COLS: { key: keyof PenWorkAnimal | 'preg'; label: string }[] = [
@@ -92,58 +84,58 @@ export function AnimalListModal({ penWorkId, title, onClose }: { penWorkId: stri
   const count = rows?.length ?? 0
   const btn: React.CSSProperties = {
     height: 36, padding: '0 13px', display: 'inline-flex', alignItems: 'center', gap: 7, borderRadius: 8,
-    background: '#fff', border: `1px solid ${BORDER}`, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: NAVY, cursor: 'pointer',
+    background: '#fff', border: `1px solid ${colors.border}`, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: colors.navy, cursor: 'pointer',
   }
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(14,38,70,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 760, maxHeight: '88vh', background: '#fff', borderRadius: 16, boxShadow: '0 24px 60px rgba(14,38,70,0.32)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         {/* header */}
-        <div style={{ flexShrink: 0, padding: '16px 18px', borderBottom: `1px solid ${LINE}`, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ flexShrink: 0, padding: '16px 18px', borderBottom: `1px solid ${colors.rowDivider}`, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 17, fontWeight: 800, color: NAVY, letterSpacing: '-0.01em' }}>Animal list</div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: MUTED, marginTop: 2 }}>{title} · {count} {count === 1 ? 'animal' : 'animals'}</div>
+            <div style={{ fontSize: 17, fontWeight: 800, color: colors.navy, letterSpacing: '-0.01em' }}>Animal list</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted, marginTop: 2 }}>{title} · {count} {count === 1 ? 'animal' : 'animals'}</div>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" style={{ width: 36, height: 36, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F1F2F4', border: 'none', borderRadius: 9, cursor: 'pointer', fontSize: 18, color: NAVY }}>✕</button>
+          <button type="button" onClick={onClose} aria-label="Close" style={{ width: 36, height: 36, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F1F2F4', border: 'none', borderRadius: 9, cursor: 'pointer', fontSize: 18, color: colors.navy }}>✕</button>
         </div>
 
         {/* toolbar */}
-        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 9, padding: '12px 18px', borderBottom: `1px solid ${LINE}`, background: '#FAFBFC', flexWrap: 'wrap' }}>
+        <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 9, padding: '12px 18px', borderBottom: `1px solid ${colors.rowDivider}`, background: '#FAFBFC', flexWrap: 'wrap' }}>
           <button type="button" onClick={copyTable} disabled={count === 0} style={{ ...btn, opacity: count === 0 ? 0.5 : 1 }}>📋 Copy table</button>
           <button type="button" onClick={copyEids} disabled={count === 0} style={{ ...btn, opacity: count === 0 ? 0.5 : 1 }}>📋 Copy EIDs</button>
           <button type="button" onClick={downloadCsv} disabled={count === 0} style={{ ...btn, opacity: count === 0 ? 0.5 : 1 }}>⭳ Download CSV</button>
           <div style={{ flex: 1 }} />
-          {copied ? <span style={{ fontSize: 13, fontWeight: 700, color: TEAL }}>✓ {copied}</span> : <span style={{ fontSize: 12, fontWeight: 500, color: FAINT }}>For health papers</span>}
+          {copied ? <span style={{ fontSize: 13, fontWeight: 700, color: colors.teal }}>✓ {copied}</span> : <span style={{ fontSize: 12, fontWeight: 500, color: colors.textPlaceholder }}>For health papers</span>}
         </div>
 
         {/* body */}
         <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
           {rows === null ? (
-            <div style={{ padding: '40px 20px', textAlign: 'center', fontSize: 14, color: MUTED }}>Loading…</div>
+            <div style={{ padding: '40px 20px', textAlign: 'center', fontSize: 14, color: colors.textMuted }}>Loading…</div>
           ) : rows.length === 0 ? (
             <div style={{ padding: '48px 20px', textAlign: 'center' }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: NAVY }}>No animals recorded yet</div>
-              <div style={{ fontSize: 13, color: MUTED, marginTop: 4 }}>Animals show here as the crew works this pen at the chute.</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: colors.navy }}>No animals recorded yet</div>
+              <div style={{ fontSize: 13, color: colors.textMuted, marginTop: 4 }}>Animals show here as the crew works this pen at the chute.</div>
             </div>
           ) : (
             <table style={{ width: '100%', borderCollapse: 'collapse', fontVariantNumeric: 'tabular-nums' }}>
               <thead>
                 <tr>
-                  <th style={{ position: 'sticky', top: 0, background: '#F1F3F8', textAlign: 'right', padding: '8px 10px', fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', color: MUTED, borderBottom: '1px solid #DEE3EC', width: 44 }}>#</th>
+                  <th style={{ position: 'sticky', top: 0, background: '#F1F3F8', textAlign: 'right', padding: '8px 10px', fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', color: colors.textMuted, borderBottom: '1px solid #DEE3EC', width: 44 }}>#</th>
                   {COLS.map((c) => (
-                    <th key={c.key as string} style={{ position: 'sticky', top: 0, background: '#F1F3F8', textAlign: 'left', padding: '8px 12px', fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', color: MUTED, borderBottom: '1px solid #DEE3EC', whiteSpace: 'nowrap' }}>{c.label.toUpperCase()}</th>
+                    <th key={c.key as string} style={{ position: 'sticky', top: 0, background: '#F1F3F8', textAlign: 'left', padding: '8px 12px', fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', color: colors.textMuted, borderBottom: '1px solid #DEE3EC', whiteSpace: 'nowrap' }}>{c.label.toUpperCase()}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.map((a, i) => (
                   <tr key={a.animalId} style={{ background: i % 2 === 1 ? '#FAFBFC' : '#fff' }}>
-                    <td style={{ textAlign: 'right', padding: '8px 10px', fontSize: 12, fontWeight: 600, color: FAINT, borderBottom: `1px solid ${LINE}` }}>{i + 1}</td>
+                    <td style={{ textAlign: 'right', padding: '8px 10px', fontSize: 12, fontWeight: 600, color: colors.textPlaceholder, borderBottom: `1px solid ${colors.rowDivider}` }}>{i + 1}</td>
                     {COLS.map((c) => {
                       const v = cell(a, c.key as string)
                       const isEid = c.key === 'eid'
                       return (
-                        <td key={c.key as string} style={{ padding: '8px 12px', fontSize: 13, fontWeight: isEid ? 700 : 600, color: v ? (isEid ? NAVY : TEXT) : '#C2C2CA', borderBottom: `1px solid ${LINE}`, whiteSpace: 'nowrap' }}>{v || '—'}</td>
+                        <td key={c.key as string} style={{ padding: '8px 12px', fontSize: 13, fontWeight: isEid ? 700 : 600, color: v ? (isEid ? colors.navy : colors.textPrimary) : '#C2C2CA', borderBottom: `1px solid ${colors.rowDivider}`, whiteSpace: 'nowrap' }}>{v || '—'}</td>
                       )
                     })}
                   </tr>

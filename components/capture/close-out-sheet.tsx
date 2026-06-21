@@ -58,10 +58,10 @@ export function CloseOutSheet({ api, onClose }: { api: CaptureApi; onClose: () =
 
         {sortPens.filter((p) => p.count > 0).map((p) => (
           <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '11px 13px', background: '#E1F5EE', border: '1px solid #55BAAA', borderRadius: 11, marginBottom: 10 }}>
-            <SortIcon size={18} color="#2E9486" sw={2.2} />
+            <SortIcon size={18} color="#55BAAA" sw={2.2} />
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#155E54' }}>Sort pen {p.pen_number} · {p.count} head</div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#2E9486', marginTop: 1 }}>Shared pen — stays open for the rest of the day</div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#55BAAA', marginTop: 1 }}>Shared pen — stays open for the rest of the day</div>
             </div>
           </div>
         ))}

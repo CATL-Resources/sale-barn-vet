@@ -11,7 +11,7 @@ export function CaptureToast({ toast, onDismiss }: { toast: ToastMsg; onDismiss:
   const bg = success ? '#E1F5EE' : '#FEF3C7'
   const border = success ? '#55BAAA' : '#F59E0B'
   const text = success ? '#1A6B5E' : '#7A4A06'
-  const iconColor = success ? '#2E9486' : '#B45309'
+  const iconColor = success ? '#55BAAA' : '#B45309'
 
   return (
     <div

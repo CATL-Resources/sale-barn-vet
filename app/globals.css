@@ -16,6 +16,8 @@
   --drawer-selected: #f3f6fb;
   --navy-gradient: linear-gradient(150deg, #1d4a7c 0%, #12325c 45%, #0e2646 100%);
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  /* One content max width for the app shell (the shared container uses it in step 1b). */
+  --content-max: 1200px;
 }
 
 * {

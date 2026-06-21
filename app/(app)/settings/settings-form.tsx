@@ -1,5 +1,6 @@
 'use client'
 
+import { colors } from '@/components/ui/tokens'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
 import { SectionCard } from '@/components/ui/section-card'
@@ -54,13 +55,6 @@ const ID_TYPES: { v: string; label: string }[] = [
 ]
 
 // ---- colors (from globals.css tokens) ----
-const NAVY = '#0E2646'
-const TEXT = '#1A1A1A'
-const MUTED = '#717182'
-const BORDER = '#D4D4D0'
-const HAIRLINE = '#ECECE8'
-const DANGER = '#C0392B'
-const GREEN = '#2E9486'
 
 // ---- helpers ----
 
@@ -99,7 +93,7 @@ function Switch({ on, onToggle, label }: { on: boolean; onToggle: () => void; la
       onClick={onToggle}
       style={{
         width: 46, height: 28, borderRadius: 999, border: 'none', padding: 3, cursor: 'pointer',
-        background: on ? NAVY : BORDER, transition: 'background 150ms', display: 'flex',
+        background: on ? colors.navy : colors.border, transition: 'background 150ms', display: 'flex',
         justifyContent: on ? 'flex-end' : 'flex-start', alignItems: 'center', flexShrink: 0,
       }}
     >
@@ -116,7 +110,7 @@ function TogglePill({ on, onToggle, children }: { on: boolean; onToggle: () => v
       onClick={onToggle}
       style={{
         height: 30, padding: '0 12px', borderRadius: 999, cursor: 'pointer', fontSize: 12, fontWeight: 700,
-        border: `1px solid ${on ? NAVY : BORDER}`, background: on ? NAVY : '#fff', color: on ? '#fff' : MUTED,
+        border: `1px solid ${on ? colors.navy : colors.border}`, background: on ? colors.navy : '#fff', color: on ? '#fff' : colors.textMuted,
       }}
     >
       {children}
@@ -126,8 +120,8 @@ function TogglePill({ on, onToggle, children }: { on: boolean; onToggle: () => v
 
 function Reorder({ onUp, onDown, canUp, canDown }: { onUp: () => void; onDown: () => void; canUp: boolean; canDown: boolean }) {
   const btn = (enabled: boolean): React.CSSProperties => ({
-    width: 30, height: 26, borderRadius: 7, border: `1px solid ${BORDER}`, background: '#fff',
-    color: enabled ? NAVY : '#CBCBC6', cursor: enabled ? 'pointer' : 'default', fontSize: 13, fontWeight: 800,
+    width: 30, height: 26, borderRadius: 7, border: `1px solid ${colors.border}`, background: '#fff',
+    color: enabled ? colors.navy : '#CBCBC6', cursor: enabled ? 'pointer' : 'default', fontSize: 13, fontWeight: 800,
     lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
   })
   return (
@@ -139,8 +133,8 @@ function Reorder({ onUp, onDown, canUp, canDown }: { onUp: () => void; onDown: (
 }
 
 const inputStyle: React.CSSProperties = {
-  border: `1px solid ${BORDER}`, borderRadius: 9, padding: '7px 9px', fontSize: 14, fontWeight: 600,
-  color: TEXT, background: '#fff', fontFamily: 'inherit', outline: 'none', minWidth: 0, width: '100%',
+  border: `1px solid ${colors.border}`, borderRadius: 9, padding: '7px 9px', fontSize: 14, fontWeight: 600,
+  color: colors.textPrimary, background: '#fff', fontFamily: 'inherit', outline: 'none', minWidth: 0, width: '100%',
 }
 
 function TextField(props: { value: string; onChange: (v: string) => void; placeholder?: string; ariaLabel: string; width?: number }) {
@@ -159,7 +153,7 @@ function TextField(props: { value: string; onChange: (v: string) => void; placeh
 function NumField(props: { value: number | null; onChange: (v: number | null) => void; ariaLabel: string; step?: number; prefix?: string; suffix?: string; width?: number }) {
   return (
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-      {props.prefix ? <span style={{ fontSize: 13, fontWeight: 700, color: MUTED }}>{props.prefix}</span> : null}
+      {props.prefix ? <span style={{ fontSize: 13, fontWeight: 700, color: colors.textMuted }}>{props.prefix}</span> : null}
       <input
         type="number"
         inputMode="decimal"
@@ -170,7 +164,7 @@ function NumField(props: { value: number | null; onChange: (v: number | null) =>
         style={{ ...inputStyle, width: props.width ?? 74, textAlign: 'right' }}
         className="tnum"
       />
-      {props.suffix ? <span style={{ fontSize: 13, fontWeight: 700, color: MUTED }}>{props.suffix}</span> : null}
+      {props.suffix ? <span style={{ fontSize: 13, fontWeight: 700, color: colors.textMuted }}>{props.suffix}</span> : null}
     </span>
   )
 }
@@ -181,7 +175,7 @@ function Caption({ children }: { children: ReactNode }) {
 
 function RowShell({ first, children }: { first: boolean; children: ReactNode }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderTop: first ? 'none' : `1px solid ${HAIRLINE}` }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderTop: first ? 'none' : `1px solid ${colors.rowDivider}` }}>
       {children}
     </div>
   )
@@ -194,7 +188,7 @@ function AddButton({ onClick, children }: { onClick: () => void; children: React
       onClick={onClick}
       style={{
         marginTop: 10, height: 36, padding: '0 14px', borderRadius: 9, cursor: 'pointer', fontSize: 13, fontWeight: 700,
-        border: `1px dashed ${BORDER}`, background: '#FBFBFA', color: NAVY,
+        border: `1px dashed ${colors.border}`, background: '#FBFBFA', color: colors.navy,
       }}
     >
       {children}
@@ -377,8 +371,8 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
   return (
     <div style={{ padding: '16px 16px 96px', display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', color: NAVY }}>Settings</h1>
-        <p style={{ margin: '4px 0 0', fontSize: 13, color: MUTED, lineHeight: 1.45 }}>
+        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', color: colors.navy }}>Settings</h1>
+        <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted, lineHeight: 1.45 }}>
           Your barn’s setup. Edit anything below, then press <strong>Save changes</strong>. The capture screen shows whatever you turn on here, in this order.
         </p>
       </div>
@@ -417,10 +411,10 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
         <Caption>Switch a field on or off, mark it required, set its order, and give it a default. The chute screen follows this list.</Caption>
         <div>
           {[...fields].sort(byOrder).map((f, i) => (
-            <div key={f.id} style={{ padding: '10px 0', borderTop: i === 0 ? 'none' : `1px solid ${HAIRLINE}` }}>
+            <div key={f.id} style={{ padding: '10px 0', borderTop: i === 0 ? 'none' : `1px solid ${colors.rowDivider}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <Reorder canUp={i > 0} canDown={i < fields.length - 1} onUp={() => setFields((xs) => reordered(xs, f.id, 'up'))} onDown={() => setFields((xs) => reordered(xs, f.id, 'down'))} />
-                <span style={{ flex: '1 1 0%', fontSize: 14, fontWeight: 600, color: f.is_displayed ? TEXT : '#9A9AA6' }}>
+                <span style={{ flex: '1 1 0%', fontSize: 14, fontWeight: 600, color: f.is_displayed ? colors.textPrimary : '#9A9AA6' }}>
                   {f.display_label || FIELD_LABELS[f.field_key] || f.field_key}
                 </span>
                 <TogglePill on={f.is_required} onToggle={() => patchField(f.id, { is_required: !f.is_required })}>Required</TogglePill>
@@ -442,13 +436,13 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
       {/* ---- Age ---- */}
       <SectionCard title="Age — tag color → age">
         <RowShell first>
-          <span style={{ flex: '1 1 0%', fontSize: 13, fontWeight: 600, color: MUTED }}>Allow a numeric age too</span>
+          <span style={{ flex: '1 1 0%', fontSize: 13, fontWeight: 600, color: colors.textMuted }}>Allow a numeric age too</span>
           <Switch on={barn.age_numeric_enabled} onToggle={() => setBarn((b) => ({ ...b, age_numeric_enabled: !b.age_numeric_enabled }))} label="Numeric age" />
         </RowShell>
         <Caption>Each row maps an observed tag color to an age. Turn a row off to retire it.</Caption>
         <div>
           {[...ages].sort(byOrder).map((a, i) => (
-            <div key={a.id} style={{ padding: '10px 0', borderTop: i === 0 ? 'none' : `1px solid ${HAIRLINE}`, opacity: a.active ? 1 : 0.55 }}>
+            <div key={a.id} style={{ padding: '10px 0', borderTop: i === 0 ? 'none' : `1px solid ${colors.rowDivider}`, opacity: a.active ? 1 : 0.55 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Reorder canUp={i > 0} canDown={i < ages.length - 1} onUp={() => setAges((xs) => reordered(xs, a.id, 'up'))} onDown={() => setAges((xs) => reordered(xs, a.id, 'down'))} />
                 <span style={{ width: 16, height: 16, borderRadius: 999, flexShrink: 0, background: TAG_COLOR_HEX[a.designation_value] ?? '#D4D4D0', boxShadow: 'inset 0 0 0 1.5px rgba(0,0,0,0.12)' }} />
@@ -457,7 +451,7 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
                 <Switch on={a.active} onToggle={() => patchAge(a.id, { active: !a.active })} label="Age row on" />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8, marginLeft: 70 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: MUTED }}>code</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted }}>code</span>
                 <TextField ariaLabel="Age code" placeholder="1yr" width={70} value={a.age_code} onChange={(v) => patchAge(a.id, { age_code: v })} />
                 <NumField ariaLabel="Min years" prefix="min" value={a.age_min_years} onChange={(v) => patchAge(a.id, { age_min_years: v })} />
                 <NumField ariaLabel="Max years" prefix="max" value={a.age_max_years} onChange={(v) => patchAge(a.id, { age_max_years: v })} />
@@ -487,7 +481,7 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
             {[...pregStages].sort(byOrder).map((s, i) => (
               <RowShell key={s.id} first={i === 0}>
                 <Reorder canUp={i > 0} canDown={i < pregStages.length - 1} onUp={() => setPregStages((xs) => reordered(xs, s.id, 'up'))} onDown={() => setPregStages((xs) => reordered(xs, s.id, 'down'))} />
-                <span style={{ width: 86, fontSize: 11, fontWeight: 700, color: MUTED, letterSpacing: '0.03em' }}>{s.stage_code}</span>
+                <span style={{ width: 86, fontSize: 11, fontWeight: 700, color: colors.textMuted, letterSpacing: '0.03em' }}>{s.stage_code}</span>
                 <TextField ariaLabel={`Label for ${s.stage_code}`} value={s.display_label} onChange={(v) => patchStage(s.id, { display_label: v })} />
                 <Switch on={s.active} onToggle={() => patchStage(s.id, { active: !s.active })} label={`${s.stage_code} on`} />
               </RowShell>
@@ -505,16 +499,16 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
         <Caption>Per-head charges. A preg tag means the preg fields show for that work. Turn a work type off to retire it.</Caption>
         <div>
           {workTypes.map((w, i) => (
-            <div key={w.id} style={{ padding: '10px 0', borderTop: i === 0 ? 'none' : `1px solid ${HAIRLINE}`, opacity: w.active ? 1 : 0.55 }}>
+            <div key={w.id} style={{ padding: '10px 0', borderTop: i === 0 ? 'none' : `1px solid ${colors.rowDivider}`, opacity: w.active ? 1 : 0.55 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ flex: '1 1 0%', fontSize: 14, fontWeight: 700, color: TEXT }}>{w.name}</span>
+                <span style={{ flex: '1 1 0%', fontSize: 14, fontWeight: 700, color: colors.textPrimary }}>{w.name}</span>
                 <TogglePill on={w.includes_preg_check} onToggle={() => patchWt(w.id, { includes_preg_check: !w.includes_preg_check })}>Preg</TogglePill>
                 <Switch on={w.active} onToggle={() => patchWt(w.id, { active: !w.active })} label={`${w.name} active`} />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: MUTED }}>Vet</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted }}>Vet</span>
                 <NumField ariaLabel={`${w.name} vet charge`} prefix="$" step={0.5} value={w.vet_charge} onChange={(v) => patchWt(w.id, { vet_charge: v == null ? 0 : round(v, 2) })} />
-                <span style={{ fontSize: 12, fontWeight: 600, color: MUTED }}>SOL</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted }}>SOL</span>
                 <NumField ariaLabel={`${w.name} SOL charge`} prefix="$" step={0.5} value={w.sol_charge} onChange={(v) => patchWt(w.id, { sol_charge: v == null ? 0 : round(v, 2) })} />
               </div>
             </div>
@@ -535,12 +529,12 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
 
       {/* ---- sticky Save bar ---- */}
       {dirty || saving || saved || error ? (
-        <div style={{ position: 'sticky', bottom: 0, marginTop: 6, padding: '10px 12px', background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(6px)', borderTop: `1px solid ${BORDER}`, borderRadius: 12, boxShadow: '0 -6px 20px rgba(14,38,70,0.10)', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ flex: '1 1 0%', fontSize: 13, fontWeight: 600, color: error ? DANGER : saved && !dirty ? GREEN : MUTED, lineHeight: 1.35 }}>
+        <div style={{ position: 'sticky', bottom: 0, marginTop: 6, padding: '10px 12px', background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(6px)', borderTop: `1px solid ${colors.border}`, borderRadius: 12, boxShadow: '0 -6px 20px rgba(14,38,70,0.10)', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ flex: '1 1 0%', fontSize: 13, fontWeight: 600, color: error ? colors.danger : saved && !dirty ? colors.teal : colors.textMuted, lineHeight: 1.35 }}>
             {error ? `Couldn’t save — ${error}` : saving ? 'Saving…' : saved && !dirty ? 'Saved ✓' : 'Unsaved changes'}
           </span>
           {dirty && !saving ? (
-            <button type="button" onClick={onDiscard} style={{ height: 40, padding: '0 14px', borderRadius: 999, border: `1px solid ${BORDER}`, background: '#fff', color: MUTED, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+            <button type="button" onClick={onDiscard} style={{ height: 40, padding: '0 14px', borderRadius: 999, border: `1px solid ${colors.border}`, background: '#fff', color: colors.textMuted, fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
               Discard
             </button>
           ) : null}
@@ -553,7 +547,7 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
   )
 }
 
-const labelCell: React.CSSProperties = { flex: '1 1 0%', fontSize: 13, fontWeight: 600, color: MUTED }
+const labelCell: React.CSSProperties = { flex: '1 1 0%', fontSize: 13, fontWeight: 600, color: colors.textMuted }
 
 // ---- option-list editor (breed / body color) ----
 function OptionList({

@@ -109,3 +109,9 @@
 - The page background now matches the app surface, so there's no visible frame or border around the content.
 - The Capture screen fills the screen at every width. The save bar pads for the phone's home indicator (safe area); the notch is already handled by the shared header.
 - Inner content cards are unchanged — only the outer frame and whitespace are gone. No data-entry or saving behavior changed.
+
+## 2026-06-21 — Foundation 1a: one set of color + sizing tokens
+- Made components/ui/tokens.ts the single source for colors. The screens that each kept their own copy of the brand colors (Home, Work List, Day Hub, Find, and the office board family) now read them from the tokens file instead.
+- Reconciled the teal that had drifted into three shades (#55BAAA, #2E9486, #0E7C86) down to one brand teal (#55BAAA) everywhere. A few screens that were using the darker teals now show the lighter brand teal.
+- Added sizing tokens: one content max width (1200px, also a --content-max CSS variable) and phone/tablet/desktop breakpoints. These are defined now; the shared container that uses them comes next.
+- Tokens only — no layout, header, button, card, or modal changes.

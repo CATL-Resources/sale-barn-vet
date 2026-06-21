@@ -163,7 +163,7 @@ export function OptionPicker({
               fontFamily: 'inherit',
             }}
           >
-            <PlusIcon size={18} color="#2E9486" sw={2.2} />
+            <PlusIcon size={18} color="#55BAAA" sw={2.2} />
             <span style={{ fontSize: 15, fontWeight: 700, color: '#155E54' }}>
               {createLabel} “{query.trim()}”
             </span>

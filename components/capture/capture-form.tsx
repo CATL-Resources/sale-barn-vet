@@ -351,12 +351,12 @@ export function CaptureForm({
 
         {sortPen && (
           <div style={{ background: '#E1F5EE', border: '1px solid #55BAAA', borderRadius: 14, padding: '13px 15px', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <SortIcon size={24} color="#2E9486" sw={2.2} />
+            <SortIcon size={24} color="#55BAAA" sw={2.2} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 16, fontWeight: 800, color: '#155E54', letterSpacing: '-0.01em' }}>
                 Sort pen {sortPen.pen_number} · {sortPen.count + 1} head so far
               </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: '#2E9486', marginTop: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: '#55BAAA', marginTop: 1 }}>
                 Out of this pen&apos;s count — stays open all day
               </div>
             </div>
@@ -374,11 +374,11 @@ export function CaptureForm({
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <ReqStar />}</div>
                   <div style={{ flex: 1, minWidth: 0, minHeight: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '6px 13px', borderRadius: 11, background: isEid15(draft.eid) ? '#E1F5EE' : '#FEF3C7', border: `1px solid ${isEid15(draft.eid) ? '#55BAAA' : '#F2C879'}` }}>
-                    <ScanIcon size={19} color={isEid15(draft.eid) ? '#2E9486' : '#B45309'} />
-                    <EidNumber v={draft.eid} head={isEid15(draft.eid) ? '#2E9486' : '#92580C'} tail={isEid15(draft.eid) ? '#0E2646' : '#7A4A06'} />
+                    <ScanIcon size={19} color={isEid15(draft.eid) ? '#55BAAA' : '#B45309'} />
+                    <EidNumber v={draft.eid} head={isEid15(draft.eid) ? '#55BAAA' : '#92580C'} tail={isEid15(draft.eid) ? '#0E2646' : '#7A4A06'} />
                     {!isEid15(draft.eid) && <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: '#B45309', fontVariantNumeric: 'tabular-nums' }}>{draft.eid.replace(/\D/g, '').length}/15</span>}
                     <button type="button" aria-label="Clear EID" onClick={() => patchDraft({ eid: '' })} style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
-                      <XIcon size={15} color={isEid15(draft.eid) ? '#2E9486' : '#B45309'} sw={2.2} />
+                      <XIcon size={15} color={isEid15(draft.eid) ? '#55BAAA' : '#B45309'} sw={2.2} />
                     </button>
                   </div>
                 </div>
@@ -386,13 +386,13 @@ export function CaptureForm({
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <ReqStar />}</div>
                   <div style={{ flex: 1, minWidth: 0, height: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '0 13px', borderRadius: 11, background: '#FFFFFF', border: '2px solid #55BAAA', boxShadow: '0 0 0 3px rgba(85,186,170,0.35)' }}>
-                    <ScanIcon size={19} color="#2E9486" />
+                    <ScanIcon size={19} color="#55BAAA" />
                     {scanInput('Scan or type EID', false)}
                     {eidType.trim() && !isEid15(eidType) ? (
                       <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: '#B45309', fontVariantNumeric: 'tabular-nums' }}>{eidType.replace(/\D/g, '').length}/15</span>
                     ) : (
-                      <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: '#2E9486' }}>
-                        <span style={{ width: 6, height: 6, borderRadius: 999, background: '#2E9486' }} />
+                      <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: '#55BAAA' }}>
+                        <span style={{ width: 6, height: 6, borderRadius: 999, background: '#55BAAA' }} />
                         READER ON
                       </span>
                     )}
@@ -453,13 +453,13 @@ export function CaptureForm({
                 <button
                   type="button"
                   onClick={onTapSort}
-                  style={{ flexShrink: 0, height: 42, padding: draft.sortPenId ? '0 13px' : '0 15px 0 13px', display: 'inline-flex', alignItems: 'center', gap: 7, borderRadius: 999, background: draft.sortPenId ? '#2E9486' : '#E1F5EE', border: `1px solid ${draft.sortPenId ? '#2E9486' : '#55BAAA'}`, color: draft.sortPenId ? '#FFFFFF' : '#1A6B5E', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+                  style={{ flexShrink: 0, height: 42, padding: draft.sortPenId ? '0 13px' : '0 15px 0 13px', display: 'inline-flex', alignItems: 'center', gap: 7, borderRadius: 999, background: draft.sortPenId ? '#55BAAA' : '#E1F5EE', border: `1px solid ${draft.sortPenId ? '#55BAAA' : '#55BAAA'}`, color: draft.sortPenId ? '#FFFFFF' : '#1A6B5E', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
                 >
-                  <SortIcon size={15} color={draft.sortPenId ? '#FFFFFF' : '#2E9486'} sw={2.2} />
+                  <SortIcon size={15} color={draft.sortPenId ? '#FFFFFF' : '#55BAAA'} sw={2.2} />
                   Sort
                   {draft.sortPenId && <CheckIcon size={15} color="#FFFFFF" sw={2.6} />}
                 </button>
-                <div style={{ fontSize: 11, fontWeight: 600, color: draft.sortPenId ? '#2E9486' : '#717182', lineHeight: 1.3 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, color: draft.sortPenId ? '#55BAAA' : '#717182', lineHeight: 1.3 }}>
                   {draft.sortPenId ? "In the sort pen — out of this pen's count" : 'Pinned · pulls her into a shared sort pen, out of this count'}
                 </div>
               </div>
