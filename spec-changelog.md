@@ -149,3 +149,7 @@
 - The Settings page heading now says "Barn Settings", matching the menu item.
 - Left in normal sentence case (on purpose): full sentences and helper text, empty-state descriptions, input placeholders, and the running count read-outs (e.g. "5 of 8 head", "2 pens to work · 145 head left").
 - Left untouched: the office work-order table's all-caps column headers (PEN, CONSIGNOR, WORK TYPE…), and every data value — work type names, animal type names, pen numbers, customer names, and field keys. Only the words shown on screen changed; nothing about the data or behavior.
+
+## 2026-06-21 — Foundation 4b: the office Work Orders table scrolls sideways on small screens
+- The office Work Orders table has fixed-width columns, so on a phone or a portrait tablet it was wider than the screen. Now the table scrolls sideways inside its own card: the whole page never scrolls sideways, and the header row stays lined up with the rows as you scroll across. It keeps a sensible minimum width so the columns don't get crushed; on a wide screen it fills the space as before with no scrollbar.
+- Office board only — the chuteside Work List (which already uses flexible rows) was not touched.

@@ -173,6 +173,12 @@ export function WorkOrdersBoard({
 
             {/* TABLE */}
             <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 13, overflow: 'hidden' }}>
+              {/* The table is a wide fixed-width grid. On a narrow screen (phone or
+                  a portrait tablet) it scrolls sideways inside this card, so the
+                  page itself never scrolls sideways and the header row stays lined
+                  up with the rows below it. */}
+              <div style={{ overflowX: 'auto' }}>
+                <div style={{ minWidth: 900 }}>
               <div style={{ display: 'grid', gridTemplateColumns: GRID, height: 34, padding: '0 18px', background: '#F1F3F8', borderBottom: '1px solid #DEE3EC', fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', color: colors.textMuted }}>
                 <HeadCell pad>PEN</HeadCell><HeadCell pad>CONSIGNOR</HeadCell><HeadCell pad>WORK TYPE</HeadCell>
                 <HeadCell end>EXP</HeadCell><HeadCell end>WORKED</HeadCell><HeadCell center>STATUS</HeadCell><div />
@@ -227,6 +233,8 @@ export function WorkOrdersBoard({
                 )
               })}
               {rows.length === 0 ? <div style={{ padding: '24px 18px', fontSize: 14, color: colors.textMuted, textAlign: 'center' }}>No work orders match “{query}”.</div> : null}
+                </div>
+              </div>
             </div>
           </>
         )}
