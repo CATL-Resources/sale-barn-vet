@@ -79,6 +79,9 @@ export function useCapture(
   // Bumped whenever a scan fills an identifier, so the form can move the cursor
   // to the first empty field for manual entry.
   const [focusTick, setFocusTick] = useState(0)
+  // The secondary-EID slot is off the normal flow: it only appears (and catches
+  // non-840 EID scans) once the operator opens it on the rare two-EID cow.
+  const [secondaryEidOpen, setSecondaryEidOpen] = useState(false)
 
   const flash = useCallback((kind: ToastKind, message: string) => {
     setToast({ kind, message })
@@ -397,6 +400,9 @@ export function useCapture(
           if (v) idRows.push({ animal_id: animal.id, barn_id: barnId, type, value: v, is_official: official, created_by: userId })
         }
         if (shows('eid')) addId('eid', eidValue, off === 'EID' || off === 'Both')
+        // A second EID (e.g. a non-840 / 900-series tag) — non-official, saved
+        // only when the operator opened the slot and filled it.
+        addId('secondary_eid', draft.eid2, false)
         if (shows('back_tag')) addId('back_tag', draft.backTag, false)
         if (shows('visual_tag')) addId('visual_tag', draft.visualTag, false)
         if (shows('metal_tag')) addId('metal_tag', draft.metalTag, off === 'Metal' || off === 'Both')
@@ -454,9 +460,10 @@ export function useCapture(
     async (eidOverride?: string): Promise<boolean> => {
       if (!batch) return false
       const ev = (eidOverride ?? draft.eid).trim()
-      // HARD: the official EID is an identifier — no animal saves without it.
-      if (eidRequired() && !ev) {
-        flash('error', 'Scan or type the EID before saving')
+      // HARD: the official EID is an identifier — no animal saves without a real
+      // one, and it has to be a full 15-digit tag (catches a mistyped EID).
+      if (eidRequired() && !/^\d{15}$/.test(ev)) {
+        flash('error', ev ? 'EID must be the full 15 digits' : 'Scan or type the EID before saving')
         return false
       }
       // HARD: the same EID can't be in this batch twice.
@@ -465,7 +472,10 @@ export function useCapture(
         return false
       }
       const ok = await buildAndInsert(ev)
-      if (ok) setDraft(emptyDraft())
+      if (ok) {
+        setDraft(emptyDraft())
+        setSecondaryEidOpen(false)
+      }
       return ok
     },
     [batch, draft.eid, eidRequired, isDuplicateEid, buildAndInsert, flash],
@@ -516,9 +526,15 @@ export function useCapture(
       }
 
       if (fifteenDigits) {
-        // Non-840 15-digit = a secondary (900-series) EID. No secondary field
-        // exists yet, so skip it rather than misfile it as a back tag.
-        flash('warn', 'Secondary EID isn’t set up yet — scan skipped')
+        // Non-840 15-digit = a secondary (900-series) EID. It only lands when
+        // the operator has opened the secondary slot; otherwise nudge them to.
+        if (!secondaryEidOpen) {
+          flash('warn', 'Tap “2nd EID” first to scan a second tag')
+          return
+        }
+        if (code === draft.eid2.trim()) return
+        patchDraft({ eid2: code })
+        setFocusTick((n) => n + 1)
         return
       }
 
@@ -526,7 +542,7 @@ export function useCapture(
       patchDraft({ backTag: code })
       setFocusTick((n) => n + 1)
     },
-    [batch, draft.eid, isDuplicateEid, patchDraft, flash],
+    [batch, draft.eid, draft.eid2, secondaryEidOpen, isDuplicateEid, patchDraft, flash],
   )
 
   const closeBatch = useCallback(async (): Promise<boolean> => {
@@ -577,6 +593,8 @@ export function useCapture(
     commitEid,
     eidRequired,
     focusTick,
+    secondaryEidOpen,
+    setSecondaryEidOpen,
     closeBatch,
     clearSort,
     chooseSortPen,
