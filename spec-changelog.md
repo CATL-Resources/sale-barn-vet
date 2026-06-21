@@ -102,3 +102,10 @@
 ## 2026-06-21 — Work List: "pens to work" wording + tap the count to see the animals
 - The header count now reads "N pens to work · M head left" (and the phone stat block says "Pens to work"), so it's clear N is a number of pens.
 - On a job that's been started, the "x of y head" count is now tappable and opens the animal list for that pen (the same list the office row menu shows — every EID/tag/age/color/breed/preg, with copy and CSV export).
+
+## 2026-06-21 — App fills the screen on phone and tablet (no floating frame)
+- The app used to draw inside a fixed 390px box that became an 844px "device frame" (with a border and shadow) on bigger screens, sitting on a slightly darker background — so on a phone it looked framed and on a tablet it sat in a narrow centered column with white space beside it.
+- Now the shell fills the screen: full width on phone and tablet, full dynamic-viewport height (no white gap at the bottom). A comfortable max width kicks in only on large desktop monitors (above ~1100px) so rows don't stretch absurdly wide.
+- The page background now matches the app surface, so there's no visible frame or border around the content.
+- The Capture screen fills the screen at every width. The save bar pads for the phone's home indicator (safe area); the notch is already handled by the shared header.
+- Inner content cards are unchanged — only the outer frame and whitespace are gone. No data-entry or saving behavior changed.

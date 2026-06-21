@@ -512,7 +512,7 @@ export function CaptureForm({
       </div>
 
       {/* save bar */}
-      <div style={{ flexShrink: 0, background: '#FFFFFF', borderTop: '1px solid #E4E4DE', padding: '12px 16px 18px', boxShadow: '0 -6px 18px rgba(8,18,40,0.06)' }}>
+      <div style={{ flexShrink: 0, background: '#FFFFFF', borderTop: '1px solid #E4E4DE', padding: '12px 16px calc(18px + env(safe-area-inset-bottom))', boxShadow: '0 -6px 18px rgba(8,18,40,0.06)' }}>
         <button
           type="button"
           onClick={() => void onSaveNext()}
