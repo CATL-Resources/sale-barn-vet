@@ -100,7 +100,7 @@ export function WorkOrdersBoard({
   const f0 = (n: number) => n.toLocaleString('en-US')
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', position: 'relative', minHeight: '100dvh', background: '#F5F5F0' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
       {/* TOP BAR */}
       <div style={{ background: colors.navy, minHeight: 60, display: 'flex', alignItems: 'center', gap: 4, padding: '0 18px 0 8px', flexShrink: 0 }}>
         <Link href="/" aria-label="Home" style={{ width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', textDecoration: 'none', fontSize: 20 }}>≡</Link>
@@ -116,7 +116,7 @@ export function WorkOrdersBoard({
         </div>
       </div>
 
-      <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 1160, width: '100%', margin: '0 auto' }}>
+      <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 'var(--content-max)', width: '100%', margin: '0 auto' }}>
         {/* HEADING */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
           <span style={{ fontSize: 24, fontWeight: 800, color: colors.navy, letterSpacing: '-0.015em' }}>Work orders</span>

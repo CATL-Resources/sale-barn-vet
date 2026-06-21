@@ -1,4 +1,5 @@
 import { colors } from '@/components/ui/tokens'
+import { AppContainer } from '@/components/ui/app-container'
 import Link from 'next/link'
 import type { Barn, SaleDay } from '@/lib/work-orders/types'
 
@@ -35,7 +36,7 @@ function HubCard({ href, badge, badgeBg, badgeColor, title, sub }: {
 export function DayHub({ saleDay, barn }: { saleDay: SaleDay; barn: Barn }) {
   const open = saleDay.status === 'open'
   return (
-    <div style={{ width: '100%', maxWidth: 820, margin: '0 auto', padding: 18, display: 'flex', flexDirection: 'column', gap: 18 }}>
+    <AppContainer style={{ paddingTop: 18, paddingBottom: 18, display: 'flex', flexDirection: 'column', gap: 18 }}>
       {/* HEADER */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -71,6 +72,6 @@ export function DayHub({ saleDay, barn }: { saleDay: SaleDay; barn: Barn }) {
           sub="Work through the day's pens one job at a time, straight into capture."
         />
       </div>
-    </div>
+    </AppContainer>
   )
 }

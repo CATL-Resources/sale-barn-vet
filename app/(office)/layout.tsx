@@ -21,11 +21,9 @@ export default async function OfficeLayout({ children }: { children: ReactNode }
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--page)', display: 'flex', flexDirection: 'column' }}>
       <AppHeader barnName={barn?.name ?? 'Sale Barn Vet'} />
-      <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-        <div style={{ width: '100%', maxWidth: 1280, display: 'flex', flexDirection: 'column' }}>
-          {children}
-        </div>
-      </div>
+      {/* The shell owns full-height + background; each screen sets its own width
+          with <AppContainer>, so full-bleed sub-headers can still span edge to edge. */}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>{children}</div>
     </div>
   )
 }

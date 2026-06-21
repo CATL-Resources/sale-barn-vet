@@ -201,7 +201,7 @@ function Detail({
   const hasProducts = products.length > 0
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 70, background: 'rgba(14,38,70,0.45)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflowY: 'auto' }} onClick={onBack}>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 480, minHeight: '100dvh', background: '#F5F5F0', display: 'flex', flexDirection: 'column' }}>
+      <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 480, background: '#F5F5F0', display: 'flex', flexDirection: 'column' }}>
         <div style={{ background: colors.navy, flexShrink: 0, padding: '14px 16px 16px', color: '#fff' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <button type="button" onClick={onBack} aria-label="Back" style={{ width: 34, height: 34, flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', color: '#fff', fontSize: 22 }}>‹</button>
