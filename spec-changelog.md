@@ -130,3 +130,11 @@
 - Find: the plain heading became the shared header ("Find animal" + its one-line description).
 - The office Work Orders board was left as-is: its navy bar is a tab switcher (Work Orders / Buyers / Sellers), not a title bar, and it's already a square navy bar flush under the top bar with no notch. Forcing it into the title header would break the tabs, so it stays a tab bar.
 - Header only — no button, card, modal, label, data, or save-path changes.
+
+## 2026-06-21 — Foundation 3a: one button, one card, one modal
+- Built one shared button with three looks: primary (gold), secondary (navy), and outline (white with a thin border). The look and the press feel live in one place; each spot still sets its own size.
+- Swapped the hand-made gold buttons for the shared one on the screens the crew uses most: Home's "New sale day" (both spots) and its "Start sale", Capture's big "Save & next", and the Work List's row "Open/Resume" and the detail's "Start working". The Work List buttons now use outline (white) when a pen is already in progress and gold when it hasn't started — the same rule as before, just from one place.
+- Made the section card (white card with a gray header and a small gold underline) the single way to draw that. Capture's two cards ("Fields" and "Quick notes") and the Work List detail's "Work order" / "Notes" cards now use it instead of their own copies.
+- Built one shared modal with three set widths — small (460), medium (480), and large (760). Pointed the New sale day box (small), the Add buyer/consignor box (small), the Work List pen detail (medium, kept as a top sheet), and the animal list (large) at it, replacing four different hand-set widths.
+- Left for a later pass (to keep this change focused): the customer edit box, the slide-in work-order form, the office board's smaller buttons, and the login/settings "Save" button still use their own styles. The unused old work-orders-screen file was left alone.
+- Look and behavior are the same — this just removes the duplicate copies. The capture save still saves the same way; scanning and the required-EID block are untouched.

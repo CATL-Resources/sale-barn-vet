@@ -8,6 +8,9 @@ import type { Barn, PenWorkFull, SaleDay } from '@/lib/work-orders/types'
 import { startCapture } from '@/lib/work-orders/start-capture'
 import { AnimalListModal } from '@/components/work-orders/board/animal-list-modal'
 import { ScreenHeader } from '@/components/ui/screen-header'
+import { SectionCard } from '@/components/ui/section-card'
+import { Button, buttonClass } from '@/components/ui/button'
+import { Modal } from '@/components/ui/modal'
 
 // Only two states show here — finished jobs are filtered out before this screen.
 type ListStatus = 'not_started' | 'in_progress'
@@ -143,8 +146,8 @@ export function WorkListScreen({
               tabIndex={0}
               aria-label={r.status === 'in_progress' ? 'Resume' : 'Open'}
               onClick={(e) => { e.stopPropagation(); go(r.pw) }}
-              className="wl-rowaction"
-              style={{ flexShrink: 0, height: 40, alignItems: 'center', gap: 7, padding: '0 18px', borderRadius: 9, fontSize: 14, fontWeight: 700, cursor: going ? 'default' : 'pointer', opacity: going ? 0.6 : 1, background: r.status === 'in_progress' ? '#fff' : colors.gold, color: colors.navy, border: r.status === 'in_progress' ? `1px solid ${colors.border}` : 'none' }}
+              className={buttonClass(r.status === 'in_progress' ? 'outline' : 'primary', false, 'wl-rowaction')}
+              style={{ flexShrink: 0, height: 40, gap: 7, padding: '0 18px', borderRadius: 9, fontSize: 14, cursor: going ? 'default' : 'pointer', opacity: going ? 0.6 : 1 }}
             >
               {r.status === 'in_progress' ? 'Resume' : 'Open'} ›
             </span>
@@ -204,8 +207,14 @@ function Detail({
   const expected = pw.head_expected ?? pw.head_started ?? 0
   const hasProducts = products.length > 0
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 70, background: 'rgba(14,38,70,0.45)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', overflowY: 'auto' }} onClick={onBack}>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 480, background: '#F5F5F0', display: 'flex', flexDirection: 'column' }}>
+    <Modal
+      size="md"
+      align="top"
+      zIndex={70}
+      onClose={onBack}
+      overlayStyle={{ padding: 0 }}
+      panelStyle={{ background: '#F5F5F0', borderRadius: 0, boxShadow: 'none' }}
+    >
         <div style={{ background: colors.navy, flexShrink: 0, padding: '14px 16px 16px', color: '#fff' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <button type="button" onClick={onBack} aria-label="Back" style={{ width: 34, height: 34, flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', color: '#fff', fontSize: 22 }}>‹</button>
@@ -217,40 +226,32 @@ function Detail({
         </div>
 
         <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 11, flex: 1 }}>
-          <Card title="Work order">
-            <div style={{ padding: '4px 14px' }}>
-              <DetailRow label="Consignor" value={`${name} · ${isBuyer ? 'Buyer' : 'Seller'}`} />
-              <DetailRow label="Work type" value={pw.workType?.name ?? '—'} />
-              <DetailRow label="Animal type" value={pw.animalType?.name ?? '—'} last={!hasProducts} />
-              {hasProducts ? <DetailRow label="Products" value={products.join(' · ')} last /> : null}
-            </div>
-          </Card>
+          <SectionCard title="Work order">
+            <DetailRow label="Consignor" value={`${name} · ${isBuyer ? 'Buyer' : 'Seller'}`} />
+            <DetailRow label="Work type" value={pw.workType?.name ?? '—'} />
+            <DetailRow label="Animal type" value={pw.animalType?.name ?? '—'} last={!hasProducts} />
+            {hasProducts ? <DetailRow label="Products" value={products.join(' · ')} last /> : null}
+          </SectionCard>
 
           {pw.notes ? (
-            <Card title="Notes">
-              <div style={{ padding: '12px 14px', fontSize: 13, fontWeight: 500, color: colors.textPrimary, lineHeight: 1.45 }}>{pw.notes}</div>
-            </Card>
+            <SectionCard title="Notes">
+              <div style={{ fontSize: 13, fontWeight: 500, color: colors.textPrimary, lineHeight: 1.45 }}>{pw.notes}</div>
+            </SectionCard>
           ) : null}
         </div>
 
         <div style={{ flexShrink: 0, background: '#fff', borderTop: `1px solid ${colors.border}`, padding: '12px 16px 18px' }}>
-          <button type="button" onClick={onStart} disabled={going} style={{ width: '100%', height: 56, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9, borderRadius: 13, background: status === 'in_progress' ? '#fff' : colors.gold, border: status === 'in_progress' ? `1px solid ${colors.border}` : 'none', color: colors.navy, fontFamily: 'inherit', fontSize: 18, fontWeight: 800, letterSpacing: '-0.01em', cursor: going ? 'default' : 'pointer', opacity: going ? 0.6 : 1 }}>
+          <Button
+            variant={status === 'in_progress' ? 'outline' : 'primary'}
+            type="button"
+            onClick={onStart}
+            disabled={going}
+            fullWidth
+            style={{ height: 56, gap: 9, borderRadius: 13, fontSize: 18, fontWeight: 800, letterSpacing: '-0.01em' }}
+          >
             {going ? 'Opening…' : status === 'in_progress' ? 'Resume' : 'Start working'} ›
-          </button>
+          </Button>
         </div>
-      </div>
-    </div>
-  )
-}
-
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 14, overflow: 'hidden' }}>
-      <div style={{ background: '#EEF1F6', padding: '8px 14px 9px', borderBottom: '1px solid #DEE3EC' }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: colors.navy }}>{title}</div>
-        <div style={{ width: 26, height: 3, borderRadius: 2, background: colors.gold, marginTop: 4 }} />
-      </div>
-      {children}
-    </div>
+    </Modal>
   )
 }

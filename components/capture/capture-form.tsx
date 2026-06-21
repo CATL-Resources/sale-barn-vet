@@ -8,18 +8,13 @@ import { useScanRouter } from '@/lib/capture/use-scan-router'
 import { ChevronLeft, ChevronDown, ChevronUp, ScanIcon, CalendarIcon, PencilIcon, SortIcon, CloseOutIcon, FlagIcon, CheckIcon, XIcon } from './icons'
 import { OptionPicker, type Option } from './sheets'
 import { ScreenHeader } from '@/components/ui/screen-header'
+import { SectionCard } from '@/components/ui/section-card'
+import { Button } from '@/components/ui/button'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 // Fields inside the white "Fields" card, rendered in resolved sort_order.
 const CARD_FIELDS = ['age', 'breed', 'hide_color', 'preg_stage', 'preg_timing', 'fetal_sex'] as const
-
-const cardHead = (title: string) => (
-  <div style={{ background: '#EEF1F6', padding: '8px 14px 9px', borderBottom: '1px solid #DEE3EC' }}>
-    <div style={{ fontSize: 14, fontWeight: 700, color: '#0E2646', letterSpacing: '-0.01em' }}>{title}</div>
-    <div style={{ width: 26, height: 3, borderRadius: 2, background: '#F3D12A', marginTop: 4 }} />
-  </div>
-)
 
 const RequiredChip = () => (
   <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: '#B45309', background: '#FEF3C7', border: '1px solid #F2C879', borderRadius: 999, padding: '2px 8px' }}>
@@ -439,19 +434,16 @@ export function CaptureForm({
 
         {/* fields */}
         {orderedFields.length > 0 && (
-          <div style={{ background: '#FFFFFF', border: '1px solid #D4D4D0', borderRadius: 14, overflow: 'hidden' }}>
-            {cardHead('Fields')}
-            <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <SectionCard title="Fields">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {orderedFields.map((k) => renderField(k))}
             </div>
-          </div>
+          </SectionCard>
         )}
 
         {/* quick notes */}
         {shows('quick_notes') && (
-          <div style={{ background: '#FFFFFF', border: '1px solid #D4D4D0', borderRadius: 14, overflow: 'hidden' }}>
-            {cardHead('Quick notes')}
-            <div style={{ padding: 12 }}>
+          <SectionCard title="Quick notes">
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingBottom: 11, marginBottom: 11, borderBottom: '1px solid #ECECE8' }}>
                 <button
                   type="button"
@@ -484,8 +476,7 @@ export function CaptureForm({
                   )
                 })}
               </div>
-            </div>
-          </div>
+          </SectionCard>
         )}
 
         {/* freeform note */}
@@ -516,15 +507,17 @@ export function CaptureForm({
 
       {/* save bar */}
       <div style={{ flexShrink: 0, background: '#FFFFFF', borderTop: '1px solid #E4E4DE', padding: '12px 16px calc(18px + env(safe-area-inset-bottom))', boxShadow: '0 -6px 18px rgba(8,18,40,0.06)' }}>
-        <button
+        <Button
+          variant="primary"
           type="button"
           onClick={() => void onSaveNext()}
           disabled={saving}
-          style={{ width: '100%', height: 56, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 9, borderRadius: 13, background: '#F3D12A', color: '#0E2646', border: 'none', fontFamily: 'inherit', fontSize: 18, fontWeight: 800, cursor: saving ? 'default' : 'pointer', letterSpacing: '-0.01em', opacity: saving ? 0.7 : 1 }}
+          fullWidth
+          style={{ height: 56, gap: 9, borderRadius: 13, fontSize: 18, fontWeight: 800, letterSpacing: '-0.01em' }}
         >
           {draft.sortPenId ? <SortIcon size={20} color="#0E2646" sw={2.6} /> : <CheckIcon size={20} color="#0E2646" sw={2.6} />}
           {draft.sortPenId ? 'Sort & next' : 'Save & next'}
-        </button>
+        </Button>
       </div>
 
       <OptionPicker

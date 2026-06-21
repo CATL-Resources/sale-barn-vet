@@ -1,6 +1,8 @@
 'use client'
 
 import { colors } from '@/components/ui/tokens'
+import { Button } from '@/components/ui/button'
+import { Modal } from '@/components/ui/modal'
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -50,9 +52,9 @@ export function HomeScreen({ days, today }: { days: Day[]; today: string }) {
             <div style={{ width: 56, height: 56, borderRadius: 14, background: '#EEF1F6', border: '1px solid #DEE3EC', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 6, fontSize: 24 }}>🗓</div>
             <div style={{ fontSize: 20, fontWeight: 700, color: colors.navy, letterSpacing: '-0.01em' }}>No sale days yet</div>
             <div style={{ fontSize: 14, fontWeight: 500, color: colors.textMuted }}>Start one to begin capturing work.</div>
-            <button type="button" onClick={openModal} style={{ marginTop: 12, height: 44, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0 22px', borderRadius: 999, background: colors.gold, color: colors.navy, border: 'none', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}>
+            <Button variant="primary" type="button" onClick={openModal} style={{ marginTop: 12, height: 44, padding: '0 22px', borderRadius: 999, fontSize: 15 }}>
               <span style={{ fontSize: 18, fontWeight: 800 }}>+</span>New sale day
-            </button>
+            </Button>
           </div>
         ) : (
           <>
@@ -61,9 +63,9 @@ export function HomeScreen({ days, today }: { days: Day[]; today: string }) {
                 <span style={{ fontSize: 16, fontWeight: 700, color: colors.navy, letterSpacing: '-0.01em' }}>Sale days</span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: colors.textPlaceholder }}>{countLabel}</span>
               </div>
-              <button type="button" onClick={openModal} style={{ height: 40, display: 'inline-flex', alignItems: 'center', gap: 8, padding: '0 18px', borderRadius: 999, background: colors.gold, color: colors.navy, border: 'none', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+              <Button variant="primary" type="button" onClick={openModal} style={{ height: 40, padding: '0 18px', borderRadius: 999, fontSize: 14 }}>
                 <span style={{ fontSize: 17, fontWeight: 800 }}>+</span>New sale day
-              </button>
+              </Button>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -97,8 +99,7 @@ export function HomeScreen({ days, today }: { days: Day[]; today: string }) {
 
       {/* NEW SALE DAY MODAL */}
       {modalOpen ? (
-        <div onClick={() => setModalOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(14,38,70,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, padding: 16 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 460, background: '#fff', borderRadius: 16, boxShadow: '0 24px 60px rgba(8,20,42,0.4)', overflow: 'hidden' }}>
+        <Modal size="sm" zIndex={50} onClose={() => setModalOpen(false)} overlayStyle={{ background: 'rgba(14,38,70,0.55)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 16px', borderBottom: `1px solid ${colors.rowDivider}` }}>
               <span style={{ fontSize: 17, fontWeight: 700, color: colors.navy, letterSpacing: '-0.01em' }}>New sale day</span>
               <button type="button" onClick={() => setModalOpen(false)} aria-label="Close" style={{ width: 32, height: 32, background: 'transparent', border: 'none', cursor: 'pointer', color: colors.textMuted, fontSize: 18 }}>✕</button>
@@ -116,10 +117,9 @@ export function HomeScreen({ days, today }: { days: Day[]; today: string }) {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, padding: '4px 20px 20px' }}>
               <button type="button" onClick={() => setModalOpen(false)} style={{ height: 42, padding: '0 18px', borderRadius: 9, background: '#fff', color: colors.textMuted, border: `1px solid ${colors.border}`, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>Cancel</button>
-              <button type="button" onClick={startSale} disabled={saving} style={{ height: 42, padding: '0 22px', borderRadius: 9, background: colors.gold, color: colors.navy, border: 'none', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Starting…' : 'Start sale'}</button>
+              <Button variant="primary" type="button" onClick={startSale} disabled={saving} style={{ height: 42, padding: '0 22px', borderRadius: 9, fontSize: 14 }}>{saving ? 'Starting…' : 'Start sale'}</Button>
             </div>
-          </div>
-        </div>
+        </Modal>
       ) : null}
     </div>
   )

@@ -1,6 +1,7 @@
 'use client'
 
 import { colors } from '@/components/ui/tokens'
+import { Modal } from '@/components/ui/modal'
 import { useEffect, useState } from 'react'
 import { getPenWorkAnimals, type PenWorkAnimal } from '@/app/(office)/work-orders/actions'
 
@@ -88,8 +89,7 @@ export function AnimalListModal({ penWorkId, title, onClose }: { penWorkId: stri
   }
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(14,38,70,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 760, maxHeight: '88vh', background: '#fff', borderRadius: 16, boxShadow: '0 24px 60px rgba(14,38,70,0.32)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <Modal size="lg" zIndex={2000} onClose={onClose} panelStyle={{ maxHeight: '88vh', boxShadow: '0 24px 60px rgba(14,38,70,0.32)' }}>
         {/* header */}
         <div style={{ flexShrink: 0, padding: '16px 18px', borderBottom: `1px solid ${colors.rowDivider}`, display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -144,7 +144,6 @@ export function AnimalListModal({ penWorkId, title, onClose }: { penWorkId: stri
             </table>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   )
 }

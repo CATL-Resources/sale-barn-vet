@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { colors } from '@/components/ui/tokens'
 import { GoldButton } from '@/components/ui/gold-button'
+import { Modal } from '@/components/ui/modal'
 import type { NewBuyerInput } from '@/lib/work-orders/use-pen-works'
 import type { Role } from '@/lib/work-orders/types'
 
@@ -80,31 +81,14 @@ export function AddPartyModal({
   }
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 50,
-        background: 'rgba(14,38,70,0.35)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 20,
-      }}
+    <Modal
+      size="sm"
+      zIndex={50}
+      onClose={onClose}
+      overlayStyle={{ background: 'rgba(14,38,70,0.35)', padding: 20 }}
+      panelStyle={{ borderRadius: 12, boxShadow: '0 18px 48px rgba(14,38,70,0.28)' }}
     >
-      <form
-        onClick={(e) => e.stopPropagation()}
-        onSubmit={submit}
-        style={{
-          width: '100%',
-          maxWidth: 400,
-          background: colors.white,
-          borderRadius: 12,
-          overflow: 'hidden',
-          boxShadow: '0 18px 48px rgba(14,38,70,0.28)',
-        }}
-      >
+      <form onSubmit={submit}>
         <div style={{ background: colors.navy, padding: '14px 18px' }}>
           <div style={{ fontSize: 16, fontWeight: 700, color: '#FFFFFF' }}>
             {isBuyer ? 'Add buyer' : 'Add consignor'}
@@ -169,6 +153,6 @@ export function AddPartyModal({
           </div>
         </div>
       </form>
-    </div>
+    </Modal>
   )
 }
