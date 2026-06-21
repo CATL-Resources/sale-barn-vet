@@ -2,7 +2,6 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { NavMenu } from '@/components/ui/nav-menu'
 import { STATUS_LABEL, type WorkStatus } from '@/lib/work-orders/status'
 import type { Barn, PenWorkFull, SaleDay } from '@/lib/work-orders/types'
 import { startCapture } from '@/lib/work-orders/start-capture'
@@ -105,7 +104,6 @@ export function WorkListScreen({
       {/* HEADER */}
       <div style={{ background: NAVY, borderRadius: 16, padding: '16px 18px', color: '#fff' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <NavMenu userLine={`${barn.name} · ${shortDate(saleDay.sale_date)}`} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.01em' }}>Work list</div>
             <div style={{ fontSize: 13, fontWeight: 600, color: '#55BAAA', marginTop: 1 }}>{barn.name} · {shortDate(saleDay.sale_date)}</div>

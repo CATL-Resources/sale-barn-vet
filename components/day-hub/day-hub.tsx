@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { NavMenu } from '@/components/ui/nav-menu'
 import type { Barn, SaleDay } from '@/lib/work-orders/types'
 
 const NAVY = '#0E2646'
@@ -46,7 +45,6 @@ export function DayHub({ saleDay, barn }: { saleDay: SaleDay; barn: Barn }) {
     <div style={{ width: '100%', maxWidth: 820, margin: '0 auto', padding: 18, display: 'flex', flexDirection: 'column', gap: 18 }}>
       {/* HEADER */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <NavMenu userLine={`${barn.name} · ${fullDate(saleDay.sale_date)}`} iconColor={NAVY} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 22, fontWeight: 800, color: NAVY, letterSpacing: '-0.015em' }}>{fullDate(saleDay.sale_date)}</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>

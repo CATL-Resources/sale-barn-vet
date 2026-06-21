@@ -112,6 +112,51 @@ button {
   border-radius: 17px 17px 0 0;
 }
 
+/* ---- Shared app header (one header for every screen) ---- */
+.sbv-appheader {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  flex-shrink: 0;
+  background: var(--navy);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 56px;
+  /* Pad the top by the notch when installed full-screen; 0 in a browser tab. */
+  padding: calc(6px + env(safe-area-inset-top)) 12px 6px 4px;
+}
+.sbv-appheader-barn {
+  flex: 1 1 0%;
+  min-width: 0;
+  text-align: center;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* The wordmark looks lit — a soft, persistent gold glow, no badge box. */
+.sbv-appheader-brand {
+  flex-shrink: 0;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  text-decoration: none;
+  padding: 4px 8px;
+  border-radius: 8px;
+  text-shadow: 0 0 10px rgba(243, 209, 42, 0.45);
+  transition: text-shadow 160ms var(--ease);
+  outline: none;
+}
+.sbv-appheader-brand:hover,
+.sbv-appheader-brand:focus-visible {
+  text-shadow: 0 0 16px rgba(243, 209, 42, 0.75);
+}
+
 .sbv-iconbtn {
   width: 44px;
   height: 44px;
