@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { STATUS_LABEL, type WorkStatus } from '@/lib/work-orders/status'
 import type { Barn, PenWorkFull, SaleDay } from '@/lib/work-orders/types'
 import { startCapture } from '@/lib/work-orders/start-capture'
+import { AnimalListModal } from '@/components/work-orders/board/animal-list-modal'
 
 const NAVY = '#0E2646'
 const GOLD = '#F3D12A'
@@ -61,6 +62,7 @@ export function WorkListScreen({
 }) {
   const router = useRouter()
   const [selected, setSelected] = useState<PenWorkFull | null>(null)
+  const [animalsFor, setAnimalsFor] = useState<PenWorkFull | null>(null)
   const [going, startGo] = useTransition()
 
   const rows = useMemo(() => {
@@ -109,10 +111,10 @@ export function WorkListScreen({
             <div style={{ fontSize: 13, fontWeight: 600, color: '#55BAAA', marginTop: 1 }}>{barn.name} · {shortDate(saleDay.sale_date)}</div>
           </div>
           {/* Tablet shows the counts inline up here; the phone gets the stat blocks below. */}
-          <span className="wl-counts-tablet" style={{ fontSize: 14, fontWeight: 700, color: GOLD }}>{toWork} to work · {headLeft} head left</span>
+          <span className="wl-counts-tablet" style={{ fontSize: 14, fontWeight: 700, color: GOLD }}>{toWork} {toWork === 1 ? 'pen' : 'pens'} to work · {headLeft} head left</span>
         </div>
         <div className="wl-stats-phone">
-          <div><div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{toWork}</div><div style={{ fontSize: 11, fontWeight: 600, color: '#8FA8CC', marginTop: 4 }}>To work</div></div>
+          <div><div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{toWork}</div><div style={{ fontSize: 11, fontWeight: 600, color: '#8FA8CC', marginTop: 4 }}>{toWork === 1 ? 'Pen' : 'Pens'} to work</div></div>
           <div style={{ width: 1, background: 'rgba(255,255,255,0.14)' }} />
           <div><div style={{ fontSize: 22, fontWeight: 800, color: GOLD, lineHeight: 1 }}>{headLeft}</div><div style={{ fontSize: 11, fontWeight: 600, color: '#8FA8CC', marginTop: 4 }}>Head left</div></div>
         </div>
@@ -134,7 +136,11 @@ export function WorkListScreen({
                 {r.isBuyer ? <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: NAVY, background: GOLD, borderRadius: 999, padding: '2px 8px' }}>Buyer #{buyerNo(r.pw) ?? '—'}</span> : null}
                 {r.pw.notes ? <NotePill /> : null}
               </div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: MUTED, marginTop: 3 }}>{r.pw.workType?.name ?? 'Work'} · {headText(r)}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: MUTED, marginTop: 3 }}>
+                {r.pw.workType?.name ?? 'Work'} · {r.worked > 0 ? (
+                  <span role="button" tabIndex={0} aria-label="Show the animals worked" onClick={(e) => { e.stopPropagation(); setAnimalsFor(r.pw) }} style={{ color: TEAL, fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 2, cursor: 'pointer' }}>{headText(r)}</span>
+                ) : headText(r)}
+              </div>
             </div>
             <StatusPill status={r.status} />
             <span
@@ -161,6 +167,15 @@ export function WorkListScreen({
           onBack={() => setSelected(null)}
           onStart={() => go(selected)}
           going={going}
+        />
+      ) : null}
+
+      {/* ANIMALS WORKED — tapping the "x of y head" count opens the list */}
+      {animalsFor ? (
+        <AnimalListModal
+          penWorkId={animalsFor.id}
+          title={`${penLabel(animalsFor)} · ${(animalsFor.buyer_party_id ? animalsFor.buyer : animalsFor.seller)?.name ?? '—'}`}
+          onClose={() => setAnimalsFor(null)}
         />
       ) : null}
     </div>

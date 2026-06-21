@@ -98,3 +98,7 @@
 - Barn Settings no longer offers a "Default value" box for the EID or the tags (eid, back tag, tag #, metal tag) — you can't pre-fill a tag.
 - The "Required" setting now shows on the capture screen: a required tag (back tag, tag #, metal tag) gets the same gold star the EID has, so Barn Settings and the chute screen agree.
 - Clearer placeholders: the back tag says "Scan the back tag barcode"; the tag number says "Type the tag number" (it's typed, not scanned); the metal tag says "Type the metal tag".
+
+## 2026-06-21 — Work List: "pens to work" wording + tap the count to see the animals
+- The header count now reads "N pens to work · M head left" (and the phone stat block says "Pens to work"), so it's clear N is a number of pens.
+- On a job that's been started, the "x of y head" count is now tappable and opens the animal list for that pen (the same list the office row menu shows — every EID/tag/age/color/breed/preg, with copy and CSV export).
