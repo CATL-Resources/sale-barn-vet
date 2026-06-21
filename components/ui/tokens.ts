@@ -6,7 +6,7 @@ export const colors = {
   gold: '#F3D12A',
   goldPressed: '#E3C01F',
   teal: '#55BAAA',
-  tealDeep: '#2E9486',
+  tealDeep: '#55BAAA',
   page: '#F5F5F0',
   canvas: '#E9E9E4',
   white: '#FFFFFF',
@@ -29,6 +29,7 @@ export const colors = {
   textFaint: '#C2C2CA', // "—" placeholder in charge cells
   columnSubheaderBg: '#F7F8FB', // group column header strip
   hoverBg: '#FAFAF8', // row / footer hover
+  purple: '#6D28D9', // "Note" pill on the Work List
 } as const
 
 export const navyGradient =
@@ -43,3 +44,16 @@ export const radius = {
 } as const
 
 export const ease = 'cubic-bezier(0.2, 0.7, 0.2, 1)'
+
+// ---- Layout sizing ----
+// One content max width for the whole app + named breakpoints. The shared
+// container (step 1b) consumes these; --content-max mirrors contentMax in CSS.
+export const layout = {
+  contentMax: 1200,
+} as const
+
+export const breakpoints = {
+  phone: 480,
+  tablet: 820,
+  desktop: 1200,
+} as const

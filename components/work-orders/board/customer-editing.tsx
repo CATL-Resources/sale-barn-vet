@@ -1,5 +1,6 @@
 'use client'
 
+import { colors } from '@/components/ui/tokens'
 import { useEffect, useState, type ReactNode } from 'react'
 import {
   getPartyDetail,
@@ -9,25 +10,15 @@ import {
   type PartyLocation,
 } from '@/app/(office)/work-orders/actions'
 
-const NAVY = '#0E2646'
-const GOLD = '#F3D12A'
-const TEXT = '#1A1A1A'
-const MUTED = '#717182'
-const FAINT = '#9A9AA6'
-const BORDER = '#D4D4D0'
-const LINE = '#ECECE8'
-const TEAL = '#2E9486'
-const AMBER = '#B45309'
-
 const inp: React.CSSProperties = {
-  width: '100%', height: 38, padding: '0 10px', border: `1px solid ${BORDER}`, borderRadius: 8,
-  background: '#fff', fontSize: 14, fontWeight: 600, color: TEXT, fontFamily: 'inherit', outline: 'none',
+  width: '100%', height: 38, padding: '0 10px', border: `1px solid ${colors.border}`, borderRadius: 8,
+  background: '#fff', fontSize: 14, fontWeight: 600, color: colors.textPrimary, fontFamily: 'inherit', outline: 'none',
 }
 
 function Toggle({ on, onToggle, children }: { on: boolean; onToggle: () => void; children: ReactNode }) {
   return (
     <button type="button" aria-pressed={on} onClick={onToggle}
-      style={{ height: 30, padding: '0 12px', borderRadius: 999, border: `1px solid ${on ? NAVY : BORDER}`, background: on ? NAVY : '#fff', color: on ? '#fff' : MUTED, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+      style={{ height: 30, padding: '0 12px', borderRadius: 999, border: `1px solid ${on ? colors.navy : colors.border}`, background: on ? colors.navy : '#fff', color: on ? '#fff' : colors.textMuted, fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
       {children}
     </button>
   )
@@ -64,7 +55,7 @@ export function LocationEditor({ partyId, location, onSaved, onCancel }: {
   }
 
   return (
-    <div style={{ border: `1px solid ${BORDER}`, borderRadius: 10, padding: 12, background: '#FBFBFA', display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <div style={{ border: `1px solid ${colors.border}`, borderRadius: 10, padding: 12, background: '#FBFBFA', display: 'flex', flexDirection: 'column', gap: 8 }}>
       {error ? <div style={{ fontSize: 12, fontWeight: 600, color: '#B42318' }}>{error}</div> : null}
       <input value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Address (or PO box)" style={inp} />
       <div style={{ display: 'flex', gap: 8 }}>
@@ -79,10 +70,10 @@ export function LocationEditor({ partyId, location, onSaved, onCancel }: {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <Toggle on={isPoBox} onToggle={() => setIsPoBox((v) => !v)}>PO box</Toggle>
         <Toggle on={isDefault} onToggle={() => setIsDefault((v) => !v)}>Default</Toggle>
-        {isPoBox ? <span style={{ fontSize: 11, fontWeight: 600, color: AMBER }}>Not a physical origin</span> : null}
+        {isPoBox ? <span style={{ fontSize: 11, fontWeight: 600, color: colors.bronze }}>Not a physical origin</span> : null}
         <div style={{ flex: 1 }} />
-        <button type="button" onClick={onCancel} style={{ height: 34, padding: '0 12px', background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 8, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: MUTED, cursor: 'pointer' }}>Cancel</button>
-        <button type="button" onClick={save} disabled={saving} style={{ height: 34, padding: '0 14px', background: GOLD, border: 'none', borderRadius: 8, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: NAVY, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Saving…' : 'Save location'}</button>
+        <button type="button" onClick={onCancel} style={{ height: 34, padding: '0 12px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 8, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: colors.textMuted, cursor: 'pointer' }}>Cancel</button>
+        <button type="button" onClick={save} disabled={saving} style={{ height: 34, padding: '0 14px', background: colors.gold, border: 'none', borderRadius: 8, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: colors.navy, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.6 : 1 }}>{saving ? 'Saving…' : 'Save location'}</button>
       </div>
     </div>
   )
@@ -91,12 +82,12 @@ export function LocationEditor({ partyId, location, onSaved, onCancel }: {
 function LocRow({ loc, onEdit }: { loc: PartyLocation; onEdit: () => void }) {
   const sub = [loc.city, loc.state].filter(Boolean).join(', ') + (loc.zip ? ` ${loc.zip}` : '')
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: `1px solid ${BORDER}`, borderRadius: 10 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', border: `1px solid ${colors.border}`, borderRadius: 10 }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>{loc.address || loc.label || 'Location'}</div>
-        <div style={{ fontSize: 12, fontWeight: 500, color: loc.is_po_box ? AMBER : MUTED }}>{loc.is_po_box ? `${sub} · PO box` : sub}{loc.is_default ? ' · default' : ''}</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: colors.textPrimary }}>{loc.address || loc.label || 'Location'}</div>
+        <div style={{ fontSize: 12, fontWeight: 500, color: loc.is_po_box ? colors.bronze : colors.textMuted }}>{loc.is_po_box ? `${sub} · PO box` : sub}{loc.is_default ? ' · default' : ''}</div>
       </div>
-      <button type="button" onClick={onEdit} style={{ height: 30, padding: '0 12px', background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 8, fontFamily: 'inherit', fontSize: 12, fontWeight: 700, color: NAVY, cursor: 'pointer' }}>Edit</button>
+      <button type="button" onClick={onEdit} style={{ height: 30, padding: '0 12px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 8, fontFamily: 'inherit', fontSize: 12, fontWeight: 700, color: colors.navy, cursor: 'pointer' }}>Edit</button>
     </div>
   )
 }
@@ -104,7 +95,7 @@ function LocRow({ loc, onEdit }: { loc: PartyLocation; onEdit: () => void }) {
 function Field({ label, children, grow }: { label: string; children: ReactNode; grow?: boolean }) {
   return (
     <label style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: grow ? 1 : undefined, minWidth: 0 }}>
-      <span style={{ fontSize: 12, fontWeight: 700, color: NAVY }}>{label}</span>
+      <span style={{ fontSize: 12, fontWeight: 700, color: colors.navy }}>{label}</span>
       {children}
     </label>
   )
@@ -150,19 +141,19 @@ export function CustomerPopup({ partyId, onClose, onChanged }: {
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(14,38,70,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 70, padding: 16 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 460, maxHeight: '92vh', display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: 14, boxShadow: '0 24px 60px rgba(8,20,42,0.4)', overflow: 'hidden' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px', borderBottom: `1px solid ${LINE}`, flexShrink: 0 }}>
-          <span style={{ fontSize: 16, fontWeight: 800, color: NAVY }}>Customer</span>
-          <button type="button" onClick={onClose} aria-label="Close" style={{ width: 30, height: 30, border: 'none', background: 'transparent', cursor: 'pointer', color: MUTED, fontSize: 18 }}>✕</button>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 18px', borderBottom: `1px solid ${colors.rowDivider}`, flexShrink: 0 }}>
+          <span style={{ fontSize: 16, fontWeight: 800, color: colors.navy }}>Customer</span>
+          <button type="button" onClick={onClose} aria-label="Close" style={{ width: 30, height: 30, border: 'none', background: 'transparent', cursor: 'pointer', color: colors.textMuted, fontSize: 18 }}>✕</button>
         </div>
 
         {!detail ? (
-          <div style={{ padding: 24, fontSize: 13, color: MUTED }}>Loading…</div>
+          <div style={{ padding: 24, fontSize: 13, color: colors.textMuted }}>Loading…</div>
         ) : (
           <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto' }}>
             {error ? <div style={{ fontSize: 13, fontWeight: 600, color: '#B42318' }}>{error}</div> : null}
             <Field label="Name"><input value={name} onChange={(e) => setName(e.target.value)} style={inp} /></Field>
             <Field label="Customer number">
-              <div style={{ ...inp, display: 'flex', alignItems: 'center', color: MUTED, background: '#F4F4F2' }}>{detail.customer_number ?? '— none —'}</div>
+              <div style={{ ...inp, display: 'flex', alignItems: 'center', color: colors.textMuted, background: '#F4F4F2' }}>{detail.customer_number ?? '— none —'}</div>
             </Field>
             <div style={{ display: 'flex', gap: 8 }}>
               <Field label="Phone" grow><input value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" style={inp} /></Field>
@@ -170,7 +161,7 @@ export function CustomerPopup({ partyId, onClose, onChanged }: {
             </div>
 
             <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: NAVY, marginBottom: 7 }}>Locations</div>
+              <div style={{ fontSize: 12, fontWeight: 700, color: colors.navy, marginBottom: 7 }}>Locations</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {detail.locations.map((l) =>
                   editingLoc !== null && editingLoc !== 'new' && editingLoc.id === l.id ? (
@@ -182,19 +173,19 @@ export function CustomerPopup({ partyId, onClose, onChanged }: {
                 {editingLoc === 'new' ? (
                   <LocationEditor partyId={partyId} onSaved={() => { setEditingLoc(null); void reload() }} onCancel={() => setEditingLoc(null)} />
                 ) : null}
-                {detail.locations.length === 0 && editingLoc !== 'new' ? <span style={{ fontSize: 13, color: FAINT }}>No locations on file.</span> : null}
+                {detail.locations.length === 0 && editingLoc !== 'new' ? <span style={{ fontSize: 13, color: colors.textPlaceholder }}>No locations on file.</span> : null}
                 {editingLoc === null ? (
-                  <button type="button" onClick={() => setEditingLoc('new')} style={{ height: 36, padding: '0 12px', borderRadius: 9, border: `1px dashed ${BORDER}`, background: '#FBFBFA', color: TEAL, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left' }}>+ Add location</button>
+                  <button type="button" onClick={() => setEditingLoc('new')} style={{ height: 36, padding: '0 12px', borderRadius: 9, border: `1px dashed ${colors.border}`, background: '#FBFBFA', color: colors.teal, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left' }}>+ Add location</button>
                 ) : null}
               </div>
             </div>
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 10, padding: '12px 18px', borderTop: `1px solid ${LINE}`, flexShrink: 0 }}>
+        <div style={{ display: 'flex', gap: 10, padding: '12px 18px', borderTop: `1px solid ${colors.rowDivider}`, flexShrink: 0 }}>
           <div style={{ flex: 1 }} />
-          <button type="button" onClick={onClose} style={{ height: 40, padding: '0 16px', background: '#fff', border: `1px solid ${BORDER}`, borderRadius: 9, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: MUTED, cursor: 'pointer' }}>Cancel</button>
-          <button type="button" onClick={save} disabled={saving || !detail} style={{ height: 40, padding: '0 20px', background: GOLD, border: 'none', borderRadius: 9, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: NAVY, cursor: saving ? 'default' : 'pointer', opacity: saving || !detail ? 0.6 : 1 }}>{saving ? 'Saving…' : 'Save'}</button>
+          <button type="button" onClick={onClose} style={{ height: 40, padding: '0 16px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 9, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: colors.textMuted, cursor: 'pointer' }}>Cancel</button>
+          <button type="button" onClick={save} disabled={saving || !detail} style={{ height: 40, padding: '0 20px', background: colors.gold, border: 'none', borderRadius: 9, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: colors.navy, cursor: saving ? 'default' : 'pointer', opacity: saving || !detail ? 0.6 : 1 }}>{saving ? 'Saving…' : 'Save'}</button>
         </div>
       </div>
     </div>
