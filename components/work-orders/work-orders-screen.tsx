@@ -1,9 +1,9 @@
 'use client'
 
 import { useMemo, useState, type ReactNode } from 'react'
-import Link from 'next/link'
 import { colors } from '@/components/ui/tokens'
-import { MenuIcon, PlusIcon } from '@/components/ui/icons'
+import { PlusIcon } from '@/components/ui/icons'
+import { NavMenu } from '@/components/ui/nav-menu'
 import { usePenWorks } from '@/lib/work-orders/use-pen-works'
 import { groupPenWorks } from '@/lib/work-orders/grouping'
 import type { PartyGroup, Role, View, WorkOrdersPageData } from '@/lib/work-orders/types'
@@ -169,9 +169,7 @@ export function WorkOrdersScreen({
           borderRadius: '17px 17px 0 0',
         }}
       >
-        <Link href="/" aria-label="Sale days" className="sbv-iconbtn" style={{ color: '#FFFFFF' }}>
-          <MenuIcon size={22} style={{ color: '#FFFFFF' }} />
-        </Link>
+        <NavMenu userLine={`${barn.name} · ${longDate(saleDay.sale_date)}`} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 16, fontWeight: 600, color: '#FFFFFF' }}>Work orders</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>

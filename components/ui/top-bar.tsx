@@ -1,16 +1,21 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import Link from 'next/link'
 import { MenuIcon } from './icons'
 
+// The wordmark doubles as a Home button — clickable, with a gold halo on hover/focus.
 function Wordmark() {
   return (
-    <span
-      style={{ fontSize: 14, fontWeight: 800, letterSpacing: '-0.01em', whiteSpace: 'nowrap' }}
+    <Link
+      href="/"
+      aria-label="Home"
+      className="sbv-brandhome"
+      style={{ fontSize: 14, fontWeight: 800, letterSpacing: '-0.01em', whiteSpace: 'nowrap', textDecoration: 'none', display: 'inline-block' }}
     >
       <span style={{ color: '#FFFFFF' }}>Sale Barn </span>
       <span style={{ color: '#F3D12A' }}>Vet</span>
-    </span>
+    </Link>
   )
 }
 
