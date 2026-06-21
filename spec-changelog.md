@@ -120,3 +120,13 @@
 - Replaced the five different page widths (1280 / 1160 / 1120 / 1100 / 820) with one shared width — every screen now uses --content-max (1200px) and fills phone and tablet, capping only on a large desktop. Built a shared AppContainer (the chute Day Hub and Find use it; the others share the same width token).
 - The route-group layouts now own the shell: full height (100dvh) and the cream background live in the layout, so screens stop re-declaring them. The office Work Orders board no longer sets its own height/background/width, and the Work List detail no longer re-declares full height.
 - Horizontal padding respects the notch safe area. Layout only — no text, data, or save-path changes.
+
+## 2026-06-21 — Foundation 2: one shared screen header
+- Built one shared screen header (a full-width navy bar with square corners) that sits flush right under the app's top bar, so the two read as one navy block — no rounded notch, no gap. It takes a title, an optional second line (in brand teal), an optional back arrow, and an optional control on the right.
+- Capture: the pen header used to have rounded top corners, which left a notch under the top bar. It now uses the shared header (pen + consignor on the title line, work type on the second line, the Close out button on the right), with the progress read-out kept as a navy strip directly below. The notch is gone and scanning/saving are unchanged.
+- New batch: same fix — the rounded-top header is now the square shared header (Back arrow + "New batch").
+- Work List: the standalone navy card became the shared header ("Work list" + barn · date, with the count on the right on a tablet); the phone's stat blocks sit in a navy strip right below, so the whole top is one navy zone.
+- Day Hub: the plain text header became the shared header (the date + barn name, with the open/closed status pill on the right).
+- Find: the plain heading became the shared header ("Find animal" + its one-line description).
+- The office Work Orders board was left as-is: its navy bar is a tab switcher (Work Orders / Buyers / Sellers), not a title bar, and it's already a square navy bar flush under the top bar with no notch. Forcing it into the title header would break the tabs, so it stays a tab bar.
+- Header only — no button, card, modal, label, data, or save-path changes.

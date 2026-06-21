@@ -6,6 +6,7 @@ import type { CaptureBootstrap } from '@/lib/capture/types'
 import type { StartBatchInput } from '@/lib/capture/use-capture'
 import { ChevronLeft, ChevronRight } from './icons'
 import { OptionPicker, type Option } from './sheets'
+import { ScreenHeader } from '@/components/ui/screen-header'
 
 function shortDate(iso: string) {
   return new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
@@ -85,14 +86,14 @@ export function StartBatch({
 
   return (
     <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-      <div style={{ background: '#0E2646', flexShrink: 0, padding: '16px 16px 18px', borderRadius: '17px 17px 0 0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <ScreenHeader
+        title="New batch"
+        back={
           <Link href="/" aria-label="Back" style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF' }}>
             <ChevronLeft size={22} color="#FFFFFF" />
           </Link>
-          <div style={{ fontSize: 19, fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em' }}>New batch</div>
-        </div>
-      </div>
+        }
+      />
 
       <div className="sbv-scroll">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 16 }}>

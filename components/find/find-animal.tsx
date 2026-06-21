@@ -2,6 +2,7 @@
 
 import { colors } from '@/components/ui/tokens'
 import { AppContainer } from '@/components/ui/app-container'
+import { ScreenHeader } from '@/components/ui/screen-header'
 import { useEffect, useState, useTransition, type ReactNode } from 'react'
 import { searchAnimals, type AnimalMatch } from '@/app/(office)/find/actions'
 
@@ -36,12 +37,9 @@ export function FindAnimal() {
   }, [q])
 
   return (
-    <AppContainer style={{ paddingTop: 18, paddingBottom: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, letterSpacing: '-0.02em', color: colors.navy }}>Find animal</h1>
-        <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>Search every sale day by EID, back tag, or tag number.</p>
-      </div>
-
+    <>
+      <ScreenHeader title="Find animal" subtitle="Search every sale day by EID, back tag, or tag number." />
+      <AppContainer style={{ paddingTop: 18, paddingBottom: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 9, height: 48, background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 11, padding: '0 14px' }}>
         <span style={{ color: colors.textPlaceholder, fontSize: 16 }}>⌕</span>
         <input
@@ -98,6 +96,7 @@ export function FindAnimal() {
           </div>
         </>
       )}
-    </AppContainer>
+      </AppContainer>
+    </>
   )
 }

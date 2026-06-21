@@ -7,6 +7,7 @@ import type { CaptureApi } from '@/lib/capture/use-capture'
 import { useScanRouter } from '@/lib/capture/use-scan-router'
 import { ChevronLeft, ChevronDown, ChevronUp, ScanIcon, CalendarIcon, PencilIcon, SortIcon, CloseOutIcon, FlagIcon, CheckIcon, XIcon } from './icons'
 import { OptionPicker, type Option } from './sheets'
+import { ScreenHeader } from '@/components/ui/screen-header'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -296,20 +297,20 @@ export function CaptureForm({
 
   return (
     <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-      {/* header */}
-      <div style={{ background: '#0E2646', flexShrink: 0, padding: '14px 16px 16px', borderRadius: '17px 17px 0 0', boxShadow: '0 6px 18px rgba(8,18,40,0.30)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      {/* header — the shared navy screen header (square, flush under AppHeader),
+          with the progress read-out in a navy strip directly below so the whole
+          top reads as one navy zone. */}
+      <ScreenHeader
+        back={
           <a href="/capture" aria-label="Back" style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <ChevronLeft size={22} color="#FFFFFF" />
           </a>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            {/* Pen + consignor/buyer are what the crew looks for, so they lead;
-                the work type is the quieter second line. */}
-            <div style={{ fontSize: 19, fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {batch.penNumber ? `Pen ${batch.penNumber}` : 'No pen'}{batch.sellerName ? ` · ${batch.sellerName}` : ''}
-            </div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#55BAAA', marginTop: 1 }}>{batch.workTypeName}</div>
-          </div>
+        }
+        // Pen + consignor/buyer are what the crew looks for, so they lead; the
+        // work type is the quieter second line.
+        title={`${batch.penNumber ? `Pen ${batch.penNumber}` : 'No pen'}${batch.sellerName ? ` · ${batch.sellerName}` : ''}`}
+        subtitle={batch.workTypeName}
+        right={
           <button
             type="button"
             onClick={onOpenCloseOut}
@@ -318,8 +319,10 @@ export function CaptureForm({
             <CloseOutIcon size={14} color="#FFFFFF" sw={2.2} />
             Close out
           </button>
-        </div>
-        <div style={{ marginTop: 12 }}>
+        }
+      />
+      <div className="sbv-screenheader" style={{ position: 'relative', zIndex: 1, boxShadow: '0 6px 18px rgba(8,18,40,0.30)' }}>
+        <div className="sbv-container" style={{ paddingTop: 0, paddingBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF', fontVariantNumeric: 'tabular-nums' }}>
               {head != null ? `${worked} of ${head} head` : `${worked} head`}

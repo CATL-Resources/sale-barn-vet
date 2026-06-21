@@ -7,6 +7,7 @@ import { STATUS_LABEL, type WorkStatus } from '@/lib/work-orders/status'
 import type { Barn, PenWorkFull, SaleDay } from '@/lib/work-orders/types'
 import { startCapture } from '@/lib/work-orders/start-capture'
 import { AnimalListModal } from '@/components/work-orders/board/animal-list-modal'
+import { ScreenHeader } from '@/components/ui/screen-header'
 
 // Only two states show here — finished jobs are filtered out before this screen.
 type ListStatus = 'not_started' | 'in_progress'
@@ -94,24 +95,26 @@ export function WorkListScreen({
     r.status === 'in_progress' ? `${r.worked} of ${r.expected} head` : `${r.expected} head`
 
   return (
-    <div className="wl-wrap">
-      {/* HEADER */}
-      <div style={{ background: colors.navy, borderRadius: 16, padding: '16px 18px', color: '#fff' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: '-0.01em' }}>Work list</div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#55BAAA', marginTop: 1 }}>{barn.name} · {shortDate(saleDay.sale_date)}</div>
-          </div>
-          {/* Tablet shows the counts inline up here; the phone gets the stat blocks below. */}
+    <>
+      {/* HEADER — the shared navy screen header (title row); the phone stat blocks
+          sit in a navy strip right below, so the whole top reads as one navy zone. */}
+      <ScreenHeader
+        title="Work list"
+        subtitle={`${barn.name} · ${shortDate(saleDay.sale_date)}`}
+        right={
+          // Tablet shows the counts inline up here; the phone gets the stat blocks below.
           <span className="wl-counts-tablet" style={{ fontSize: 14, fontWeight: 700, color: colors.gold }}>{toWork} {toWork === 1 ? 'pen' : 'pens'} to work · {headLeft} head left</span>
-        </div>
-        <div className="wl-stats-phone">
+        }
+      />
+      <div className="sbv-screenheader">
+        <div className="sbv-container wl-stats-phone">
           <div><div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{toWork}</div><div style={{ fontSize: 11, fontWeight: 600, color: '#8FA8CC', marginTop: 4 }}>{toWork === 1 ? 'Pen' : 'Pens'} to work</div></div>
           <div style={{ width: 1, background: 'rgba(255,255,255,0.14)' }} />
           <div><div style={{ fontSize: 22, fontWeight: 800, color: colors.gold, lineHeight: 1 }}>{headLeft}</div><div style={{ fontSize: 11, fontWeight: 600, color: '#8FA8CC', marginTop: 4 }}>Head left</div></div>
         </div>
       </div>
 
+      <div className="wl-wrap">
       {/* LIST */}
       {rows.length === 0 ? (
         <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 14, padding: '48px 20px', textAlign: 'center' }}>
@@ -170,7 +173,8 @@ export function WorkListScreen({
           onClose={() => setAnimalsFor(null)}
         />
       ) : null}
-    </div>
+      </div>
+    </>
   )
 }
 
