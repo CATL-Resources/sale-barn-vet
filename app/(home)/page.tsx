@@ -5,7 +5,6 @@ export const dynamic = 'force-dynamic'
 
 export default async function HomePage() {
   const supabase = createClient()
-  const { data: barn } = await supabase.from('barn').select('name').limit(1).maybeSingle()
   const { data: days } = await supabase
     .from('sale_day')
     .select('id, sale_date, status, notes')
@@ -13,11 +12,5 @@ export default async function HomePage() {
     .order('sale_date', { ascending: false })
     .limit(100)
 
-  return (
-    <HomeScreen
-      barnName={barn?.name ?? 'Sale Barn Vet'}
-      days={days ?? []}
-      today={new Date().toISOString().slice(0, 10)}
-    />
-  )
+  return <HomeScreen days={days ?? []} today={new Date().toISOString().slice(0, 10)} />
 }

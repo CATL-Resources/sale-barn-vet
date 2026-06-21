@@ -86,6 +86,13 @@
 - The whole EID number is shown in the box now (no cutoff), with the last four digits bolded so it's easy to match against a tag.
 - Added an on-demand "2nd EID" slot for the rare cow with two EID tags. It stays out of the normal flow — tap "+ 2nd EID" to open it, then a non-840 EID scan (or typing) fills it. It's saved as a non-official secondary EID. Until it's opened, a non-840 EID scan nudges you to open it instead of being misfiled.
 
+## 2026-06-21 — One shared header on every screen
+- Built a single header used by every screen, replacing each screen's own top bar. Before, some screens (like Sale Days / Home) had no menu at all; now none can be missing it.
+- The header is a navy bar: a hamburger on the left (opens the menu), the current barn name centered (pulled from the barn record, not hardcoded), and the "Sale Barn Vet" wordmark on the right that taps Home — lit with a soft gold glow, no box.
+- The menu drawer is short on purpose: Home and Barn Settings (plus Sign out). Barn Settings opens the settings screen, view-only for now. Room to add more later.
+- Each screen keeps its own controls (Capture's progress + Close-out, the Work List counts, the Work Orders "Consignor" button) as a slim strip just below the shared header — nothing was lost.
+- Removed the old one-off per-screen hamburgers and headers so there's exactly one header style and one menu across the app.
+
 ## 2026-06-21 — Capture polish + Barn Settings: identifiers, required, clearer labels
 - Capture header now leads with the pen and the consignor/buyer name (big and bold); the work type drops to the quieter second line. The pen and the name are what the crew looks for.
 - Barn Settings no longer offers a "Default value" box for the EID or the tags (eid, back tag, tag #, metal tag) — you can't pre-fill a tag.

@@ -3,7 +3,6 @@
 import { useMemo, useState, type ReactNode } from 'react'
 import { colors } from '@/components/ui/tokens'
 import { PlusIcon } from '@/components/ui/icons'
-import { NavMenu } from '@/components/ui/nav-menu'
 import { usePenWorks } from '@/lib/work-orders/use-pen-works'
 import { groupPenWorks } from '@/lib/work-orders/grouping'
 import type { PartyGroup, Role, View, WorkOrdersPageData } from '@/lib/work-orders/types'
@@ -154,22 +153,17 @@ export function WorkOrdersScreen({
 
   return (
     <>
-      {/* Top bar */}
+      {/* Screen context strip (below the shared header) */}
       <div
         style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 5,
           background: colors.navy,
-          minHeight: 60,
+          minHeight: 56,
           display: 'flex',
           alignItems: 'center',
           gap: 8,
-          padding: '0 14px 0 6px',
-          borderRadius: '17px 17px 0 0',
+          padding: '8px 14px',
         }}
       >
-        <NavMenu userLine={`${barn.name} · ${longDate(saleDay.sale_date)}`} />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 16, fontWeight: 600, color: '#FFFFFF' }}>Work orders</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
