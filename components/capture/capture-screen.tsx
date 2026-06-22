@@ -2,10 +2,13 @@
 
 import { useState } from 'react'
 import type { BatchInfo, CaptureBootstrap } from '@/lib/capture/types'
+import type { CapturedAnimal } from '@/lib/capture/save-animal'
 import { useCapture } from '@/lib/capture/use-capture'
 import { StartBatch } from './start-batch'
 import { CaptureForm } from './capture-form'
 import { CloseOutSheet } from './close-out-sheet'
+import { AnimalListSheet } from './animal-list-sheet'
+import { AnimalEditSheet, type EditTarget } from './animal-edit-sheet'
 import { CaptureToast } from './toast'
 import { OptionPicker, type Option } from './sheets'
 
@@ -21,6 +24,10 @@ export function CaptureScreen({
   const api = useCapture(bootstrap, userId, initialBatch)
   const [closeOutOpen, setCloseOutOpen] = useState(false)
   const [sortSheetOpen, setSortSheetOpen] = useState(false)
+  const [animalsOpen, setAnimalsOpen] = useState(false)
+  const [editing, setEditing] = useState<EditTarget | null>(null)
+  // Bumped after a save/remove so the open animal list re-fetches.
+  const [reloadKey, setReloadKey] = useState(0)
 
   // Sort tap: toggle off when already sorted; quiet for 0–1 open pens; pick when many.
   function onTapSort() {
@@ -50,12 +57,39 @@ export function CaptureScreen({
       {api.step === 'start' ? (
         <StartBatch bootstrap={bootstrap} onStart={api.startBatch} saving={api.saving} />
       ) : (
-        <CaptureForm api={api} onOpenCloseOut={() => setCloseOutOpen(true)} onTapSort={onTapSort} />
+        <CaptureForm
+          api={api}
+          onOpenCloseOut={() => setCloseOutOpen(true)}
+          onOpenAnimals={() => setAnimalsOpen(true)}
+          onTapSort={onTapSort}
+        />
       )}
 
       <CaptureToast toast={api.toast} onDismiss={api.dismissToast} />
 
       {closeOutOpen && api.step === 'capture' && <CloseOutSheet api={api} onClose={() => setCloseOutOpen(false)} />}
+
+      {api.step === 'capture' && (
+        <AnimalListSheet
+          api={api}
+          open={animalsOpen}
+          reloadKey={reloadKey}
+          onClose={() => setAnimalsOpen(false)}
+          onEdit={(animal: CapturedAnimal | null) => setEditing(animal ? { mode: 'edit', animal } : { mode: 'add' })}
+        />
+      )}
+
+      {api.step === 'capture' && editing && (
+        <AnimalEditSheet
+          api={api}
+          target={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => {
+            setEditing(null)
+            setReloadKey((k) => k + 1)
+          }}
+        />
+      )}
 
       <OptionPicker
         open={sortSheetOpen}
