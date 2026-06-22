@@ -17,7 +17,7 @@ export type IdentifierInput = { type: IdType; value: string; is_official: boolea
 
 const nowIso = () => new Date().toISOString()
 
-function formatTime(iso: string): string {
+export function timeLabel(iso: string): string {
   const d = new Date(iso)
   let h = d.getHours()
   const m = d.getMinutes()
@@ -74,7 +74,7 @@ export async function findDuplicateEid(
     .maybeSingle()
   return {
     eid: value,
-    time: created ? formatTime(created) : '',
+    time: created ? timeLabel(created) : '',
     status: pw?.work_complete ? 'Complete' : 'Open',
   }
 }

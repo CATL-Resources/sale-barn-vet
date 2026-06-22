@@ -11,16 +11,21 @@ export const FLAG_RED = '#E24B4A'
 export const FLAG_RED_BG = '#FCEBEB'
 export const FLAG_RED_TEXT = '#E24B4A'
 
-/** The big red banner. `detail` is the one-liner, e.g. "0142 already worked · 10:42a · Open". */
+/**
+ * The big red banner. `detail` is the one-liner, e.g.
+ * "0142 already worked · 10:42a · Open". Rendered as a rounded card so it sits
+ * consistently with the other rounded sections on the screen.
+ */
 export function FlagBanner({ title, detail }: { title: string; detail?: string }) {
   return (
     <div
       style={{
         background: FLAG_RED,
-        padding: '12px 14px',
+        padding: '13px 15px',
         display: 'flex',
         alignItems: 'center',
         gap: 12,
+        borderRadius: 14,
         flexShrink: 0,
       }}
     >

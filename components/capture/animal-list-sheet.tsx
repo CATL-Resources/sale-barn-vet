@@ -20,12 +20,13 @@ function primaryTag(a: CapturedAnimal): string {
 
 function summaryLine(a: CapturedAnimal, api: CaptureApi): string {
   const parts: string[] = []
+  if (a.visualTag) parts.push(`Tag ${a.visualTag}`)
   if (a.color) parts.push(a.color)
-  if (a.breed) parts.push(a.breed)
   if (a.age_designation) {
     const opt = api.bootstrap.ageOptions.find((o) => o.designation_value === a.age_designation)
     parts.push(opt?.age_label ?? a.age_designation)
   }
+  if (a.breed) parts.push(a.breed)
   if (a.preg_status) {
     const st = api.bootstrap.pregStages.find((s) => s.stage_code === a.preg_status)
     parts.push(st?.display_label ?? a.preg_status)
@@ -103,6 +104,7 @@ export function AnimalListSheet({
         ) : (
           rows.map((a) => {
             const sum = summaryLine(a, api)
+            const notes = a.quick_notes ?? []
             return (
               <button
                 key={a.id}
@@ -113,6 +115,13 @@ export function AnimalListSheet({
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 15, fontWeight: 800, color: '#0E2646', fontVariantNumeric: 'tabular-nums', wordBreak: 'break-all' }}>{primaryTag(a)}</div>
                   {sum && <div style={{ fontSize: 13, fontWeight: 600, color: '#717182', marginTop: 1 }}>{sum}</div>}
+                  {notes.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 5 }}>
+                      {notes.map((n) => (
+                        <span key={n} style={{ height: 22, padding: '0 9px', display: 'inline-flex', alignItems: 'center', borderRadius: 999, background: '#EEF1F6', border: '1px solid #DEE3EC', fontSize: 11, fontWeight: 700, color: '#3C5278' }}>{n}</span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <span aria-hidden style={{ flexShrink: 0, color: '#A8AEC0', fontSize: 18 }}>›</span>
               </button>

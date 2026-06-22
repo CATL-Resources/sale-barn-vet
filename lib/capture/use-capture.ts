@@ -16,6 +16,7 @@ import { fieldRequired, fieldShows, resolveFields } from './fields'
 import {
   findDuplicateEid,
   saveAnimalRecord,
+  timeLabel,
   type DuplicateHit,
   type IdentifierInput,
   type IdType,
@@ -94,6 +95,16 @@ export function useCapture(
   // this pen_work is entered; cleared on the next fresh scan or a good save.
   const [flag, setFlag] = useState<DuplicateHit | null>(null)
   const clearFlag = useCallback(() => setFlag(null), [])
+
+  // EIDs already worked in this batch, kept in memory so a re-scan is flagged
+  // INSTANTLY (no database round-trip) — by the time a query returned, the cow
+  // could be down the alley. Updated on every save, seeded when a batch opens or
+  // the animal list changes. The database check still runs as a backstop.
+  const workedEids = useRef<Map<string, { time: string; status: string }>>(new Map())
+  const localDuplicate = useCallback((value: string): DuplicateHit | null => {
+    const hit = workedEids.current.get(value.trim())
+    return hit ? { eid: value.trim(), time: hit.time, status: hit.status } : null
+  }, [])
 
   const flash = useCallback((kind: ToastKind, message: string) => {
     setToast({ kind, message })
@@ -380,6 +391,12 @@ export function useCapture(
         })
         if (!res.ok) throw new Error(res.error)
 
+        // Remember this EID so a re-scan is flagged instantly.
+        const savedEid = eidValue.trim()
+        if (shows('eid') && savedEid) {
+          workedEids.current.set(savedEid, { time: timeLabel(new Date().toISOString()), status: 'Open' })
+        }
+
         // Freeze the started count on the first animal of a bound office order
         // whose head was never set. We set head_started from the office's
         // expected head so the order reads "in progress". The ".is(head_started,
@@ -439,7 +456,7 @@ export function useCapture(
       // raise the flag, and CLEAR the entered value so it isn't left in the field.
       // (The same EID under a different work order is fine and flows through.)
       if (ev) {
-        const dup = await checkDuplicate(ev)
+        const dup = localDuplicate(ev) ?? (await checkDuplicate(ev))
         if (dup) {
           setFlag(dup)
           patchDraft({ eid: '' })
@@ -454,7 +471,7 @@ export function useCapture(
       }
       return ok
     },
-    [batch, draft.eid, eidRequired, checkDuplicate, buildAndInsert, patchDraft],
+    [batch, draft.eid, eidRequired, localDuplicate, checkDuplicate, buildAndInsert, patchDraft],
   )
 
   // Manual EID entry (typed into the EID box, not scanned). Fill and wait, same
@@ -465,7 +482,7 @@ export function useCapture(
       if (!batch) return
       const v = value.trim()
       if (!v || v === draft.eid.trim()) return
-      const dup = await checkDuplicate(v)
+      const dup = localDuplicate(v) ?? (await checkDuplicate(v))
       if (dup) {
         setFlag(dup)
         patchDraft({ eid: '' })
@@ -475,7 +492,7 @@ export function useCapture(
       patchDraft({ eid: v })
       setFocusTick((n) => n + 1)
     },
-    [batch, draft.eid, checkDuplicate, patchDraft],
+    [batch, draft.eid, localDuplicate, checkDuplicate, patchDraft],
   )
 
   /**
@@ -491,17 +508,24 @@ export function useCapture(
    * The duplicate check runs in the background so the tag shows instantly; the
    * Save step still hard-refuses a real duplicate.
    */
-  // Background check after a scan fills the primary EID: if it's a duplicate in
-  // this pen_work, raise the flag and clear the scanned value.
+  // After a scan fills the primary EID: flag a duplicate. The in-memory check is
+  // instant (so the banner is up before the cow moves); the database check is a
+  // backstop for tags worked on another device or before the set was seeded.
   const flagIfDuplicate = useCallback(
     async (value: string): Promise<void> => {
+      const local = localDuplicate(value)
+      if (local) {
+        setFlag(local)
+        patchDraft({ eid: '' })
+        return
+      }
       const dup = await checkDuplicate(value)
       if (dup) {
         setFlag(dup)
         patchDraft({ eid: '' })
       }
     },
-    [checkDuplicate, patchDraft],
+    [localDuplicate, checkDuplicate, patchDraft],
   )
 
   const routeScan = useCallback(
@@ -620,18 +644,44 @@ export function useCapture(
     }
   }, [batch, worked, supabase, flash, bootstrap])
 
-  // Re-sync the in-batch worked count from the live (non-deleted) animal count.
-  // Called after the animal-list pop-up adds or removes a record so the progress
-  // read-out and the close-out count stay correct.
+  // Re-sync the in-batch worked count AND the instant-duplicate set from the
+  // live (non-deleted) animals. Called when a batch opens (so a resumed batch
+  // knows what's already been worked) and after the animal-list pop-up adds or
+  // removes a record.
   const refreshWorked = useCallback(async () => {
     if (!batch) return
-    const { count } = await supabase
+    const { data: animals } = await supabase
       .from('animal')
-      .select('id', { count: 'exact', head: true })
+      .select('id, created_at')
       .eq('pen_work_id', batch.penWorkId)
       .is('deleted_at', null)
-    setWorked(count ?? 0)
+    const list = animals ?? []
+    setWorked(list.length)
+    const map = new Map<string, { time: string; status: string }>()
+    if (list.length) {
+      const created = new Map(list.map((a) => [a.id, a.created_at as string]))
+      const { data: idents } = await supabase
+        .from('identifier')
+        .select('animal_id, value')
+        .eq('type', 'eid')
+        .is('deleted_at', null)
+        .in('animal_id', list.map((a) => a.id))
+      for (const it of idents ?? []) {
+        const c = created.get(it.animal_id)
+        map.set(it.value, { time: c ? timeLabel(c) : '', status: 'Open' })
+      }
+    }
+    workedEids.current = map
   }, [supabase, batch])
+
+  // Seed the worked count + instant-duplicate set when a batch opens (covers a
+  // resumed batch that already has animals). Keyed on the id so it doesn't re-run
+  // when the batch object changes mid-capture (e.g. head_started gets frozen).
+  const penWorkId = batch?.penWorkId
+  useEffect(() => {
+    if (penWorkId) void refreshWorked()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [penWorkId])
 
   return {
     bootstrap,

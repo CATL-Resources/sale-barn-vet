@@ -216,8 +216,6 @@ export function CaptureForm({
         }
       />
 
-      {flag && <FlagBanner title="Duplicate tag" detail={`${flag.eid} already worked · ${flag.time} · ${flag.status}`} />}
-
       <div className="sbv-screenheader" style={{ position: 'relative', zIndex: 1, boxShadow: '0 6px 18px rgba(8,18,40,0.30)' }}>
         <div className="sbv-container" style={{ paddingTop: 0, paddingBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -237,6 +235,8 @@ export function CaptureForm({
 
       <div className="sbv-scroll">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 11, padding: 12 }}>
+          {flag && <FlagBanner title="Duplicate tag" detail={`${flag.eid} already worked · ${flag.time} · ${flag.status}`} />}
+
           {flaggedOn.length > 0 && (
             <div style={{ background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: 14, padding: '13px 15px', display: 'flex', alignItems: 'center', gap: 12 }}>
               <FlagIcon size={26} color="#B45309" sw={2.4} />

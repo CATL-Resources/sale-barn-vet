@@ -219,9 +219,10 @@ export function AnimalEditSheet({
   return (
     <BottomSheet open onClose={onClose}>
       <SheetHeader title={target.mode === 'add' ? 'Add animal' : 'Edit animal'} onClose={onClose} />
-      {flag && <FlagBanner title="Duplicate tag" detail={`${flag.eid} already worked · ${flag.time} · ${flag.status}`} />}
 
       <div style={{ overflowY: 'auto', padding: '0 16px 18px', display: 'flex', flexDirection: 'column', gap: 11 }}>
+        {flag && <FlagBanner title="Duplicate tag" detail={`${flag.eid} already worked · ${flag.time} · ${flag.status}`} />}
+
         {/* identity */}
         <div style={{ background: '#FFFFFF', border: '1px solid #D4D4D0', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 9 }}>
           {shows('eid') && (
