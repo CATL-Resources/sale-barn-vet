@@ -524,6 +524,11 @@ export function useCapture(
       if (!batch) return
       const code = raw.trim()
       if (!code) return
+      // A fresh scan clears any leftover message (e.g. a "this tag is already in
+      // this batch" warning from the previous scan) so it can't make the new,
+      // good tag look like a duplicate too. The background check below re-raises
+      // it only if THIS tag is actually a repeat.
+      setToast(null)
       const fifteenDigits = /^\d{15}$/.test(code)
 
       if (fifteenDigits) {
