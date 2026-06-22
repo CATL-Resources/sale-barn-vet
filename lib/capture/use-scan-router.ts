@@ -3,10 +3,10 @@
 import { useEffect, useRef } from 'react'
 
 /**
- * Set an <input>/<textarea> value so React's onChange notices. Used to pull back
- * the one stray character that slips into the focused field before we know a
- * scan has begun (React tracks the value itself, so a plain assignment is
- * ignored — we have to go through the native setter and fire an input event).
+ * Set an <input>/<textarea> value so React's onChange notices. Used to wipe the
+ * characters a recognised scan dropped into the focused field (React tracks the
+ * value itself, so a plain assignment is ignored — we have to go through the
+ * native setter and fire an input event).
  */
 function setNativeValue(el: HTMLInputElement | HTMLTextAreaElement, value: string) {
   const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
@@ -16,21 +16,25 @@ function setNativeValue(el: HTMLInputElement | HTMLTextAreaElement, value: strin
 }
 
 /**
- * Screen-level scan capture. A keyboard-wedge wand types a fast burst of
- * characters then Enter, into whatever field has focus — so scans land in the
- * wrong place. We watch keydowns at the window (capture phase), recognise the
- * burst by its speed, keep those characters out of the focused field, and on
- * Enter hand the whole code to `onScan` to be routed by its shape. Slow, human
- * typing is left completely alone.
+ * Screen-level scan capture, rebuilt so it can never drop a digit.
  *
- * We can't tell the first key of a burst from a person until the SECOND fast key
- * arrives, so that first character does slip into the focused field. The moment
- * we know it's a scan we pull it back out — otherwise the leading digit of an
- * EID gets left behind in the back-tag / tag field and cascades down the form.
+ * A keyboard-wedge wand types a fast burst of characters then Enter, into
+ * whatever field has focus. The hard lesson from the chute: any scheme that
+ * BLOCKS the wand's keys mid-burst and rebuilds the number from a copy is
+ * fragile — on a slower tablet one late or missed key and the number comes back
+ * as a single digit (or split in two). So we don't block anything.
  *
- * A real wand on a busy phone doesn't deliver keys perfectly evenly, so once a
- * burst is underway we keep collecting every character until a clearly
- * human-length pause (or Enter); one slightly-late key must never split a scan.
+ * We let every character land in the focused field as it arrives, exactly like
+ * normal typing, and quietly keep a timed copy. When the wand's Enter arrives we
+ * look at that copy: if the characters came in as one fast machine burst, we
+ * wipe whatever they dropped into the focused field and hand the whole code to
+ * `onScan` to be routed by its shape. If it looks like a person typing, we leave
+ * it completely alone.
+ *
+ * Because we never block a key, the digits are never lost: worst case, on a
+ * really janky tablet, the burst just isn't recognised and the number simply
+ * stays in the box for the normal Save path to pick up — you can't be left with
+ * one digit.
  */
 export function useScanRouter(onScan: (code: string) => void, active: boolean) {
   const onScanRef = useRef(onScan)
@@ -40,30 +44,29 @@ export function useScanRouter(onScan: (code: string) => void, active: boolean) {
     if (!active) return
 
     let buffer = ''
-    let lastTime = 0
-    let inBurst = false
-    // The field the first (un-prevented) character slipped into, and that
-    // field's value just before it, so we can undo that one stray char.
+    let startTime = 0 // when the current run of characters began
+    let lastTime = 0 // when the last character arrived
+    // The field the characters are landing in, and its value before this run
+    // began, so a recognised scan can be wiped back out of it.
     let leakEl: HTMLInputElement | HTMLTextAreaElement | null = null
     let leakPrior = ''
-    // A follow-up key this close to the last one is wand speed, not a person.
-    const FAST_MS = 80
-    // Once we're in a burst, only a real pause this long ends it.
+
+    // Silence this long between keys means a new, separate entry has started, so
+    // we begin a fresh run. Generous, so one slow key on a busy tablet never
+    // splits a single scan in two.
     const END_MS = 400
-    const MIN_LEN = 3 // shortest burst we'll treat as a scan
+    // A machine burst averages well under this many ms per key, even on a slow
+    // tablet with the odd stalled key; no one hand-types a long code this fast,
+    // so it cleanly tells a wand from a person.
+    const AVG_GAP_MAX = 80
+    const MIN_LEN = 4 // shortest run we'll treat as a scan (a back tag barcode)
 
     function rememberLeak(target: EventTarget | null) {
       leakEl = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement ? target : null
       leakPrior = leakEl ? leakEl.value : ''
     }
-    function undoLeak() {
-      if (leakEl) {
-        try {
-          setNativeValue(leakEl, leakPrior)
-        } catch {
-          /* field went away — nothing to undo */
-        }
-      }
+    function reset() {
+      buffer = ''
       leakEl = null
       leakPrior = ''
     }
@@ -73,17 +76,28 @@ export function useScanRouter(onScan: (code: string) => void, active: boolean) {
 
       if (e.key === 'Enter') {
         const code = buffer
-        const wasBurst = inBurst && code.length >= MIN_LEN
-        buffer = ''
-        inBurst = false
-        leakEl = null
-        leakPrior = ''
+        const span = lastTime - startTime
+        const avgGap = code.length > 1 ? span / (code.length - 1) : Infinity
+        const wasBurst = code.length >= MIN_LEN && avgGap <= AVG_GAP_MAX
+        const el = leakEl
+        const prior = leakPrior
+        reset()
         if (wasBurst) {
-          // It was a scan — don't let the Enter submit a form or add a newline.
+          // A machine burst — don't let the Enter submit a form or add a
+          // newline, wipe the characters it dropped into the focused field, then
+          // hand the whole code on to be routed by its shape.
           e.preventDefault()
           e.stopPropagation()
+          if (el) {
+            try {
+              setNativeValue(el, prior)
+            } catch {
+              /* field went away — nothing to wipe */
+            }
+          }
           onScanRef.current(code)
         }
+        // Otherwise a person pressed Enter — let it through untouched.
         return
       }
 
@@ -93,36 +107,16 @@ export function useScanRouter(onScan: (code: string) => void, active: boolean) {
       const gap = now - lastTime
       lastTime = now
 
-      if (inBurst) {
-        // Mid-scan. Keep every character even if one arrives a touch late — only
-        // a genuine, human-length pause means a new, separate entry has started.
-        if (gap > END_MS) {
-          buffer = e.key
-          inBurst = false
-          rememberLeak(e.target)
-        } else {
-          buffer += e.key
-          e.preventDefault()
-          e.stopPropagation()
-        }
-        return
-      }
-
-      if (gap <= FAST_MS && buffer) {
-        // Second fast key in a row: this is the wand. Pull back the one stray
-        // character the first key left in the focused field, keep the first
-        // char in the buffer so the routed code is whole, and block the rest.
-        buffer += e.key
-        inBurst = true
-        undoLeak()
-        e.preventDefault()
-        e.stopPropagation()
-      } else {
-        // First keypress, or slow human typing: let it type into the focused
-        // field as normal, but remember where it went in case this turns into a
-        // scan on the very next key.
+      if (!buffer || gap > END_MS) {
+        // First key, or a real pause since the last one: this starts a fresh
+        // run. Note where it's landing so a recognised scan can be wiped back
+        // out. We never block the key — it types in as normal.
         buffer = e.key
+        startTime = now
         rememberLeak(e.target)
+      } else {
+        // Another key right behind the last: same run. Still never blocked.
+        buffer += e.key
       }
     }
 
