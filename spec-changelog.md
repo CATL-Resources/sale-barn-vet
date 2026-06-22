@@ -153,3 +153,7 @@
 ## 2026-06-21 — Foundation 4b: the office Work Orders table scrolls sideways on small screens
 - The office Work Orders table has fixed-width columns, so on a phone or a portrait tablet it was wider than the screen. Now the table scrolls sideways inside its own card: the whole page never scrolls sideways, and the header row stays lined up with the rows as you scroll across. It keeps a sensible minimum width so the columns don't get crushed; on a wide screen it fills the space as before with no scrollbar.
 - Office board only — the chuteside Work List (which already uses flexible rows) was not touched.
+
+## 2026-06-22 — Fix: EID scan no longer splits into "a couple of digits"
+- The wand scan catcher treated any gap over 45ms between keystrokes as the start of a brand-new entry, so if a single digit from the wand arrived a touch late (normal on a real wand and a busy phone), it cut the scan in two. The leftover few digits then got read as a back tag and the cursor jumped to that field.
+- Now, once a scan is underway, every character is kept together until a real, human-length pause (or the wand's Enter) — one slightly-late key can't split the EID anymore. Slow human typing is still left completely alone, and a typed EID + Enter still works.
