@@ -115,24 +115,21 @@ export function usePenWorks(pageData: WorkOrdersPageData, saleDayId: string) {
     [supabase, barnId, saleDayId, patch, flashError, reload],
   )
 
+  // Picking a work type is PREVIEW ONLY: it sets the work type so the live
+  // preview can price from the current rate card. It never writes the frozen
+  // price — that happens only when the order is finished. (The database also
+  // blocks any frozen change on an already-finished order.)
   const saveWorkType = useCallback(
     async (id: string, workTypeId: string) => {
       const wt = pageData.workTypes.find((w) => w.id === workTypeId)
       if (!wt) return
-      const frozen = {
-        work_type_id: workTypeId,
-        frozen_vet_charge: wt.vet_charge,
-        frozen_sol_charge: wt.sol_charge,
-        frozen_admin_rate: pageData.barn.admin_fee_rate,
-        frozen_tax_rate: pageData.barn.sales_tax_rate,
-      }
       await optimistic(
         id,
         {
-          ...frozen,
+          work_type_id: workTypeId,
           workType: { id: wt.id, name: wt.name, vet_charge: wt.vet_charge, sol_charge: wt.sol_charge },
         },
-        frozen,
+        { work_type_id: workTypeId },
         'Could not save work type',
       )
     },
@@ -173,15 +170,49 @@ export function usePenWorks(pageData: WorkOrdersPageData, saleDayId: string) {
 
   const toggleStatus = useCallback(
     async (id: string, field: StatusField) => {
-      const current = penWorks.find((p) => p.id === id)?.[field] ?? false
+      const row = penWorks.find((p) => p.id === id)
+      const current = row?.[field] ?? false
+      const next = !current
+
+      // Finishing a work order (work_complete: false -> true) freezes its price.
+      if (field === 'work_complete' && next && row) {
+        // A finished order must have a work type to freeze a rate from, or its
+        // bill would be blank and the lock would then keep it that way.
+        if (!row.work_type_id) {
+          flashError('Pick a work type before marking complete')
+          return
+        }
+        // Freeze only on the FIRST finish. If it already has a frozen price
+        // (it was finished before and reopened), leave the price alone so
+        // reopen-then-complete can't move it.
+        if (row.frozen_vet_charge == null) {
+          const wt = pageData.workTypes.find((w) => w.id === row.work_type_id)
+          if (wt) {
+            const frozen = {
+              frozen_vet_charge: wt.vet_charge,
+              frozen_sol_charge: wt.sol_charge,
+              frozen_admin_rate: pageData.barn.admin_fee_rate,
+              frozen_tax_rate: pageData.barn.sales_tax_rate,
+            }
+            await optimistic(
+              id,
+              { work_complete: true, ...frozen },
+              { work_complete: true, ...frozen },
+              'Could not update status',
+            )
+            return
+          }
+        }
+      }
+
       await optimistic(
         id,
-        { [field]: !current } as Partial<PenWorkFull>,
-        { [field]: !current } as TablesUpdate<'pen_work'>,
+        { [field]: next } as Partial<PenWorkFull>,
+        { [field]: next } as TablesUpdate<'pen_work'>,
         'Could not update status',
       )
     },
-    [penWorks, optimistic],
+    [penWorks, optimistic, pageData, flashError],
   )
 
   const addPenWork = useCallback(

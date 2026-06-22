@@ -576,11 +576,49 @@ export function useCapture(
     if (!batch) return false
     setSaving(true)
     try {
-      const { error } = await supabase
+      // Look at the order's current state before writing. Finishing is a
+      // ONE-TIME event: the first close records the head count and freezes the
+      // price. Closing again (after the office reopened it) must NOT overwrite
+      // either — re-doing a finish is never a do-over of the count or the rate.
+      const { data: current, error: readErr } = await supabase
         .from('pen_work')
-        .update({ work_complete: true, head_worked: worked })
+        .select('work_complete, frozen_vet_charge')
         .eq('id', batch.penWorkId)
-      if (error) throw error
+        .maybeSingle()
+      if (readErr) throw readErr
+
+      if (current?.work_complete) {
+        // Already finished — leave head_worked and the frozen price untouched.
+      } else if (current?.frozen_vet_charge != null) {
+        // Was finished before, then reopened: re-mark complete only. The head
+        // count and frozen price stay exactly as they were first recorded.
+        const { error } = await supabase
+          .from('pen_work')
+          .update({ work_complete: true })
+          .eq('id', batch.penWorkId)
+        if (error) throw error
+      } else {
+        // First finish: record the head count and freeze the price now, from
+        // the current rate card (the work type's rates) + the barn's rates.
+        const wt = bootstrap.workTypes.find((w) => w.id === batch.workTypeId)
+        if (!wt) {
+          flash('error', 'Could not find the work-type rate to freeze')
+          return false
+        }
+        const { error } = await supabase
+          .from('pen_work')
+          .update({
+            work_complete: true,
+            head_worked: worked,
+            frozen_vet_charge: wt.vet_charge,
+            frozen_sol_charge: wt.sol_charge,
+            frozen_admin_rate: bootstrap.barn.admin_fee_rate,
+            frozen_tax_rate: bootstrap.barn.sales_tax_rate,
+          })
+          .eq('id', batch.penWorkId)
+        if (error) throw error
+      }
+
       setBatch(null)
       setDraft(emptyDraft())
       setWorked(0)
@@ -595,7 +633,7 @@ export function useCapture(
     } finally {
       setSaving(false)
     }
-  }, [batch, worked, supabase, flash])
+  }, [batch, worked, supabase, flash, bootstrap])
 
   return {
     bootstrap,
