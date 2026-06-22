@@ -28,6 +28,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
+- **capture:** instant duplicate flag, richer list rows, rounded flag banner _(2026-06-22, `95c253b`)_
 - **capture:** instant EID fill + 2nd EID works for two 840 tags _(2026-06-21, `a34d6e9`)_
 - **capture:** stop the wand EID scan splitting into a couple of digits _(2026-06-21, `41f9a98`)_
 - **layout:** app fills the screen on phone and tablet (remove the 390px frame) _(2026-06-21, `4b7054e`)_
@@ -53,6 +54,10 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 ## Tooling
 
 - add a changelog script so npm run changelog works _(2026-06-19, `db43609`)_
+
+## Chores
+
+- **changelog:** regenerate for the chute animal list _(2026-06-22, `0babd55`)_
 
 ## Other
 
