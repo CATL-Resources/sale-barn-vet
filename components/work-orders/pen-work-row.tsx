@@ -196,7 +196,16 @@ export function PenWorkRow({
     <select
       value={pw.work_type_id ?? ''}
       onChange={(e) => api.saveWorkType(pw.id, e.target.value)}
-      style={{ ...fieldBase, color: hasWorkType ? colors.textPrimary : colors.textPlaceholder }}
+      // Once finished, the price is frozen — don't let the work type be
+      // re-picked on a completed order.
+      disabled={pw.work_complete}
+      title={pw.work_complete ? 'Finished — price is locked' : undefined}
+      style={{
+        ...fieldBase,
+        color: hasWorkType ? colors.textPrimary : colors.textPlaceholder,
+        background: pw.work_complete ? '#F3F3F0' : colors.white,
+        cursor: pw.work_complete ? 'not-allowed' : undefined,
+      }}
     >
       <option value="" disabled>
         Choose…

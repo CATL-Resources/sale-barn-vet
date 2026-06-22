@@ -52,17 +52,40 @@ export function hasRate(pw: PenWorkFull): boolean {
 }
 
 /**
- * Charges for one pen_work. Uses the FROZEN rate snapshot when present (saved
- * rows); falls back to the live work_type rate + barn rates for a draft row
- * the user is still editing before it persists.
+ * Charges for one pen_work.
+ * - FINISHED order: bill from the STORED, frozen totals the database computed at
+ *   finish time, so editing the rate card later never moves a finished bill.
+ *   (Falls back to computing from the frozen snapshot when the stored totals
+ *   aren't loaded yet — e.g. right after marking complete, before the refetch.)
+ * - OPEN order: show a LIVE PREVIEW from the current rate card + barn rates.
+ *   Nothing is frozen until the order is finished.
  */
 export function penWorkCharges(pw: PenWorkFull, barn: Barn) {
   const head = pw.head_worked ?? 0
-  const vet = pw.frozen_vet_charge ?? pw.workType?.vet_charge ?? 0
-  const sol = pw.frozen_sol_charge ?? pw.workType?.sol_charge ?? 0
-  const tax = pw.frozen_tax_rate ?? barn.sales_tax_rate
-  const admin = pw.frozen_admin_rate ?? barn.admin_fee_rate
-  const charges = computePenWorkCharges(vet, sol, head, tax, admin)
+
+  if (pw.work_complete) {
+    if (pw.total_customer_charge != null) {
+      return {
+        vetTotal: pw.vet_total ?? 0,
+        adminTotal: pw.admin_total ?? 0,
+        solTotal: pw.sol_total ?? 0,
+        lineCharge: pw.total_customer_charge,
+        headWorked: head,
+      }
+    }
+    const frozen = computePenWorkCharges(
+      pw.frozen_vet_charge ?? 0,
+      pw.frozen_sol_charge ?? 0,
+      head,
+      pw.frozen_tax_rate ?? barn.sales_tax_rate,
+      pw.frozen_admin_rate ?? barn.admin_fee_rate,
+    )
+    return { ...frozen, headWorked: head }
+  }
+
+  const vet = pw.workType?.vet_charge ?? 0
+  const sol = pw.workType?.sol_charge ?? 0
+  const charges = computePenWorkCharges(vet, sol, head, barn.sales_tax_rate, barn.admin_fee_rate)
   return { ...charges, headWorked: head }
 }
 
