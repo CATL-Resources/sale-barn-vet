@@ -139,6 +139,14 @@ export function CaptureForm({
         ref={(el) => { idRefs.current[key] = el }}
         value={draft[key]}
         onChange={(e) => patchDraft({ [key]: e.target.value } as Partial<typeof draft>)}
+        onKeyDown={(e) => {
+          // Fill and wait: swallow Enter so a wand's trailing Enter into a tag
+          // box can't fall through and save the record early.
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            e.stopPropagation()
+          }
+        }}
         placeholder={placeholder}
         style={{
           flex: 1,
@@ -405,6 +413,15 @@ export function CaptureForm({
                   ref={(el) => { idRefs.current['eid2'] = el }}
                   value={draft.eid2}
                   onChange={(e) => patchDraft({ eid2: e.target.value })}
+                  onKeyDown={(e) => {
+                    // Fill and wait, same as the primary EID box: swallow Enter so
+                    // a wand's trailing Enter (when the scan-router didn't catch
+                    // the burst) can't fall through and save the record early.
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      e.stopPropagation()
+                    }
+                  }}
                   placeholder="Scan or type 2nd EID"
                   style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, color: '#FFFFFF', fontVariantNumeric: 'tabular-nums' }}
                 />

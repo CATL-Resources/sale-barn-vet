@@ -311,6 +311,7 @@ export async function getPartyDetail(partyId: string): Promise<PartyDetail | nul
 export type PenWorkAnimal = {
   animalId: string
   eid: string | null
+  eid2: string | null
   backTag: string | null
   visualTag: string | null
   metalTag: string | null
@@ -345,11 +346,12 @@ export async function getPenWorkAnimals(penWorkId: string): Promise<PenWorkAnima
     .in('animal_id', ids)
     .is('deleted_at', null)
 
-  type Tags = { eid: string | null; backTag: string | null; visualTag: string | null; metalTag: string | null }
+  type Tags = { eid: string | null; eid2: string | null; backTag: string | null; visualTag: string | null; metalTag: string | null }
   const tagsByAnimal = new Map<string, Tags>()
   for (const it of idents ?? []) {
-    const cur = tagsByAnimal.get(it.animal_id) ?? { eid: null, backTag: null, visualTag: null, metalTag: null }
+    const cur = tagsByAnimal.get(it.animal_id) ?? { eid: null, eid2: null, backTag: null, visualTag: null, metalTag: null }
     if (it.type === 'eid') cur.eid = it.value
+    else if (it.type === 'secondary_eid') cur.eid2 = it.value
     else if (it.type === 'back_tag') cur.backTag = it.value
     else if (it.type === 'visual_tag') cur.visualTag = it.value
     else if (it.type === 'metal_tag') cur.metalTag = it.value
@@ -357,10 +359,11 @@ export async function getPenWorkAnimals(penWorkId: string): Promise<PenWorkAnima
   }
 
   return list.map((a) => {
-    const t = tagsByAnimal.get(a.id) ?? { eid: null, backTag: null, visualTag: null, metalTag: null }
+    const t = tagsByAnimal.get(a.id) ?? { eid: null, eid2: null, backTag: null, visualTag: null, metalTag: null }
     return {
       animalId: a.id,
       eid: t.eid,
+      eid2: t.eid2,
       backTag: t.backTag,
       visualTag: t.visualTag,
       metalTag: t.metalTag,
