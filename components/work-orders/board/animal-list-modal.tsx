@@ -8,6 +8,7 @@ import { getPenWorkAnimals, type PenWorkAnimal } from '@/app/(office)/work-order
 // Columns shown on screen and used for every copy/export, in this order.
 const COLS: { key: keyof PenWorkAnimal | 'preg'; label: string }[] = [
   { key: 'eid', label: 'EID' },
+  { key: 'eid2', label: '2nd EID' },
   { key: 'backTag', label: 'Back tag' },
   { key: 'visualTag', label: 'Tag #' },
   { key: 'metalTag', label: 'Metal' },
