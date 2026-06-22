@@ -501,12 +501,24 @@ export function useCapture(
 
   /**
    * A screen-level scan, sorted by what it looks like — not by which field has
-   * focus. It fills the right field and WAITS (never auto-submits):
+   * focus, so the operator never has to put the cursor anywhere first. It fills
+   * the right field right away and WAITS (never auto-submits):
    *   - 15 digits starting 840        -> primary EID
-   *   - 15 digits NOT starting 840    -> secondary (900) EID — no field yet: skip
+   *   - 15 digits NOT starting 840    -> a second EID — only once the 2nd slot is
+   *                                      open (otherwise nudge them to open it)
+   *   - with the 2nd-EID slot open    -> EIDs fill in order, primary then second,
+   *                                      so a cow wearing two 840 tags works too
    *   - anything else (e.g. 46MA1234) -> back tag barcode
-   * A duplicate EID in the batch is hard-refused.
+   * The duplicate check runs in the background so the tag shows instantly; the
+   * Save step still hard-refuses a real duplicate.
    */
+  const warnIfDuplicate = useCallback(
+    async (value: string): Promise<void> => {
+      if (await isDuplicateEid(value)) flash('warn', 'This tag is already in this batch')
+    },
+    [isDuplicateEid, flash],
+  )
+
   const routeScan = useCallback(
     async (raw: string): Promise<void> => {
       if (!batch) return
@@ -514,27 +526,37 @@ export function useCapture(
       if (!code) return
       const fifteenDigits = /^\d{15}$/.test(code)
 
-      if (fifteenDigits && code.startsWith('840')) {
-        if (code === draft.eid.trim()) return
-        if (await isDuplicateEid(code)) {
-          flash('warn', 'This tag is already in this batch')
-          return
-        }
-        patchDraft({ eid: code })
-        setFocusTick((n) => n + 1)
-        return
-      }
-
       if (fifteenDigits) {
-        // Non-840 15-digit = a secondary (900-series) EID. It only lands when
-        // the operator has opened the secondary slot; otherwise nudge them to.
-        if (!secondaryEidOpen) {
-          flash('warn', 'Tap “2nd EID” first to scan a second tag')
+        // Re-scan of a tag already on this cow — ignore it.
+        if (code === draft.eid.trim() || code === draft.eid2.trim()) return
+
+        // With the 2nd-EID slot open, full EIDs fill in order — the first empty
+        // of [primary, second]. That covers a cow wearing two 840 tags, which
+        // the 840-vs-900 shape rule alone can't tell apart.
+        if (secondaryEidOpen) {
+          if (!draft.eid.trim()) {
+            patchDraft({ eid: code })
+            setFocusTick((n) => n + 1)
+            void warnIfDuplicate(code)
+          } else {
+            patchDraft({ eid2: code })
+            setFocusTick((n) => n + 1)
+          }
           return
         }
-        if (code === draft.eid2.trim()) return
-        patchDraft({ eid2: code })
-        setFocusTick((n) => n + 1)
+
+        // Slot closed: an 840 tag is the primary EID; show it at once and check
+        // for a duplicate in the background.
+        if (code.startsWith('840')) {
+          patchDraft({ eid: code })
+          setFocusTick((n) => n + 1)
+          void warnIfDuplicate(code)
+          return
+        }
+
+        // A non-840 (900-series) 15-digit tag is a second EID — nudge them to
+        // open the 2nd-EID slot first.
+        flash('warn', 'Tap “2nd EID” first to scan a second tag')
         return
       }
 
@@ -542,7 +564,7 @@ export function useCapture(
       patchDraft({ backTag: code })
       setFocusTick((n) => n + 1)
     },
-    [batch, draft.eid, draft.eid2, secondaryEidOpen, isDuplicateEid, patchDraft, flash],
+    [batch, draft.eid, draft.eid2, secondaryEidOpen, patchDraft, flash, warnIfDuplicate],
   )
 
   const closeBatch = useCallback(async (): Promise<boolean> => {

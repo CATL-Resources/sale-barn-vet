@@ -157,3 +157,7 @@
 ## 2026-06-22 — Fix: EID scan no longer splits into "a couple of digits"
 - The wand scan catcher treated any gap over 45ms between keystrokes as the start of a brand-new entry, so if a single digit from the wand arrived a touch late (normal on a real wand and a busy phone), it cut the scan in two. The leftover few digits then got read as a back tag and the cursor jumped to that field.
 - Now, once a scan is underway, every character is kept together until a real, human-length pause (or the wand's Enter) — one slightly-late key can't split the EID anymore. Slow human typing is still left completely alone, and a typed EID + Enter still works.
+
+## 2026-06-22 — Capture scan: faster, and the 2nd EID works for two 840 tags
+- The scanned EID now shows up the instant you scan. Before, the app ran a "is this tag already in this batch?" check against the database first and only filled the field once that came back — on barn wifi that was the lag. The check now runs in the background and still flags a repeat; the Save step still flat-out refuses a real duplicate.
+- The 2nd EID field now works for a cow wearing two normal (840) tags. Before, the second 840 scan overwrote the first because the app only sent non-840 (900-series) tags to the 2nd slot. Now, once you tap "2nd EID" to open the slot, scans fill in order — first tag to the main EID, next tag to the 2nd EID — so two 840 tags both land. You still don't need to put the cursor anywhere; the scan goes to the right spot on its own.
