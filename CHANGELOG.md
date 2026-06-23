@@ -27,7 +27,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
-- layout polish on the Work Orders board and Pen List header _(2026-06-23, `14f90a4`)_
+- keep an in-progress chute batch alive across a page refresh _(2026-06-23, `9752e0d`)_
 - **capture:** instant EID fill + 2nd EID works for two 840 tags _(2026-06-21, `a34d6e9`)_
 - **capture:** stop the wand EID scan splitting into a couple of digits _(2026-06-21, `41f9a98`)_
 - **layout:** app fills the screen on phone and tablet (remove the 390px frame) _(2026-06-21, `4b7054e`)_
@@ -56,6 +56,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Layout polish: Work Orders board columns and Pen List mobile header _(2026-06-23, `d2e8ef8`)_
 - Continue Working button lands on the Pen List _(2026-06-23, `f13a067`)_
 - Duplicate-EID guard: fire on entry and clear the field _(2026-06-23, `5d7dc22`)_
 - One slim shared header, single back chevron _(2026-06-23, `f913b98`)_
