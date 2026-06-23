@@ -100,24 +100,16 @@ export function WorkListScreen({
 
   return (
     <>
-      {/* HEADER — the shared navy screen header (title row); the phone stat blocks
-          sit in a navy strip right below, so the whole top reads as one navy zone. */}
+      {/* HEADER — one tight navy block: title + date on the left, the pen/head
+          summary on a single condensed line to the right. Same on phone and tablet. */}
       <ScreenHeader
         title="Work List"
         subtitle={shortDate(saleDay.sale_date)}
         back={<HeaderBack href={`/day/${saleDay.id}`} label="Back to Sale Dashboard" />}
         right={
-          // Tablet shows the counts inline up here; the phone gets the stat blocks below.
-          <span className="wl-counts-tablet" style={{ fontSize: 14, fontWeight: 700, color: colors.gold }}>{toWork} {toWork === 1 ? 'pen' : 'pens'} to work · {headLeft} head left</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: colors.gold, whiteSpace: 'nowrap', textAlign: 'right' }}>{toWork} {toWork === 1 ? 'pen' : 'pens'} · {headLeft} head left</span>
         }
       />
-      <div className="sbv-screenheader">
-        <div className="sbv-container wl-stats-phone">
-          <div><div style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{toWork}</div><div style={{ fontSize: 11, fontWeight: 600, color: '#8FA8CC', marginTop: 4 }}>{toWork === 1 ? 'Pen' : 'Pens'} to Work</div></div>
-          <div style={{ width: 1, background: 'rgba(255,255,255,0.14)' }} />
-          <div><div style={{ fontSize: 22, fontWeight: 800, color: colors.gold, lineHeight: 1 }}>{headLeft}</div><div style={{ fontSize: 11, fontWeight: 600, color: '#8FA8CC', marginTop: 4 }}>Head Left</div></div>
-        </div>
-      </div>
 
       <div className="wl-wrap">
       {/* LIST */}

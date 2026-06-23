@@ -13,11 +13,13 @@ import { deleteWorkOrder } from '@/app/(office)/work-orders/actions'
 import { WorkOrderForm } from './work-order-form'
 import { AnimalListModal } from './animal-list-modal'
 
-// Pen first (kept apart from the EXP head count so the two numbers don't blur
-// together), then consignor, work type, expected head, worked, status, actions.
-// Fluid widths so the table fits a tablet (>=768px) without sideways scroll;
-// the phone gets stacked cards instead (see the .wo-cards / .wo-board-table CSS).
-const GRID = '72px minmax(120px, 1fr) 130px 64px 92px 116px 132px'
+// Pen first (kept apart from the head count so the two numbers don't blur
+// together), then consignor, work type, head, worked, status, actions. Work type
+// gets the most room and is allowed to wrap to two lines, so a full name like
+// "Preg and Mouth Combo" shows in full; the other columns are tightened to make
+// room. Fluid widths so the table fits a tablet (>=768px) without sideways
+// scroll; the phone gets stacked cards instead (see .wo-cards / .wo-board-table).
+const GRID = '56px minmax(110px, 1fr) minmax(150px, 1.1fr) 52px 80px 104px 116px'
 
 const STATUS_STYLE: Record<WorkStatus, { bg: string; border: string; color: string; dot: string }> = {
   not_started: { bg: '#F3F3F0', border: '#E4E4DE', color: '#717182', dot: '#C2C2CA' },
@@ -165,7 +167,7 @@ export function WorkOrdersBoard({
                 <div>
               <div style={{ display: 'grid', gridTemplateColumns: GRID, height: 34, padding: '0 18px', background: '#F1F3F8', borderBottom: '1px solid #DEE3EC', fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', color: colors.textMuted }}>
                 <HeadCell pad>PEN</HeadCell><HeadCell pad>CONSIGNOR</HeadCell><HeadCell pad>WORK TYPE</HeadCell>
-                <HeadCell end>EXP</HeadCell><HeadCell end>WORKED</HeadCell><HeadCell center>STATUS</HeadCell><div />
+                <HeadCell end>HEAD</HeadCell><HeadCell end>WORKED</HeadCell><HeadCell center>STATUS</HeadCell><div />
               </div>
               {rows.map((r, i) => {
                 const st = STATUS_STYLE[r.status]
@@ -186,16 +188,16 @@ export function WorkOrdersBoard({
                             style={{ flexShrink: 0, width: 26, height: 26, borderRadius: 7, cursor: 'pointer', background: nOpen ? colors.navy : '#FDF1DC', border: `1px solid ${nOpen ? colors.navy : '#F1D9A8'}`, color: nOpen ? '#fff' : '#B45309', fontSize: 13 }}>✎</button>
                         ) : null}
                       </div>
-                      <Cell pad ellipsis color={r.pw.workType ? colors.textPrimary : colors.textPlaceholder} weight={600} size={13}>{r.pw.workType?.name ?? '—'}</Cell>
+                      <Cell pad wrap color={r.pw.workType ? colors.textPrimary : colors.textPlaceholder} weight={600} size={13}>{r.pw.workType?.name ?? '—'}</Cell>
                       <Cell end weight={800} size={15} color={colors.teal}>{r.pw.head_expected ?? 0}</Cell>
                       <Cell end weight={700} size={13} color={workedColor}>{worked}</Cell>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 10px', borderRight: '1px solid #EFF0F4' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 12px', borderRight: '1px solid #EFF0F4' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 24, padding: '0 10px', borderRadius: 999, background: st.bg, border: `1px solid ${st.border}`, fontSize: 12, fontWeight: 700, color: st.color, whiteSpace: 'nowrap' }}><span style={{ width: 7, height: 7, borderRadius: 999, background: st.dot }} />{STATUS_LABEL[r.status]}</span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 6, paddingLeft: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, paddingLeft: 16 }}>
                         {r.status !== 'complete' ? (
                           <button type="button" onClick={(e) => { e.stopPropagation(); onWorkCows(r.pw) }} title="Mark started and open Capture bound to this order"
-                            style={{ height: 32, padding: '0 12px', borderRadius: 7, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', background: colors.gold, color: colors.navy, border: 'none', whiteSpace: 'nowrap' }}>Work Cows</button>
+                            style={{ height: 32, padding: '0 14px', borderRadius: 7, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', background: colors.gold, color: colors.navy, border: 'none', whiteSpace: 'nowrap' }}>Work</button>
                         ) : (
                           <button type="button" onClick={(e) => { e.stopPropagation(); openEdit(r.pw) }}
                             style={{ height: 32, padding: '0 12px', borderRadius: 7, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', background: 'transparent', color: colors.textMuted, border: '1px solid #E4E4DE', whiteSpace: 'nowrap' }}>View</button>
@@ -245,7 +247,7 @@ export function WorkOrdersBoard({
                     {r.pw.notes ? <div style={{ fontSize: 13, fontWeight: 500, color: colors.textPrimary, background: '#FDF7EA', border: '1px solid #F1D9A8', borderRadius: 9, padding: '8px 10px', lineHeight: 1.45 }}>{r.pw.notes}</div> : null}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       {r.status !== 'complete' ? (
-                        <button type="button" onClick={(e) => { e.stopPropagation(); onWorkCows(r.pw) }} style={{ flex: 1, height: 44, borderRadius: 9, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer', background: colors.gold, color: colors.navy, border: 'none' }}>Work Cows</button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); onWorkCows(r.pw) }} style={{ flex: 1, height: 44, borderRadius: 9, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer', background: colors.gold, color: colors.navy, border: 'none' }}>Work</button>
                       ) : (
                         <button type="button" onClick={(e) => { e.stopPropagation(); openEdit(r.pw) }} style={{ flex: 1, height: 44, borderRadius: 9, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer', background: '#fff', color: colors.textMuted, border: '1px solid #E4E4DE' }}>View</button>
                       )}
@@ -327,8 +329,8 @@ function HeadCell({ children, pad, end, center }: { children?: React.ReactNode; 
   return <div style={{ display: 'flex', alignItems: 'center', justifyContent: end ? 'flex-end' : center ? 'center' : 'flex-start', paddingLeft: pad ? 12 : 0, paddingRight: end ? 12 : 0, borderRight: '1px solid #E2E5EC' }}>{children}</div>
 }
 
-function Cell({ children, pad, end, ellipsis, color = colors.textPrimary, weight = 600, size = 14 }: { children: React.ReactNode; pad?: boolean; end?: boolean; ellipsis?: boolean; color?: string; weight?: number; size?: number }) {
+function Cell({ children, pad, end, ellipsis, wrap, color = colors.textPrimary, weight = 600, size = 14 }: { children: React.ReactNode; pad?: boolean; end?: boolean; ellipsis?: boolean; wrap?: boolean; color?: string; weight?: number; size?: number }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: end ? 'flex-end' : 'flex-start', padding: '0 12px', borderRight: '1px solid #EFF0F4', fontSize: size, fontWeight: weight, color, whiteSpace: ellipsis ? 'nowrap' : undefined, overflow: ellipsis ? 'hidden' : undefined, textOverflow: ellipsis ? 'ellipsis' : undefined }}>{children}</div>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: end ? 'flex-end' : 'flex-start', padding: wrap ? '7px 12px' : '0 12px', borderRight: '1px solid #EFF0F4', fontSize: size, fontWeight: weight, color, lineHeight: wrap ? 1.25 : undefined, wordBreak: wrap ? 'break-word' : undefined, whiteSpace: ellipsis ? 'nowrap' : undefined, overflow: ellipsis ? 'hidden' : undefined, textOverflow: ellipsis ? 'ellipsis' : undefined }}>{children}</div>
   )
 }

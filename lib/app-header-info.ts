@@ -12,6 +12,8 @@ export async function fetchHeaderInfo(
   ])
   return {
     barnName: barn?.name ?? 'Sale Barn Vet',
-    subtitle: open ? 'Sale Day In Progress' : 'No Sale In Progress',
+    // When a sale is open the header just shows the barn name (no extra line);
+    // when nothing is open we say so.
+    subtitle: open ? '' : 'No Sale In Progress',
   }
 }
