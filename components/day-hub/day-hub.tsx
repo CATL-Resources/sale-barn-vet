@@ -58,8 +58,10 @@ export function DayHub({ saleDay, barn, metrics }: { saleDay: SaleDay; barn: Bar
           ))}
         </div>
 
-        {/* CAPTURE — gold primary */}
-        <GoldButton href="/capture">
+        {/* CAPTURE — gold primary. Lands on the Pen List so the operator picks a
+            pen and goes straight into capture bound to that work order, instead
+            of the old New Batch start screen. */}
+        <GoldButton href={`/work-list/${saleDay.id}`}>
           Continue Working at the Chute · {metrics.headWorked} of {metrics.headExpected}
         </GoldButton>
 
