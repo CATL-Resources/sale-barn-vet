@@ -179,6 +179,26 @@ export function AnimalEditSheet({
     onSaved()
   }
 
+  // The shared duplicate guard, fired the moment a full EID settles from typing
+  // or a scan: a duplicate already on THIS pen_work flags at once and the value
+  // is cleared, so it can't be left in the field and saved (which would count and
+  // bill the same head twice). The same EID under a different work order is fine.
+  async function guardEid(value: string): Promise<void> {
+    if (!batch) return
+    const v = value.trim()
+    if (!/^\d{15}$/.test(v)) return
+    const dup = await findDuplicateEid(supabase, {
+      barnId: bootstrap.barn.id,
+      penWorkId: batch.penWorkId,
+      eid: v,
+      excludeAnimalId: animal?.id,
+    })
+    if (dup) {
+      setFlag(dup)
+      patch({ eid: '' })
+    }
+  }
+
   const idInput = (
     value: string,
     onChange: (v: string) => void,
@@ -228,7 +248,7 @@ export function AnimalEditSheet({
           {shows('eid') && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {labelCol('EID', eidRequired && !isEid15)}
-              {idInput(draft.eid, (v) => { setFlag(null); patch({ eid: v }) }, 'Scan or type EID', { flagged: !!flag })}
+              {idInput(draft.eid, (v) => { setFlag(null); patch({ eid: v }); void guardEid(v) }, 'Scan or type EID', { flagged: !!flag })}
             </div>
           )}
           {shows('eid') && (
