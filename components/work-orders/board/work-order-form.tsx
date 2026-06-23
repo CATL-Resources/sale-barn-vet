@@ -23,7 +23,7 @@ type StagedSpecial = SpecialInput & { key: string }
 
 const fieldLabel: React.CSSProperties = { fontSize: 12, fontWeight: 700, color: colors.navy, letterSpacing: '0.02em', marginBottom: 7 }
 const input: React.CSSProperties = {
-  width: '100%', height: 42, padding: '0 12px', border: `1px solid ${colors.border}`, borderRadius: 9,
+  width: '100%', height: 44, padding: '0 12px', border: `1px solid ${colors.border}`, borderRadius: 9,
   background: '#fff', fontSize: 15, fontWeight: 600, color: colors.textPrimary, fontFamily: 'inherit', outline: 'none',
 }
 
@@ -216,7 +216,7 @@ export function WorkOrderForm({
           <div style={{ flex: 1 }} />
           {editing ? (
             <button type="button" onClick={() => setShowAnimals(true)} style={{ height: 36, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0 12px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 8, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, color: colors.navy, cursor: 'pointer' }}>
-              <span aria-hidden>📋</span>Animals
+              Animals
             </button>
           ) : null}
           {editing ? <PrintPenCardButton penWorkId={editing.id} label="Print" /> : null}
@@ -232,7 +232,7 @@ export function WorkOrderForm({
           <Section label="Type">
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <button type="button" onClick={() => setRole(role === 'buyer' ? 'seller' : 'buyer')}
-                style={{ height: 40, padding: '0 18px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 8, background: role === 'buyer' ? colors.gold : colors.navy, color: role === 'buyer' ? colors.navy : '#fff' }}>
+                style={{ height: 44, padding: '0 18px', borderRadius: 999, border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: 8, background: role === 'buyer' ? colors.gold : colors.navy, color: role === 'buyer' ? colors.navy : '#fff' }}>
                 <span style={{ width: 8, height: 8, borderRadius: 999, background: role === 'buyer' ? colors.navy : '#fff' }} />{role === 'buyer' ? 'Buyer' : 'Seller'}
               </button>
               {role === 'buyer' ? (
@@ -318,25 +318,25 @@ export function WorkOrderForm({
             </Section>
           ) : null}
 
-          {/* Work type + Animal type */}
-          <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{ flex: 1 }}>
+          {/* Work type + Animal type — stacks on a phone, side by side on a tablet */}
+          <div className="wo-form-row">
+            <div>
               <Dropdown label="Work Type" value={wt?.name ?? null} open={menu === 'work'} onToggle={() => setMenu(menu === 'work' ? null : 'work')}
                 options={workTypes.map((w) => ({ id: w.id, label: w.name }))} onPick={(id) => { setWorkTypeId(id); setMenu(null) }} />
             </div>
-            <div style={{ flex: 1 }}>
+            <div>
               <Dropdown label="Animal Type" value={animalTypes.find((a) => a.id === animalTypeId)?.name ?? null} open={menu === 'animal'} onToggle={() => setMenu(menu === 'animal' ? null : 'animal')}
                 options={animalTypes.map((a) => ({ id: a.id, label: a.name }))} onPick={(id) => { setAnimalTypeId(id); setMenu(null) }} />
             </div>
           </div>
 
-          {/* Expected head + Pen */}
-          <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{ flex: 1 }}>
+          {/* Expected head + Pen — stacks on a phone, side by side on a tablet */}
+          <div className="wo-form-row">
+            <div>
               <div style={fieldLabel as React.CSSProperties}>Expected Head</div>
               <input value={headExpected} onChange={(e) => setHeadExpected(e.target.value.replace(/[^0-9]/g, ''))} inputMode="numeric" placeholder="0" style={{ ...input, fontWeight: 700, color: colors.navy }} />
             </div>
-            <div style={{ flex: 1 }}>
+            <div>
               <div style={fieldLabel as React.CSSProperties}>Pen</div>
               <input list="wo-pen-list" value={penText} onChange={(e) => setPenText(e.target.value)} placeholder="e.g. Pen 4" style={{ ...input, fontWeight: 700, color: colors.navy }} />
               <datalist id="wo-pen-list">{pens.map((p) => <option key={p.id} value={p.pen_number} />)}</datalist>
@@ -440,7 +440,7 @@ function Dropdown({ label, value, open, onToggle, options, onPick }: {
   return (
     <div>
       <div style={fieldLabel as React.CSSProperties}>{label}</div>
-      <button type="button" onClick={onToggle} style={{ position: 'relative', width: '100%', height: 42, display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 9, fontFamily: 'inherit', cursor: 'pointer' }}>
+      <button type="button" onClick={onToggle} style={{ position: 'relative', width: '100%', height: 44, display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 9, fontFamily: 'inherit', cursor: 'pointer' }}>
         <span style={{ flex: 1, textAlign: 'left', fontSize: 14, fontWeight: 600, color: value ? colors.textPrimary : colors.textPlaceholder }}>{value ?? 'Choose…'}</span>
         <span style={{ color: colors.textPlaceholder }}>▾</span>
       </button>

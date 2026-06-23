@@ -663,6 +663,37 @@ button {
   cursor: default;
 }
 
+/* ---- Office work orders: responsive (phone first, table from tablet up) ---- */
+
+/* Form rows that hold two fields: stacked on a phone, side by side from tablet up. */
+.wo-form-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+/* The orders list: stacked cards on a phone, the multi-column table from tablet up. */
+.wo-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.wo-board-table {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .wo-form-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .wo-cards {
+    display: none;
+  }
+  .wo-board-table {
+    display: block;
+  }
+}
+
 @media (min-width: 430px) {
   .login-card {
     padding: 26px 24px;
