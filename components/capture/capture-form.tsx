@@ -188,7 +188,7 @@ export function CaptureForm({
     <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       <ScreenHeader
         back={
-          <a href="/capture" aria-label="Back" style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <a href={`/work-list/${batch.saleDayId}`} aria-label="Back to Pen List" style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <ChevronLeft size={22} color="#FFFFFF" />
           </a>
         }

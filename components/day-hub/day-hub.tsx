@@ -4,6 +4,7 @@ import { AppContainer } from '@/components/ui/app-container'
 import { ScreenHeader } from '@/components/ui/screen-header'
 import { StatTile } from '@/components/ui/stat-tile'
 import { GoldButton } from '@/components/ui/gold-button'
+import { HeaderBack } from '@/components/ui/header-back'
 import { ChevronRightIcon } from '@/components/ui/icons'
 import type { Barn, SaleDay } from '@/lib/work-orders/types'
 import type { SaleMetrics } from '@/lib/dashboard/metrics'
@@ -46,9 +47,7 @@ export function DayHub({ saleDay, barn, metrics }: { saleDay: SaleDay; barn: Bar
 
   return (
     <>
-      {/* Back to the Hub is the global chevron in the AppHeader (shown on every
-          non-home screen), so the sub-header keeps just the title + status. */}
-      <ScreenHeader title={fullDate(saleDay.sale_date)} subtitle={statusLine} />
+      <ScreenHeader title={fullDate(saleDay.sale_date)} subtitle={statusLine} back={<HeaderBack href="/" label="Back to Hub" />} />
       <AppContainer style={{ paddingTop: 18, paddingBottom: 24, display: 'flex', flexDirection: 'column', gap: 18 }}>
         {/* METRICS */}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>

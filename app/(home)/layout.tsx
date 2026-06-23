@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { AppHeader } from '@/components/ui/app-header'
+import { fetchHeaderInfo } from '@/lib/app-header-info'
 
 // The landing hub (Sale Days) after login. Gets the one shared header on top,
 // then its own responsive body.
@@ -14,11 +15,11 @@ export default async function HomeLayout({ children }: { children: ReactNode }) 
   } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: barn } = await supabase.from('barn').select('name').limit(1).maybeSingle()
+  const { barnName, subtitle } = await fetchHeaderInfo(supabase)
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
-      <AppHeader barnName={barn?.name ?? 'Sale Barn Vet'} />
+      <AppHeader barnName={barnName} subtitle={subtitle} />
       <div style={{ flex: 1, minHeight: 0 }}>{children}</div>
     </div>
   )

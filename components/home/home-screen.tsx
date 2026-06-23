@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import { colors } from '@/components/ui/tokens'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
-import { ScreenHeader } from '@/components/ui/screen-header'
 import { StatTile } from '@/components/ui/stat-tile'
 import { GoldButton } from '@/components/ui/gold-button'
 import { ChevronRightIcon } from '@/components/ui/icons'
@@ -106,8 +105,8 @@ export function HomeScreen({
 
   return (
     <div style={{ background: 'var(--page)', minHeight: '100%' }}>
-      <ScreenHeader title={barnName} subtitle={statusLine} />
-
+      {/* The barn name + status now live in the shared app header; the Hub goes
+          straight into its content. */}
       <div className="sbv-container" style={{ paddingTop: 18, paddingBottom: 28, display: 'flex', flexDirection: 'column', gap: 20 }}>
         {/* CURRENT SALE */}
         {current && currentMetrics ? (
