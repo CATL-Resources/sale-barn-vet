@@ -683,6 +683,34 @@ export function useCapture(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [penWorkId])
 
+  // Keep the active batch in the address bar so a page refresh restores the SAME
+  // pen_work and its already-saved animals, instead of dropping back to the start
+  // screen and leaving the batch orphaned with no count. A batch opened from the
+  // Pen List already arrives with ?penWork in the URL; a batch started here at the
+  // chute did not — which is where a reload used to lose the running batch. We use
+  // replaceState: it adds no history entry and doesn't refetch, so the live capture
+  // state stays put and only a reload reads the URL back. (A single half-typed,
+  // unsaved animal can still be lost on reload — that's fine; the saved animals and
+  // the batch binding are what must survive.)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    // Only touch the URL while we're actually on the capture screen, so closing a
+    // batch (which navigates on to the Pen List) doesn't fight the navigation.
+    if (window.location.pathname !== '/capture') return
+    const url = new URL(window.location.href)
+    const current = url.searchParams.get('penWork')
+    if (penWorkId) {
+      if (current !== penWorkId) {
+        url.searchParams.set('penWork', penWorkId)
+        window.history.replaceState(window.history.state, '', url.toString())
+      }
+    } else if (current) {
+      // Batch closed or cleared — drop the param so a reload doesn't reopen it.
+      url.searchParams.delete('penWork')
+      window.history.replaceState(window.history.state, '', url.toString())
+    }
+  }, [penWorkId])
+
   return {
     bootstrap,
     step,
