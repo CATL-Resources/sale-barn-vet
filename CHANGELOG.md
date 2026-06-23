@@ -4,6 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
+- add pen_session table for a pen's working state in a sale day _(2026-06-23, `33941eb`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -27,7 +28,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
-- keep an in-progress chute batch alive across a page refresh _(2026-06-23, `9752e0d`)_
 - **capture:** instant EID fill + 2nd EID works for two 840 tags _(2026-06-21, `a34d6e9`)_
 - **capture:** stop the wand EID scan splitting into a couple of digits _(2026-06-21, `41f9a98`)_
 - **layout:** app fills the screen on phone and tablet (remove the 390px frame) _(2026-06-21, `4b7054e`)_
@@ -56,6 +56,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Resume an in-progress chute batch after a page refresh _(2026-06-23, `29d5226`)_
 - Layout polish: Work Orders board columns and Pen List mobile header _(2026-06-23, `d2e8ef8`)_
 - Continue Working button lands on the Pen List _(2026-06-23, `f13a067`)_
 - Duplicate-EID guard: fire on entry and clear the field _(2026-06-23, `5d7dc22`)_
