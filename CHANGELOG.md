@@ -27,7 +27,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
-- send Continue Working button to the Pen List, not New Batch _(2026-06-23, `1eec75d`)_
+- layout polish on the Work Orders board and Pen List header _(2026-06-23, `14f90a4`)_
 - **capture:** instant EID fill + 2nd EID works for two 840 tags _(2026-06-21, `a34d6e9`)_
 - **capture:** stop the wand EID scan splitting into a couple of digits _(2026-06-21, `41f9a98`)_
 - **layout:** app fills the screen on phone and tablet (remove the 390px frame) _(2026-06-21, `4b7054e`)_
@@ -56,6 +56,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Continue Working button lands on the Pen List _(2026-06-23, `f13a067`)_
 - Duplicate-EID guard: fire on entry and clear the field _(2026-06-23, `5d7dc22`)_
 - One slim shared header, single back chevron _(2026-06-23, `f913b98`)_
 - Office work-order screen: fit phone and tablet _(2026-06-23, `60fd066`)_
