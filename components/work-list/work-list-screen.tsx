@@ -8,6 +8,7 @@ import type { Barn, PenWorkFull, SaleDay } from '@/lib/work-orders/types'
 import { startCapture } from '@/lib/work-orders/start-capture'
 import { AnimalListModal } from '@/components/work-orders/board/animal-list-modal'
 import { ScreenHeader } from '@/components/ui/screen-header'
+import { HeaderBack } from '@/components/ui/header-back'
 import { SectionCard } from '@/components/ui/section-card'
 import { Button, buttonClass } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
@@ -103,7 +104,8 @@ export function WorkListScreen({
           sit in a navy strip right below, so the whole top reads as one navy zone. */}
       <ScreenHeader
         title="Work List"
-        subtitle={`${barn.name} · ${shortDate(saleDay.sale_date)}`}
+        subtitle={shortDate(saleDay.sale_date)}
+        back={<HeaderBack href={`/day/${saleDay.id}`} label="Back to Sale Dashboard" />}
         right={
           // Tablet shows the counts inline up here; the phone gets the stat blocks below.
           <span className="wl-counts-tablet" style={{ fontSize: 14, fontWeight: 700, color: colors.gold }}>{toWork} {toWork === 1 ? 'pen' : 'pens'} to work · {headLeft} head left</span>

@@ -110,7 +110,7 @@ button {
   border-radius: 17px 17px 0 0;
 }
 
-/* ---- Shared app header (one header for every screen) ---- */
+/* ---- Shared app header (one slim header for every screen) ---- */
 .sbv-appheader {
   position: sticky;
   top: 0;
@@ -120,18 +120,30 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 56px;
+  min-height: 50px;
   /* Pad the top by the notch when installed full-screen; 0 in a browser tab. */
-  padding: calc(6px + env(safe-area-inset-top)) 12px 6px 4px;
+  padding: calc(5px + env(safe-area-inset-top)) 12px 5px 4px;
 }
-.sbv-appheader-barn {
+.sbv-appheader-info {
   flex: 1 1 0%;
   min-width: 0;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.sbv-appheader-name {
   color: #ffffff;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sbv-appheader-sub {
+  color: var(--teal);
+  font-size: 11px;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -166,13 +178,13 @@ button {
 .sbv-screenheader-inner {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 56px;
-  padding-top: 12px;
-  padding-bottom: 12px;
+  gap: 10px;
+  min-height: 44px;
+  padding-top: 8px;
+  padding-bottom: 8px;
 }
 .sbv-screenheader-title {
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 800;
   letter-spacing: -0.015em;
   color: #ffffff;

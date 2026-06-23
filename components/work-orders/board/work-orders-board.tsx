@@ -4,6 +4,7 @@ import { colors } from '@/components/ui/tokens'
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ScreenHeader } from '@/components/ui/screen-header'
+import { HeaderBack } from '@/components/ui/header-back'
 import { PlusIcon, SearchIcon, ChevronDownIcon, TrashIcon } from '@/components/ui/icons'
 import { deriveStatus, STATUS_LABEL, type WorkStatus } from '@/lib/work-orders/status'
 import type { AnimalType, Barn, PenWorkFull, SaleDay, SpecialChargeFull, WorkType } from '@/lib/work-orders/types'
@@ -104,9 +105,9 @@ export function WorkOrdersBoard({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
-      {/* Screen sub-header under the shared app header — back / hamburger / wordmark
-          all live in the shell, so this screen no longer carries its own nav. */}
-      <ScreenHeader title="Work Orders" subtitle={`${barn.name} · ${longDate(saleDay.sale_date)}`} />
+      {/* Slim screen sub-header with the one back chevron (to the Sale Dashboard);
+          the shared app header above carries the barn name + wordmark. */}
+      <ScreenHeader title="Work Orders" subtitle={longDate(saleDay.sale_date)} back={<HeaderBack href={`/day/${saleDay.id}`} label="Back to Sale Dashboard" />} />
 
       <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 'var(--content-max)', width: '100%', margin: '0 auto' }}>
         {/* TOOLBAR — wraps onto two rows on a phone so nothing is cut off. */}
