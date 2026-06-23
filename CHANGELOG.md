@@ -27,7 +27,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
-- **capture:** duplicate EID guard fires on entry and clears the field _(2026-06-23, `aff320b`)_
+- send Continue Working button to the Pen List, not New Batch _(2026-06-23, `1eec75d`)_
 - **capture:** instant EID fill + 2nd EID works for two 840 tags _(2026-06-21, `a34d6e9`)_
 - **capture:** stop the wand EID scan splitting into a couple of digits _(2026-06-21, `41f9a98`)_
 - **layout:** app fills the screen on phone and tablet (remove the 390px frame) _(2026-06-21, `4b7054e`)_
@@ -56,6 +56,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Duplicate-EID guard: fire on entry and clear the field _(2026-06-23, `5d7dc22`)_
 - One slim shared header, single back chevron _(2026-06-23, `f913b98`)_
 - Office work-order screen: fit phone and tablet _(2026-06-23, `60fd066`)_
 - Two-tier hub navigation: Hub and Sale Dashboard _(2026-06-23, `faade81`)_
