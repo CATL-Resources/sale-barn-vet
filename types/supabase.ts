@@ -779,6 +779,64 @@ export type Database = {
           },
         ]
       }
+      pen_session: {
+        Row: {
+          barn_id: string
+          created_at: string
+          field_defaults: Json
+          id: string
+          is_up: boolean
+          pen_id: string
+          sale_day_id: string
+          up_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          barn_id: string
+          created_at?: string
+          field_defaults?: Json
+          id?: string
+          is_up?: boolean
+          pen_id: string
+          sale_day_id: string
+          up_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          barn_id?: string
+          created_at?: string
+          field_defaults?: Json
+          id?: string
+          is_up?: boolean
+          pen_id?: string
+          sale_day_id?: string
+          up_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pen_session_barn_id_fkey"
+            columns: ["barn_id"]
+            isOneToOne: false
+            referencedRelation: "barn"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pen_session_pen_id_fkey"
+            columns: ["pen_id"]
+            isOneToOne: false
+            referencedRelation: "pen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pen_session_sale_day_id_fkey"
+            columns: ["sale_day_id"]
+            isOneToOne: false
+            referencedRelation: "sale_day"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pen_work: {
         Row: {
           admin_total: number | null

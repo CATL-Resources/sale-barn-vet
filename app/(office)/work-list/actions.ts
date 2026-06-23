@@ -31,3 +31,34 @@ export async function startWorkOrder(penWorkId: string): Promise<{ ok: boolean; 
   }
   return { ok: true }
 }
+
+/**
+ * The yard-crew "Up" marker for a pen on a sale day. Brought up = true with the
+ * time stamped; tapping again clears it. This is scratch yard state in
+ * pen_session, separate from the chute status — it never touches pen_work, head
+ * counts, billing, or the freeze. One row per pen per sale day (upsert on that
+ * pair). barn_id is passed through and still re-checked by RLS, so a pen can only
+ * be marked within the user's own barn.
+ */
+export async function setPenUp(
+  penId: string,
+  saleDayId: string,
+  barnId: string,
+  isUp: boolean,
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('pen_session')
+    .upsert(
+      {
+        pen_id: penId,
+        sale_day_id: saleDayId,
+        barn_id: barnId,
+        is_up: isUp,
+        up_at: isUp ? new Date().toISOString() : null,
+      },
+      { onConflict: 'pen_id,sale_day_id' },
+    )
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
+}
