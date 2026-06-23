@@ -77,6 +77,12 @@ export function CaptureForm({
     if (draft.eid) setEidType('')
   }, [draft.eid])
 
+  // A duplicate flag also clears the manual-entry box, so a duplicate tag that
+  // was typed (not scanned) can't be left sitting in the field and saved.
+  useEffect(() => {
+    if (flag) setEidType('')
+  }, [flag])
+
   // When the operator opens the secondary EID slot, drop the cursor in it.
   useEffect(() => {
     if (secondaryEidOpen) idRefs.current['eid2']?.focus()
@@ -154,7 +160,13 @@ export function CaptureForm({
       ref={eidRef}
       autoFocus
       value={eidType}
-      onChange={(e) => setEidType(e.target.value)}
+      onChange={(e) => {
+        const v = e.target.value
+        setEidType(v)
+        // The moment a full EID settles from typing, run the same guard a scan
+        // does — so a duplicate flags at once and clears, not only on Save.
+        if (/^\d{15}$/.test(v.trim())) void commitEid(v)
+      }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
           e.preventDefault()
