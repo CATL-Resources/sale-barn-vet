@@ -4,7 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- add pen_session table for a pen's working state in a sale day _(2026-06-23, `33941eb`)_
+- yard-crew Up marker and To Grab filter on the Pen List _(2026-06-23, `c6a66c2`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -56,6 +56,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Add pen_session table (schema only, additive) _(2026-06-23, `75d8a43`)_
 - Resume an in-progress chute batch after a page refresh _(2026-06-23, `29d5226`)_
 - Layout polish: Work Orders board columns and Pen List mobile header _(2026-06-23, `d2e8ef8`)_
 - Continue Working button lands on the Pen List _(2026-06-23, `f13a067`)_
