@@ -6,11 +6,13 @@ import { useRouter } from 'next/navigation'
 import { STATUS_LABEL, type WorkStatus } from '@/lib/work-orders/status'
 import type { Barn, PenWorkFull, SaleDay } from '@/lib/work-orders/types'
 import { startCapture } from '@/lib/work-orders/start-capture'
+import { setPenUp } from '@/app/(office)/work-list/actions'
 import { AnimalListModal } from '@/components/work-orders/board/animal-list-modal'
 import { ScreenHeader } from '@/components/ui/screen-header'
 import { HeaderBack } from '@/components/ui/header-back'
 import { SectionCard } from '@/components/ui/section-card'
 import { Button, buttonClass } from '@/components/ui/button'
+import { CheckIcon } from '@/components/ui/icons'
 import { Modal } from '@/components/ui/modal'
 
 // Only two states show here — finished jobs are filtered out before this screen.
@@ -48,19 +50,118 @@ function StatusPill({ status }: { status: ListStatus }) {
   )
 }
 
+// A Pen List filter chip (All / To Grab). Phone-comfortable tap target.
+function FilterChip({ active, label, count, onClick }: { active: boolean; label: string; count: number; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      style={{
+        height: 40,
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 7,
+        padding: '0 16px',
+        borderRadius: 999,
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        fontSize: 14,
+        fontWeight: 700,
+        background: active ? colors.navy : '#fff',
+        border: `1px solid ${active ? colors.navy : colors.border}`,
+        color: active ? '#fff' : colors.textPrimary,
+      }}
+    >
+      {label}
+      <span style={{ fontSize: 12, fontWeight: 800, color: active ? '#fff' : colors.textMuted, fontVariantNumeric: 'tabular-nums' }}>{count}</span>
+    </button>
+  )
+}
+
+// A small up-caret for the "Up" control.
+function CaretUp({ color }: { color: string }) {
+  return (
+    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" aria-hidden style={{ flexShrink: 0 }}>
+      <path d="M6 15l6-6 6 6" stroke={color} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// The yard-crew "Up" / brought-up control. A purple toggle, kept visually apart
+// from the gray/amber chute status so both can sit on the same card. Phone-sized
+// tap target. It's its own tap zone inside the card button, so it uses a
+// role="button" span (a real button can't nest inside the card's button).
+function UpToggle({ up, busy, onToggle }: { up: boolean; busy: boolean; onToggle: () => void }) {
+  return (
+    <span
+      role="button"
+      tabIndex={0}
+      aria-pressed={up}
+      aria-label={up ? 'Brought up — tap to clear' : 'Mark this pen up'}
+      onClick={(e) => { e.stopPropagation(); if (!busy) onToggle() }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); if (!busy) onToggle() } }}
+      style={{
+        flexShrink: 0,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 5,
+        height: 40,
+        minWidth: 60,
+        padding: '0 14px',
+        borderRadius: 999,
+        cursor: busy ? 'default' : 'pointer',
+        opacity: busy ? 0.6 : 1,
+        background: up ? colors.purple : '#fff',
+        border: `1px solid ${up ? colors.purple : '#C9B8F0'}`,
+        color: up ? '#fff' : colors.purple,
+        fontSize: 14,
+        fontWeight: 800,
+        letterSpacing: '-0.01em',
+      }}
+    >
+      {up ? <CheckIcon size={12} strokeWidth={3} style={{ color: '#fff' }} /> : <CaretUp color={colors.purple} />}
+      Up
+    </span>
+  )
+}
+
 export function WorkListScreen({
-  saleDay, barn, penWorks, workedById, productsById,
+  saleDay, barn, penWorks, workedById, productsById, upByPenId,
 }: {
   saleDay: SaleDay
   barn: Barn
   penWorks: PenWorkFull[]
   workedById: Record<string, number>
   productsById: Record<string, string[]>
+  upByPenId: Record<string, boolean>
 }) {
   const router = useRouter()
   const [selected, setSelected] = useState<PenWorkFull | null>(null)
   const [animalsFor, setAnimalsFor] = useState<PenWorkFull | null>(null)
   const [going, startGo] = useTransition()
+  // The yard-crew "Up" markers, kept locally so a tap flips instantly; seeded
+  // from the server and persisted through setPenUp. Keyed by pen, so two jobs in
+  // the same pen read (and toggle) the one marker together.
+  const [upState, setUpState] = useState<Record<string, boolean>>(upByPenId)
+  const [upBusy, setUpBusy] = useState<Record<string, boolean>>({})
+  const [, startUp] = useTransition()
+  // The "To Grab" view: only pens still needing work that aren't up yet.
+  const [toGrab, setToGrab] = useState(false)
+
+  const penUp = (penId: string | null | undefined) => !!(penId && upState[penId])
+
+  function toggleUp(penId: string) {
+    const next = !upState[penId]
+    setUpState((m) => ({ ...m, [penId]: next }))
+    setUpBusy((m) => ({ ...m, [penId]: true }))
+    startUp(async () => {
+      const res = await setPenUp(penId, saleDay.id, barn.id, next)
+      if (!res.ok) setUpState((m) => ({ ...m, [penId]: !next })) // revert on failure
+      setUpBusy((m) => ({ ...m, [penId]: false }))
+    })
+  }
 
   const rows = useMemo(() => {
     return penWorks
@@ -89,6 +190,13 @@ export function WorkListScreen({
   const toWork = rows.length
   const headLeft = rows.reduce((a, r) => a + r.headLeft, 0)
 
+  // To Grab = still has work (every row here does — finished pens are dropped
+  // before this screen) AND not up. A pen that gets worked to complete leaves on
+  // its own because it's no longer in the list at all.
+  const toGrabRows = rows.filter((r) => !penUp(r.pw.pen?.id))
+  const toGrabCount = toGrabRows.length
+  const visibleRows = toGrab ? toGrabRows : rows
+
   function go(pw: PenWorkFull) {
     startGo(async () => {
       await startCapture(pw.id, (href) => router.push(href))
@@ -112,14 +220,28 @@ export function WorkListScreen({
       />
 
       <div className="wl-wrap">
+      {/* FILTERS — All vs the yard's To Grab view (pens still needing work that
+          aren't up yet). */}
+      {rows.length > 0 ? (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <FilterChip active={!toGrab} label="All" count={toWork} onClick={() => setToGrab(false)} />
+          <FilterChip active={toGrab} label="To Grab" count={toGrabCount} onClick={() => setToGrab(true)} />
+        </div>
+      ) : null}
+
       {/* LIST */}
       {rows.length === 0 ? (
         <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 14, padding: '48px 20px', textAlign: 'center' }}>
           <div style={{ fontSize: 18, fontWeight: 700, color: colors.navy }}>Nothing Left to Work</div>
           <div style={{ fontSize: 14, color: colors.textMuted, marginTop: 6 }}>Every job for this sale day is complete.</div>
         </div>
+      ) : visibleRows.length === 0 ? (
+        <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 14, padding: '40px 20px', textAlign: 'center' }}>
+          <div style={{ fontSize: 18, fontWeight: 700, color: colors.navy }}>Every Pen Is Up</div>
+          <div style={{ fontSize: 14, color: colors.textMuted, marginTop: 6 }}>Nothing left to grab — every pen still needing work has been brought up.</div>
+        </div>
       ) : (
-        rows.map((r) => (
+        visibleRows.map((r) => (
           <button key={r.pw.id} type="button" className="wl-card" onClick={() => setSelected(r.pw)}>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -135,6 +257,9 @@ export function WorkListScreen({
               </div>
             </div>
             <StatusPill status={r.status} />
+            {r.pw.pen?.id ? (
+              <UpToggle up={penUp(r.pw.pen.id)} busy={!!upBusy[r.pw.pen.id]} onToggle={() => toggleUp(r.pw.pen!.id)} />
+            ) : null}
             <span
               role="button"
               tabIndex={0}

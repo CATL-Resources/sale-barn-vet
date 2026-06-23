@@ -29,6 +29,21 @@ export default async function WorkListPage({ params }: { params: { saleDay: stri
   //  - productsById: the special-charge descriptions to show on the job detail.
   const workedById: Record<string, number> = {}
   const productsById: Record<string, string[]> = {}
+
+  // The yard-crew "Up" markers for this sale day (pen_session.is_up), keyed by
+  // pen. Scratch yard state only — separate from the chute status, never touches
+  // pen_work or billing. A pen with no row is simply not up.
+  const upByPenId: Record<string, boolean> = {}
+  {
+    const { data: sessions } = await supabase
+      .from('pen_session')
+      .select('pen_id, is_up')
+      .eq('sale_day_id', params.saleDay)
+    for (const s of sessions ?? []) {
+      if (s.pen_id && s.is_up) upByPenId[s.pen_id] = true
+    }
+  }
+
   if (ids.length) {
     const [{ data: animals }, { data: charges }] = await Promise.all([
       supabase.from('animal').select('pen_work_id').in('pen_work_id', ids).is('deleted_at', null),
@@ -56,6 +71,7 @@ export default async function WorkListPage({ params }: { params: { saleDay: stri
       penWorks={open}
       workedById={workedById}
       productsById={productsById}
+      upByPenId={upByPenId}
     />
   )
 }
