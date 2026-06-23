@@ -4,7 +4,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **nav:** two-tier hub — Hub and Sale Dashboard, driven by real data _(2026-06-23, `6940c6d`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -28,6 +27,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
+- **work-orders:** fit the office board and form to phone and tablet _(2026-06-23, `42e7cf5`)_
 - **capture:** instant EID fill + 2nd EID works for two 840 tags _(2026-06-21, `a34d6e9`)_
 - **capture:** stop the wand EID scan splitting into a couple of digits _(2026-06-21, `41f9a98`)_
 - **layout:** app fills the screen on phone and tablet (remove the 390px frame) _(2026-06-21, `4b7054e`)_
@@ -56,6 +56,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Two-tier hub navigation: Hub and Sale Dashboard _(2026-06-23, `faade81`)_
 - Chute animal list + full-record edit pop-up _(2026-06-22, `985fc46`)_
 - Second EID: fill-and-wait (no early save) + show it on the animal list _(2026-06-22, `54135f0`)_
 - Make the per-work-order price freeze real, and bill from it _(2026-06-22, `0caf596`)_
