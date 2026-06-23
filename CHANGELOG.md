@@ -4,7 +4,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **nav:** one slim shared header, single back chevron _(2026-06-23, `e5be1cf`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -28,6 +27,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
+- **capture:** duplicate EID guard fires on entry and clears the field _(2026-06-23, `aff320b`)_
 - **capture:** instant EID fill + 2nd EID works for two 840 tags _(2026-06-21, `a34d6e9`)_
 - **capture:** stop the wand EID scan splitting into a couple of digits _(2026-06-21, `41f9a98`)_
 - **layout:** app fills the screen on phone and tablet (remove the 390px frame) _(2026-06-21, `4b7054e`)_
@@ -56,6 +56,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- One slim shared header, single back chevron _(2026-06-23, `f913b98`)_
 - Office work-order screen: fit phone and tablet _(2026-06-23, `60fd066`)_
 - Two-tier hub navigation: Hub and Sale Dashboard _(2026-06-23, `faade81`)_
 - Chute animal list + full-record edit pop-up _(2026-06-22, `985fc46`)_
