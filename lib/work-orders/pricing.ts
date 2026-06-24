@@ -66,6 +66,13 @@ export function penWorkCharges(pw: PenWorkFull, barn: Barn) {
   // return is the head this charge is for (the billed head).
   const head = pw.head_billed ?? pw.head_worked ?? 0
 
+  // A Hold line (un-placeable head parked on the pen) is never billed — $0, but
+  // its head stays visible. Every total in the app reads lineCharge through here,
+  // so this keeps Hold out of the pen and day totals everywhere.
+  if (pw.is_hold) {
+    return { vetTotal: 0, adminTotal: 0, solTotal: 0, lineCharge: 0, headWorked: head }
+  }
+
   if (pw.work_complete) {
     // Finished: price from the FROZEN rates so a later rate-card edit never moves
     // a finished bill — but at the BILLED head, so the office's billed count is

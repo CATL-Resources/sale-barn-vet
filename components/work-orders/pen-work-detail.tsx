@@ -96,6 +96,9 @@ export function PenWorkDetail({
   moveTargets,
   onResolve,
   onMove,
+  onParkHold,
+  onResolveHold,
+  onBillPen,
 }: {
   pw: PenWorkFull
   barn: Barn
@@ -105,11 +108,17 @@ export function PenWorkDetail({
   moveTargets: { id: string; name: string }[]
   onResolve: (mode: ResolveMode, reason?: string) => Promise<boolean>
   onMove: (n: number, targetId: string) => Promise<boolean>
+  onParkHold?: (n: number) => Promise<boolean>
+  onResolveHold?: (n: number, targetId: string) => Promise<boolean>
+  onBillPen?: () => Promise<boolean>
 }) {
   const charges = penWorkCharges(pw, barn)
   const [reason, setReason] = useState('')
   const [moveN, setMoveN] = useState('')
   const [moveTarget, setMoveTarget] = useState('')
+  const [parkN, setParkN] = useState('')
+  const [holdN, setHoldN] = useState('')
+  const [holdTarget, setHoldTarget] = useState('')
   const [busy, setBusy] = useState(false)
 
   const run = async (fn: () => Promise<boolean>) => {
@@ -121,6 +130,52 @@ export function PenWorkDetail({
     }
   }
   const moveCount = toIntOrNull(moveN)
+  const parkCount = toIntOrNull(parkN)
+  const holdCount = toIntOrNull(holdN)
+
+  // A Hold line gets its own simple detail: move its head onto a real owner.
+  if (pw.is_hold) {
+    return (
+      <div style={{ background: colors.hoverBg, padding: '11px 14px 13px 36px', borderBottom: `1px solid ${colors.rowDivider}`, display: 'flex', flexDirection: 'column', gap: 9 }}>
+        <div style={caption}>RESOLVE HOLD · {pw.head_billed ?? 0} HEAD</div>
+        <div style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted }}>
+          Move this un-placeable head onto the right owner. It bills $0 until then, and the pen can&rsquo;t be billed while head sits here.
+        </div>
+        {onResolveHold && moveTargets.length > 0 ? (
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input
+              inputMode="numeric"
+              value={holdN}
+              onChange={(e) => setHoldN(e.target.value)}
+              placeholder="Head"
+              className="tnum"
+              style={{ height: 30, width: 56, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 8px', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', textAlign: 'right', background: colors.white, color: colors.textPrimary }}
+            />
+            <select
+              value={holdTarget}
+              onChange={(e) => setHoldTarget(e.target.value)}
+              style={{ height: 30, minWidth: 140, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 8px', fontSize: 13, fontFamily: 'inherit', background: colors.white, color: colors.textPrimary }}
+            >
+              <option value="">Move to…</option>
+              {moveTargets.map((t) => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={busy || !holdTarget || !(holdCount != null && holdCount > 0)}
+              onClick={() => run(async () => { const ok = await onResolveHold(holdCount as number, holdTarget); if (ok) { setHoldN(''); setHoldTarget('') } return ok })}
+              style={resolveBtn(colors.navy, busy || !holdTarget || !(holdCount != null && holdCount > 0))}
+            >
+              Move to Owner
+            </button>
+          </div>
+        ) : (
+          <div style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted }}>Add the owner&rsquo;s line to this pen on the board, then move the head onto it.</div>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div
@@ -251,6 +306,45 @@ export function PenWorkDetail({
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* PARK TO HOLD + BILL — slice 3. Park moves un-placeable head onto the
+          pen's Hold line; Bill marks the pen billed (blocked while Hold holds
+          head). */}
+      {(onParkHold || onBillPen) && (
+        <div style={{ flexBasis: '100%', borderTop: '1px solid #E4E4DE', paddingTop: 12, marginTop: 2, display: 'flex', flexWrap: 'wrap', gap: 18, alignItems: 'flex-end' }}>
+          {onParkHold && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: colors.textMuted }}>Park un-placeable head to Hold</span>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input
+                  inputMode="numeric"
+                  value={parkN}
+                  onChange={(e) => setParkN(e.target.value)}
+                  placeholder="Head"
+                  className="tnum"
+                  style={{ height: 30, width: 56, border: `1px solid ${colors.border}`, borderRadius: 7, padding: '0 8px', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', textAlign: 'right', background: colors.white, color: colors.textPrimary }}
+                />
+                <button
+                  type="button"
+                  disabled={busy || !(parkCount != null && parkCount > 0)}
+                  onClick={() => run(async () => { const ok = await onParkHold(parkCount as number); if (ok) setParkN(''); return ok })}
+                  style={resolveBtn(colors.bronze, busy || !(parkCount != null && parkCount > 0))}
+                >
+                  Park to Hold
+                </button>
+              </div>
+            </div>
+          )}
+          {onBillPen && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: colors.textMuted }}>Billing</span>
+              <button type="button" disabled={busy} onClick={() => run(onBillPen)} style={resolveBtn(colors.teal, busy)}>
+                Bill Pen
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

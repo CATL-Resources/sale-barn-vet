@@ -482,6 +482,199 @@ export async function moveHead(input: MoveHeadInput): Promise<MoveResult> {
   return { ok: true, targetId: target.id }
 }
 
+export type HoldResult = { ok: true; holdId: string } | { ok: false; error: string }
+
+/**
+ * Park N head onto a pen's Hold line (slice 3) — head the crew worked but can't
+ * place to an owner. Moves N off the source owner line into the pen's "Unknown /
+ * Hold" line (created if it doesn't exist yet: is_hold=true, no parties). Only
+ * head_billed moves; the generated *_total columns are never written and the
+ * Hold line bills $0 through pricing.ts. Audit kind='hold_park'.
+ */
+export async function parkHold(sourceId: string, n: number): Promise<HoldResult> {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const count = Math.trunc(n)
+  if (!(count > 0)) return { ok: false, error: 'Enter a head count greater than zero.' }
+
+  const { data: src, error: srcErr } = await supabase
+    .from('pen_work')
+    .select('id, barn_id, sale_day_id, pen_id, head_worked, head_billed, is_hold')
+    .eq('id', sourceId)
+    .is('deleted_at', null)
+    .maybeSingle()
+  if (srcErr) return { ok: false, error: srcErr.message }
+  if (!src) return { ok: false, error: 'Source line not found.' }
+  if (src.is_hold) return { ok: false, error: 'That line is already the Hold line.' }
+  if (!src.pen_id) return { ok: false, error: 'Assign a pen before parking head to Hold.' }
+  const srcBilled = src.head_billed ?? src.head_worked ?? 0
+  if (count > srcBilled) return { ok: false, error: `Can't park ${count} — that line only has ${srcBilled}.` }
+
+  // Find or create the pen's Hold line.
+  const { data: existing } = await supabase
+    .from('pen_work')
+    .select('id, head_billed')
+    .eq('sale_day_id', src.sale_day_id)
+    .eq('pen_id', src.pen_id)
+    .eq('is_hold', true)
+    .is('deleted_at', null)
+    .limit(1)
+  let holdId: string
+  let holdBilled = 0
+  if (existing && existing.length) {
+    holdId = existing[0].id
+    holdBilled = existing[0].head_billed ?? 0
+  } else {
+    const { data: created, error } = await supabase
+      .from('pen_work')
+      .insert({ barn_id: src.barn_id, sale_day_id: src.sale_day_id, pen_id: src.pen_id, is_hold: true, origin: 'office', head_billed: 0 })
+      .select('id')
+      .single()
+    if (error || !created) return { ok: false, error: error?.message ?? 'Could not create the Hold line.' }
+    holdId = created.id
+  }
+
+  const { error: e1 } = await supabase.from('pen_work').update({ head_billed: srcBilled - count }).eq('id', sourceId)
+  if (e1) return { ok: false, error: e1.message }
+  const { error: e2 } = await supabase.from('pen_work').update({ head_billed: holdBilled + count }).eq('id', holdId)
+  if (e2) return { ok: false, error: e2.message }
+
+  await supabase.from('pen_work_adjustment').insert({
+    barn_id: src.barn_id,
+    sale_day_id: src.sale_day_id,
+    pen_work_id: holdId,
+    source_pen_work_id: sourceId,
+    kind: 'hold_park',
+    head_delta: count,
+    created_by: user?.id ?? null,
+  })
+
+  revalidatePath(`/work-orders/${src.sale_day_id}`)
+  return { ok: true, holdId }
+}
+
+export type ResolveHoldInput = {
+  holdId: string
+  n: number
+  targetId?: string | null
+  targetPartyId?: string | null
+  targetRole?: 'seller' | 'buyer'
+}
+
+/**
+ * Empty N head off a pen's Hold line onto a real owner line in the same pen
+ * (slice 3, reusing the move pattern). Target is created if it doesn't exist.
+ * Only head_billed moves; the owner's charge recomputes through pricing.ts. When
+ * the Hold line hits 0 head it's soft-cleared so it drops off the board. Audit
+ * kind='hold_resolve' (source=Hold, target=owner).
+ */
+export async function resolveHold(input: ResolveHoldInput): Promise<MoveResult> {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const n = Math.trunc(input.n)
+  if (!(n > 0)) return { ok: false, error: 'Enter a head count greater than zero.' }
+
+  const { data: hold, error: hErr } = await supabase
+    .from('pen_work')
+    .select('id, barn_id, sale_day_id, pen_id, head_billed, is_hold')
+    .eq('id', input.holdId)
+    .is('deleted_at', null)
+    .maybeSingle()
+  if (hErr) return { ok: false, error: hErr.message }
+  if (!hold || !hold.is_hold) return { ok: false, error: 'Hold line not found.' }
+  const holdBilled = hold.head_billed ?? 0
+  if (n > holdBilled) return { ok: false, error: `Only ${holdBilled} head on Hold.` }
+
+  let target: { id: string; head_worked: number | null; head_billed: number | null }
+  if (input.targetId) {
+    const { data, error } = await supabase
+      .from('pen_work')
+      .select('id, pen_id, sale_day_id, head_worked, head_billed')
+      .eq('id', input.targetId)
+      .is('deleted_at', null)
+      .maybeSingle()
+    if (error) return { ok: false, error: error.message }
+    if (!data) return { ok: false, error: 'Target line not found.' }
+    if (data.pen_id !== hold.pen_id || data.sale_day_id !== hold.sale_day_id) {
+      return { ok: false, error: 'The target line must be in the same pen and sale day.' }
+    }
+    target = { id: data.id, head_worked: data.head_worked, head_billed: data.head_billed }
+  } else if (input.targetPartyId && input.targetRole) {
+    const payload: TablesInsert<'pen_work'> = {
+      barn_id: hold.barn_id,
+      sale_day_id: hold.sale_day_id,
+      pen_id: hold.pen_id,
+      origin: 'office',
+    }
+    if (input.targetRole === 'buyer') payload.buyer_party_id = input.targetPartyId
+    else payload.seller_party_id = input.targetPartyId
+    const { data, error } = await supabase.from('pen_work').insert(payload).select('id, head_worked, head_billed').single()
+    if (error || !data) return { ok: false, error: error?.message ?? 'Could not create the target line.' }
+    target = { id: data.id, head_worked: data.head_worked, head_billed: data.head_billed }
+  } else {
+    return { ok: false, error: 'Pick an owner to move the head to.' }
+  }
+
+  const tgtBilled = target.head_billed ?? target.head_worked ?? 0
+  const { error: e1 } = await supabase.from('pen_work').update({ head_billed: tgtBilled + n }).eq('id', target.id)
+  if (e1) return { ok: false, error: e1.message }
+
+  const holdLeft = holdBilled - n
+  const holdUpdate: { head_billed: number; deleted_at?: string } = { head_billed: holdLeft }
+  if (holdLeft <= 0) holdUpdate.deleted_at = new Date().toISOString() // empty Hold drops off the board
+  const { error: e2 } = await supabase.from('pen_work').update(holdUpdate).eq('id', hold.id)
+  if (e2) return { ok: false, error: e2.message }
+
+  await supabase.from('pen_work_adjustment').insert({
+    barn_id: hold.barn_id,
+    sale_day_id: hold.sale_day_id,
+    pen_work_id: target.id,
+    source_pen_work_id: hold.id,
+    kind: 'hold_resolve',
+    head_delta: n,
+    created_by: user?.id ?? null,
+  })
+
+  revalidatePath(`/work-orders/${hold.sale_day_id}`)
+  return { ok: true, targetId: target.id }
+}
+
+export type BillPenResult = { ok: true; billed: number } | { ok: false; error: string }
+
+/**
+ * Mark a pen's lines billed (line_status='billed'), with the Hold latch: a pen
+ * with un-placeable head still on Hold can't be billed. Soft-block only at this
+ * step — nothing else is gated. The freeze trigger allows the line_status write.
+ */
+export async function billPen(penId: string, saleDayId: string, penLabel: string): Promise<BillPenResult> {
+  const supabase = createClient()
+  const { data: lines, error } = await supabase
+    .from('pen_work')
+    .select('id, is_hold, head_billed')
+    .eq('pen_id', penId)
+    .eq('sale_day_id', saleDayId)
+    .is('deleted_at', null)
+  if (error) return { ok: false, error: error.message }
+
+  const holdHead = (lines ?? []).filter((l) => l.is_hold).reduce((a, l) => a + (l.head_billed ?? 0), 0)
+  if (holdHead > 0) {
+    return { ok: false, error: `Pen ${penLabel} has ${holdHead} head on Hold — resolve before billing.` }
+  }
+
+  const toBill = (lines ?? []).filter((l) => !l.is_hold).map((l) => l.id)
+  if (toBill.length) {
+    const { error: upErr } = await supabase.from('pen_work').update({ line_status: 'billed' }).in('id', toBill)
+    if (upErr) return { ok: false, error: upErr.message }
+  }
+
+  revalidatePath(`/work-orders/${saleDayId}`)
+  return { ok: true, billed: toBill.length }
+}
+
 /** Soft-delete a work order (set deleted_at). Per-barn RLS scopes the write. */
 export async function deleteWorkOrder(penWorkId: string): Promise<{ ok: boolean; error?: string }> {
   const supabase = createClient()
