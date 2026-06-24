@@ -11,6 +11,7 @@ export type BarnSettings = {
   preg_timing_format: string // shown read-only (capture depends on it)
   admin_fee_rate: number // stored as a fraction, e.g. 0.05 = 5%
   sales_tax_rate: number
+  special_sol_charge: number // flat dollars per head added to every special charge
 }
 
 export type FieldConfig = {

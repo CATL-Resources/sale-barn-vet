@@ -3,11 +3,12 @@
 import { useState } from 'react'
 import { colors } from '@/components/ui/tokens'
 import { PlusIcon, TrashIcon } from '@/components/ui/icons'
-import { formatUsd } from '@/lib/work-orders/pricing'
+import { computePenWorkCharges, formatUsd } from '@/lib/work-orders/pricing'
 import type { Role, SpecialChargeFull } from '@/lib/work-orders/types'
 import type { NewSpecialChargeInput } from '@/lib/work-orders/use-pen-works'
 
 type PartyOption = { id: string; name: string }
+type Rates = { taxRate: number; adminRate: number; solCharge: number }
 
 const fieldStyle: React.CSSProperties = {
   height: 36,
@@ -41,8 +42,13 @@ function SpecialRow({
         background: hover ? colors.hoverBg : 'transparent',
       }}
     >
-      <span style={{ flex: 2, minWidth: 0, fontSize: 14, fontWeight: 600, color: colors.textPrimary }}>
-        {sc.description || '—'}
+      <span style={{ flex: 2, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <span style={{ fontSize: 14, fontWeight: 600, color: colors.textPrimary }}>{sc.description || '—'}</span>
+        {sc.head > 0 && (
+          <span className="tnum" style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted }}>
+            {sc.head} head · {formatUsd(sc.frozen_vet_charge ?? 0)}/head vet
+          </span>
+        )}
       </span>
       <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: colors.textMuted }}>
         {sc.party?.name ?? '—'}
@@ -75,14 +81,27 @@ function SpecialRow({
   )
 }
 
+function BreakdownLine({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
+      <span style={{ fontSize: 12, fontWeight: strong ? 700 : 600, color: strong ? colors.navy : colors.textMuted }}>{label}</span>
+      <span className="tnum" style={{ fontSize: strong ? 14 : 13, fontWeight: strong ? 800 : 700, color: strong ? colors.navy : colors.textPrimary }}>
+        {value}
+      </span>
+    </div>
+  )
+}
+
 export function SpecialChargesCard({
   specialCharges,
   partyOptions,
+  rates,
   onAdd,
   onDelete,
 }: {
   specialCharges: SpecialChargeFull[]
   partyOptions: PartyOption[]
+  rates: Rates
   onAdd: (input: NewSpecialChargeInput) => Promise<void>
   onDelete: (id: string) => void
 }) {
@@ -90,23 +109,34 @@ export function SpecialChargesCard({
   const [description, setDescription] = useState('')
   const [partyId, setPartyId] = useState('')
   const [role, setRole] = useState<Role>('seller')
-  const [amount, setAmount] = useState('')
+  const [head, setHead] = useState('')
+  const [vetCharge, setVetCharge] = useState('')
+
+  // A special is priced like a work type: a per-head vet charge plus the barn's
+  // standard per-head SOL, with tax and the admin fee on top. This preview shows
+  // exactly what will be charged before it's saved (and frozen).
+  const headNum = Math.max(0, Math.floor(Number(head) || 0))
+  const vetNum = Number(vetCharge) || 0
+  const calc = computePenWorkCharges(vetNum, rates.solCharge, headNum, rates.taxRate, rates.adminRate)
+  const canSave = headNum >= 1
 
   function reset() {
     setDescription('')
     setPartyId('')
     setRole('seller')
-    setAmount('')
+    setHead('')
+    setVetCharge('')
     setAdding(false)
   }
 
   async function save() {
-    const value = parseFloat(amount)
+    if (!canSave) return
     await onAdd({
       description,
       partyId: partyId || null,
       role,
-      amount: Number.isFinite(value) ? value : 0,
+      head: headNum,
+      vetCharge: vetNum,
     })
     reset()
   }
@@ -155,93 +185,138 @@ export function SpecialChargesCard({
         <div
           style={{
             display: 'flex',
-            gap: 8,
-            alignItems: 'center',
-            flexWrap: 'wrap',
+            flexDirection: 'column',
+            gap: 10,
             padding: '12px 14px',
             borderBottom: `1px solid ${colors.rowDivider}`,
             background: colors.hoverBg,
           }}
         >
-          <input
-            autoFocus
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Description"
-            style={{ ...fieldStyle, flex: '2 1 200px' }}
-          />
-          <select value={partyId} onChange={(e) => setPartyId(e.target.value)} style={{ ...fieldStyle, flex: '1 1 160px' }}>
-            <option value="">(no party)</option>
-            {partyOptions.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <div style={{ display: 'flex', border: `1px solid ${colors.border}`, borderRadius: 8, overflow: 'hidden' }}>
-            {(['seller', 'buyer'] as Role[]).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setRole(r)}
-                style={{
-                  height: 36,
-                  padding: '0 12px',
-                  border: 'none',
-                  background: role === r ? colors.navy : colors.white,
-                  color: role === r ? '#FFFFFF' : colors.textMuted,
-                  fontSize: 13,
-                  fontWeight: 700,
-                  textTransform: 'capitalize',
-                  cursor: 'pointer',
-                }}
-              >
-                {r}
-              </button>
-            ))}
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input
+              autoFocus
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Description"
+              style={{ ...fieldStyle, flex: '2 1 200px' }}
+            />
+            <select value={partyId} onChange={(e) => setPartyId(e.target.value)} style={{ ...fieldStyle, flex: '1 1 160px' }}>
+              <option value="">(no party)</option>
+              {partyOptions.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <div style={{ display: 'flex', border: `1px solid ${colors.border}`, borderRadius: 8, overflow: 'hidden' }}>
+              {(['seller', 'buyer'] as Role[]).map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setRole(r)}
+                  style={{
+                    height: 36,
+                    padding: '0 12px',
+                    border: 'none',
+                    background: role === r ? colors.navy : colors.white,
+                    color: role === r ? '#FFFFFF' : colors.textMuted,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    textTransform: 'capitalize',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
           </div>
-          <input
-            inputMode="decimal"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="Amount"
-            className="tnum"
-            style={{ ...fieldStyle, width: 110, textAlign: 'right' }}
-          />
-          <button
-            type="button"
-            onClick={save}
+
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: colors.textMuted }}>
+              Head
+              <input
+                inputMode="numeric"
+                value={head}
+                onChange={(e) => setHead(e.target.value)}
+                placeholder="0"
+                className="tnum"
+                style={{ ...fieldStyle, width: 76, textAlign: 'right' }}
+              />
+            </label>
+            <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: colors.textMuted }}>
+              Vet $/head
+              <input
+                inputMode="decimal"
+                value={vetCharge}
+                onChange={(e) => setVetCharge(e.target.value)}
+                placeholder="0.00"
+                className="tnum"
+                style={{ ...fieldStyle, width: 96, textAlign: 'right' }}
+              />
+            </label>
+            <span style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted }}>
+              SOL {formatUsd(rates.solCharge)}/head (barn standard)
+            </span>
+          </div>
+
+          {/* Live breakdown — what will actually be charged, before freezing. */}
+          <div
             style={{
-              height: 36,
-              padding: '0 16px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 5,
+              padding: '10px 12px',
               borderRadius: 8,
-              background: colors.gold,
-              border: 'none',
-              color: colors.navy,
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: 'pointer',
+              background: colors.white,
+              border: `1px solid ${colors.border}`,
             }}
           >
-            Save
-          </button>
-          <button
-            type="button"
-            onClick={reset}
-            style={{
-              height: 36,
-              padding: '0 12px',
-              borderRadius: 8,
-              background: 'transparent',
-              border: 'none',
-              color: colors.textMuted,
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: 'pointer',
-            }}
-          >
-            Cancel
-          </button>
+            <BreakdownLine label={`Vet (${formatUsd(vetNum)} × ${headNum} head + ${(rates.taxRate * 100).toFixed(2)}% tax)`} value={formatUsd(calc.vetTotal)} />
+            <BreakdownLine label={`Admin fee (${(rates.adminRate * 100).toFixed(2)}%)`} value={formatUsd(calc.adminTotal)} />
+            <BreakdownLine label={`SOL (${formatUsd(rates.solCharge)} × ${headNum} head)`} value={formatUsd(calc.solTotal)} />
+            <div style={{ height: 1, background: colors.rowDivider, margin: '3px 0' }} />
+            <BreakdownLine label="Customer charge" value={formatUsd(calc.lineCharge)} strong />
+          </div>
+
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              onClick={reset}
+              style={{
+                height: 36,
+                padding: '0 12px',
+                borderRadius: 8,
+                background: 'transparent',
+                border: 'none',
+                color: colors.textMuted,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={save}
+              disabled={!canSave}
+              style={{
+                height: 36,
+                padding: '0 16px',
+                borderRadius: 8,
+                background: canSave ? colors.gold : colors.border,
+                border: 'none',
+                color: colors.navy,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: canSave ? 'pointer' : 'default',
+                opacity: canSave ? 1 : 0.6,
+              }}
+            >
+              Save
+            </button>
+          </div>
         </div>
       )}
 

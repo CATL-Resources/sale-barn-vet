@@ -72,6 +72,7 @@ export default async function SettingsPage() {
       preg_timing_format: barn.preg_timing_format,
       admin_fee_rate: num(barn.admin_fee_rate),
       sales_tax_rate: num(barn.sales_tax_rate),
+      special_sol_charge: num(barn.special_sol_charge),
     },
     fields: (fieldsRes.data ?? []).map((f) => ({
       id: f.id,
