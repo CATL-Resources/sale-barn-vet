@@ -281,6 +281,60 @@ export type PartyDetail = {
   locations: PartyLocation[]
 }
 
+export type SetBilledResult = { ok: true } | { ok: false; error: string }
+
+/**
+ * Set a line's billed count — the office's number, independent of the chute's
+ * head_worked. Office detail only; the chute never calls this.
+ *
+ * - head_worked is never touched, and the frozen_* RATE columns are never written.
+ * - The bill follows head_billed through pricing.ts (penWorkCharges), which
+ *   prices a finished line from the FROZEN rates times the billed head. We do NOT
+ *   write the vet/admin/sol/total columns: they are GENERATED from head_worked and
+ *   can't be written or made to track head_billed. So this action only stores the
+ *   billed count; pricing reflects it everywhere the charge is shown.
+ * - Records the change in pen_work_adjustment (kind='set_billed', old -> new).
+ *
+ * Per-barn RLS scopes every write.
+ */
+export async function setHeadBilled(penWorkId: string, headBilled: number | null): Promise<SetBilledResult> {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const { data: pw, error: readErr } = await supabase
+    .from('pen_work')
+    .select('barn_id, sale_day_id, head_worked, head_billed')
+    .eq('id', penWorkId)
+    .is('deleted_at', null)
+    .maybeSingle()
+  if (readErr) return { ok: false, error: readErr.message }
+  if (!pw) return { ok: false, error: 'Work order not found.' }
+
+  const { error: upErr } = await supabase
+    .from('pen_work')
+    .update({ head_billed: headBilled })
+    .eq('id', penWorkId)
+  if (upErr) return { ok: false, error: upErr.message }
+
+  // Audit the change: old billed (or worked, if billed was unset) -> new.
+  const fromValue = pw.head_billed ?? pw.head_worked
+  await supabase.from('pen_work_adjustment').insert({
+    barn_id: pw.barn_id,
+    sale_day_id: pw.sale_day_id,
+    pen_work_id: penWorkId,
+    kind: 'set_billed',
+    from_value: fromValue == null ? null : String(fromValue),
+    to_value: headBilled == null ? null : String(headBilled),
+    reason: null,
+    created_by: user?.id ?? null,
+  })
+
+  revalidatePath(`/work-orders/${pw.sale_day_id}`)
+  return { ok: true }
+}
+
 /** Soft-delete a work order (set deleted_at). Per-barn RLS scopes the write. */
 export async function deleteWorkOrder(penWorkId: string): Promise<{ ok: boolean; error?: string }> {
   const supabase = createClient()

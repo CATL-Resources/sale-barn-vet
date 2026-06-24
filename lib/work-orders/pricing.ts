@@ -61,18 +61,18 @@ export function hasRate(pw: PenWorkFull): boolean {
  *   Nothing is frozen until the order is finished.
  */
 export function penWorkCharges(pw: PenWorkFull, barn: Barn) {
-  const head = pw.head_worked ?? 0
+  // Bill the office's BILLED count when it's set, otherwise the chute's worked
+  // count. head_worked itself is never changed by this. `headWorked` in the
+  // return is the head this charge is for (the billed head).
+  const head = pw.head_billed ?? pw.head_worked ?? 0
 
   if (pw.work_complete) {
-    if (pw.total_customer_charge != null) {
-      return {
-        vetTotal: pw.vet_total ?? 0,
-        adminTotal: pw.admin_total ?? 0,
-        solTotal: pw.sol_total ?? 0,
-        lineCharge: pw.total_customer_charge,
-        headWorked: head,
-      }
-    }
+    // Finished: price from the FROZEN rates so a later rate-card edit never moves
+    // a finished bill — but at the BILLED head, so the office's billed count is
+    // reflected. The stored vet_total / admin_total / sol_total /
+    // total_customer_charge columns are GENERATED from head_worked, so they can't
+    // track head_billed and are intentionally not used for the bill here. With
+    // head_billed == head_worked this yields exactly those stored values.
     const frozen = computePenWorkCharges(
       pw.frozen_vet_charge ?? 0,
       pw.frozen_sol_charge ?? 0,

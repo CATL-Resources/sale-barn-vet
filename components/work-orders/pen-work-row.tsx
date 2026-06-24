@@ -106,6 +106,30 @@ function StatusDot({ complete, onClick }: { complete: boolean; onClick: () => vo
   )
 }
 
+// The office line-status lifecycle, shown read-only as a small label.
+const LINE_STATUS_STYLE: Record<string, { bg: string; color: string }> = {
+  open: { bg: '#F3F3F0', color: colors.textMuted },
+  worked: { bg: colors.tealPillBg, color: colors.tealDeep },
+  clean: { bg: colors.tealPillBg, color: colors.tealDeep },
+  needs_resolution: { bg: '#FDF1DC', color: colors.bronze },
+  resolved: { bg: '#F3F3F0', color: colors.textMuted },
+  billed: { bg: '#EAE2FA', color: colors.purple },
+}
+
+function MiniPill({ text, bg, color }: { text: string; bg: string; color: string }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', height: 18, padding: '0 7px', borderRadius: 999, background: bg, color, fontSize: 10, fontWeight: 700, whiteSpace: 'nowrap' }}>
+      {text}
+    </span>
+  )
+}
+
+function LineStatusPill({ status }: { status: string }) {
+  const s = LINE_STATUS_STYLE[status] ?? { bg: '#F3F3F0', color: colors.textMuted }
+  const label = status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  return <MiniPill text={label} bg={s.bg} color={s.color} />
+}
+
 export function PenWorkRow({
   pw,
   view,
@@ -235,15 +259,28 @@ export function PenWorkRow({
     </select>
   )
 
+  // Worked = the chute's count (editable here). Billed = the office's count,
+  // shown beneath it: teal when it differs from worked, faint when it matches.
+  const billed = pw.head_billed ?? pw.head_worked ?? 0
+  const billedDiffers = pw.head_billed != null && pw.head_billed !== (pw.head_worked ?? 0)
   const headCell = (
-    <input
-      inputMode="numeric"
-      value={headText}
-      onChange={(e) => setHeadText(e.target.value)}
-      onBlur={() => api.saveHeadWorked(pw.id, toIntOrNull(headText))}
-      className="tnum"
-      style={{ ...fieldBase, textAlign: 'right' }}
-    />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <input
+        inputMode="numeric"
+        value={headText}
+        onChange={(e) => setHeadText(e.target.value)}
+        onBlur={() => api.saveHeadWorked(pw.id, toIntOrNull(headText))}
+        className="tnum"
+        style={{ ...fieldBase, textAlign: 'right' }}
+      />
+      <span
+        className="tnum"
+        title={billedDiffers ? 'Billed count differs from worked' : 'Billed count'}
+        style={{ fontSize: 10, fontWeight: 700, textAlign: 'right', color: billedDiffers ? colors.teal : colors.textFaint }}
+      >
+        bill {billed}
+      </span>
+    </div>
   )
 
   const chargeCell = (
@@ -260,8 +297,11 @@ export function PenWorkRow({
     </div>
   )
 
+  const mixed = pw.pen_id != null && api.mixedPenIds.has(pw.pen_id)
   const statusCell = (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flexWrap: 'wrap' }}>
+      <LineStatusPill status={pw.line_status} />
+      {mixed && <MiniPill text="Mixed" bg={colors.cardHeader} color={colors.navy} />}
       <StatusDot complete={pw.work_complete} onClick={() => api.toggleStatus(pw.id, 'work_complete' as StatusField)} />
       <StatusDot
         complete={pw.health_complete}
@@ -301,6 +341,7 @@ export function PenWorkRow({
           pw={pw}
           barn={barn}
           onCommitCount={(field, value) => api.saveCountDetail(pw.id, field, value)}
+          onCommitHeadBilled={(value) => api.saveHeadBilled(pw.id, value)}
         />
       )}
     </>

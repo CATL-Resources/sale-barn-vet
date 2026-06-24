@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { TablesInsert, TablesUpdate } from '@/types/supabase'
 import { fetchPenWorks, fetchSpecialCharges } from './queries'
 import { upsertPen } from './pens'
+import { setHeadBilled } from '@/app/(office)/work-orders/actions'
 import type {
   PenWorkFull,
   Role,
@@ -167,6 +168,32 @@ export function usePenWorks(pageData: WorkOrdersPageData, saleDayId: string) {
     },
     [optimistic],
   )
+
+  // The office's billed count. Goes through a server action (not the direct
+  // optimistic path) because it also writes an audit row server-side. We patch
+  // head_billed locally for instant feedback; the charge then follows from
+  // pricing.ts (penWorkCharges), so no totals need to come back.
+  const saveHeadBilled = useCallback(
+    async (id: string, value: number | null) => {
+      patch(id, { head_billed: value })
+      const res = await setHeadBilled(id, value)
+      if (!res.ok) {
+        flashError(res.error || 'Could not save billed count')
+        reload().catch(() => {})
+      }
+    },
+    [patch, flashError, reload],
+  )
+
+  // Pens with more than one work order on this sale day — surfaced as "Mixed".
+  // Derived from the loaded (non-deleted) rows; no manual flag.
+  const mixedPenIds = useMemo(() => {
+    const count = new Map<string, number>()
+    for (const p of penWorks) if (p.pen_id) count.set(p.pen_id, (count.get(p.pen_id) ?? 0) + 1)
+    const s = new Set<string>()
+    for (const [penId, n] of count) if (n > 1) s.add(penId)
+    return s
+  }, [penWorks])
 
   const toggleStatus = useCallback(
     async (id: string, field: StatusField) => {
@@ -365,6 +392,8 @@ export function usePenWorks(pageData: WorkOrdersPageData, saleDayId: string) {
     saveAnimalType,
     saveHeadWorked,
     saveCountDetail,
+    saveHeadBilled,
+    mixedPenIds,
     toggleStatus,
     addPenWork,
     deletePenWork,

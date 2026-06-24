@@ -73,10 +73,12 @@ export function PenWorkDetail({
   pw,
   barn,
   onCommitCount,
+  onCommitHeadBilled,
 }: {
   pw: PenWorkFull
   barn: Barn
   onCommitCount: (field: CountField, value: number | null) => void
+  onCommitHeadBilled: (value: number | null) => void
 }) {
   const charges = penWorkCharges(pw, barn)
 
@@ -87,7 +89,8 @@ export function PenWorkDetail({
         padding: '11px 14px 13px 36px',
         borderBottom: `1px solid ${colors.rowDivider}`,
         display: 'flex',
-        gap: 34,
+        gap: 28,
+        flexWrap: 'wrap',
       }}
     >
       <div>
@@ -107,6 +110,22 @@ export function PenWorkDetail({
             label="Returned"
             value={pw.head_returned}
             onCommit={(v) => onCommitCount('head_returned', v)}
+          />
+        </div>
+      </div>
+
+      <div style={{ width: 1, alignSelf: 'stretch', background: '#E4E4DE' }} />
+
+      {/* Billing count: Worked is the chute's number (read-only here); Billed is
+          the office's lever. Defaults to the worked count until set. */}
+      <div>
+        <div style={caption}>BILLING</div>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end' }}>
+          <ReadStat label="Worked (chute)" value={pw.head_worked == null ? '—' : String(pw.head_worked)} />
+          <CountInput
+            label="Billed"
+            value={pw.head_billed ?? pw.head_worked}
+            onCommit={onCommitHeadBilled}
           />
         </div>
       </div>

@@ -4,7 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **work-list:** rename Up to Staged and add per-pen capture defaults _(2026-06-24, `41156f6`)_
+- **work-orders:** office head-billed lever, billing by billed count, audit _(2026-06-24, `191e2b3`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -57,6 +57,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Pen List: rename Up to Staged + per-pen capture defaults _(2026-06-24, `a0c68af`)_
 - Office-layer schema for pen_work (migration only) _(2026-06-23, `b642e5a`)_
 - on-screen keyboard for the chute _(2026-06-23, `ae3b8bb`)_
 - Claude/peaceful lovelace nud54g _(2026-06-23, `cd97dcd`)_
