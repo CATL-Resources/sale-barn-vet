@@ -4,7 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **work-orders:** office head-billed lever, billing by billed count, audit _(2026-06-24, `191e2b3`)_
+- **work-orders:** office slice 2 — count-mismatch resolution + move engine _(2026-06-24, `4a66bc1`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -57,6 +57,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Office layer slice 1: head_billed lever, billing by billed count, audit _(2026-06-24, `70d4f83`)_
 - Pen List: rename Up to Staged + per-pen capture defaults _(2026-06-24, `a0c68af`)_
 - Office-layer schema for pen_work (migration only) _(2026-06-23, `b642e5a`)_
 - on-screen keyboard for the chute _(2026-06-23, `ae3b8bb`)_
