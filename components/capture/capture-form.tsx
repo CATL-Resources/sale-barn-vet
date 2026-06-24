@@ -3,11 +3,13 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
 import type { CaptureApi } from '@/lib/capture/use-capture'
 import { useScanRouter } from '@/lib/capture/use-scan-router'
-import { ChevronLeft, ScanIcon, SortIcon, CloseOutIcon, FlagIcon, CheckIcon, XIcon } from './icons'
+import { useOnScreenKeyboard } from '@/lib/capture/use-onscreen-keyboard'
+import { ChevronLeft, ScanIcon, SortIcon, CloseOutIcon, FlagIcon, CheckIcon, XIcon, KeyboardIcon } from './icons'
 import { ScreenHeader } from '@/components/ui/screen-header'
 import { Button } from '@/components/ui/button'
 import { RequiredMark } from '@/components/ui/required-mark'
 import { AnimalAttributes } from './animal-attributes'
+import { OnScreenKeyboard } from './onscreen-keyboard'
 import { FlagBanner, FLAG_RED, FLAG_RED_BG } from './flag'
 
 const isEid15 = (v: string) => /^\d{15}$/.test(v.trim())
@@ -68,6 +70,10 @@ export function CaptureForm({
   const idRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const [eidType, setEidType] = useState('')
 
+  // The app's own on-screen keyboard (for when a paired wand makes iOS hide the
+  // native one). Types into whichever capture field has focus.
+  const kbd = useOnScreenKeyboard()
+
   // Route every wand scan by its shape, no matter which field has focus.
   useScanRouter(routeScan, true)
 
@@ -118,6 +124,14 @@ export function CaptureForm({
   const sortPen = draft.sortPenId ? sortPens.find((p) => p.id === draft.sortPenId) : null
   const active = draft.eid.trim().length > 0
 
+  // The EID box's value setter — used by both its onChange and the on-screen
+  // keyboard. The moment a full EID settles, run the same guard a scan does so a
+  // duplicate flags at once and clears, not only on Save.
+  function setEidValue(v: string) {
+    setEidType(v)
+    if (/^\d{15}$/.test(v.trim())) void commitEid(v)
+  }
+
   // Manual EID typed into the EID box and confirmed with Enter (wand scans are
   // caught at the screen level, not here).
   async function onEidEnter() {
@@ -149,6 +163,7 @@ export function CaptureForm({
           onChange={(e) => patchDraft({ [key]: e.target.value } as Partial<typeof draft>)}
           onKeyDown={swallowEnter}
           placeholder={placeholder}
+          {...kbd.bind(fieldKey, draft[key], (v) => patchDraft({ [key]: v } as Partial<typeof draft>))}
           style={{ flex: 1, minWidth: 0, height: 46, padding: '0 13px', borderRadius: 11, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)', color: '#FFFFFF', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, outline: 'none' }}
         />
       </div>
@@ -160,13 +175,7 @@ export function CaptureForm({
       ref={eidRef}
       autoFocus
       value={eidType}
-      onChange={(e) => {
-        const v = e.target.value
-        setEidType(v)
-        // The moment a full EID settles from typing, run the same guard a scan
-        // does — so a duplicate flags at once and clears, not only on Save.
-        if (/^\d{15}$/.test(v.trim())) void commitEid(v)
-      }}
+      onChange={(e) => setEidValue(e.target.value)}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
           e.preventDefault()
@@ -174,6 +183,7 @@ export function CaptureForm({
         }
       }}
       placeholder={placeholder}
+      {...kbd.bind('eid', eidType, setEidValue)}
       style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: dashed ? 14 : 16, fontWeight: 700, color: '#1A1A1A', fontVariantNumeric: 'tabular-nums' }}
     />
   )
@@ -349,6 +359,7 @@ export function CaptureForm({
                     onChange={(e) => patchDraft({ eid2: e.target.value })}
                     onKeyDown={swallowEnter}
                     placeholder="Scan or type 2nd EID"
+                    {...kbd.bind('eid2', draft.eid2, (v) => patchDraft({ eid2: v }))}
                     style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, color: '#FFFFFF', fontVariantNumeric: 'tabular-nums' }}
                   />
                   <button type="button" aria-label="Remove second EID" onClick={() => { patchDraft({ eid2: '' }); setSecondaryEidOpen(false) }} style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
@@ -376,24 +387,38 @@ export function CaptureForm({
             draft={draft}
             patch={patchDraft}
             quickNotesLeading={sortRow}
+            bindKeyboard={kbd.bind}
           />
         </div>
       </div>
 
-      {/* save bar */}
-      <div style={{ flexShrink: 0, background: '#FFFFFF', borderTop: '1px solid #E4E4DE', padding: '12px 16px calc(18px + env(safe-area-inset-bottom))', boxShadow: '0 -6px 18px rgba(8,18,40,0.06)' }}>
+      {/* save bar — with the always-visible app-keyboard toggle on the left */}
+      <div style={{ flexShrink: 0, background: '#FFFFFF', borderTop: '1px solid #E4E4DE', padding: kbd.open ? '12px 16px' : '12px 16px calc(18px + env(safe-area-inset-bottom))', boxShadow: '0 -6px 18px rgba(8,18,40,0.06)', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button
+          type="button"
+          onClick={kbd.toggle}
+          aria-label={kbd.open ? 'Hide on-screen keyboard' : 'Show on-screen keyboard'}
+          aria-pressed={kbd.open}
+          style={{ flexShrink: 0, width: 56, height: 56, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 13, background: kbd.open ? '#0E2646' : '#F5F5F0', border: `1px solid ${kbd.open ? '#0E2646' : '#D4D4D0'}`, cursor: 'pointer' }}
+        >
+          <KeyboardIcon size={24} color={kbd.open ? '#FFFFFF' : '#0E2646'} sw={1.9} />
+        </button>
         <Button
           variant="primary"
           type="button"
           onClick={() => void onSaveNext()}
           disabled={saving}
           fullWidth
-          style={{ height: 56, gap: 9, borderRadius: 13, fontSize: 18, fontWeight: 800, letterSpacing: '-0.01em' }}
+          style={{ flex: 1, height: 56, gap: 9, borderRadius: 13, fontSize: 18, fontWeight: 800, letterSpacing: '-0.01em' }}
         >
           {draft.sortPenId ? <SortIcon size={20} color="#0E2646" sw={2.6} /> : <CheckIcon size={20} color="#0E2646" sw={2.6} />}
           {draft.sortPenId ? 'Sort & next' : 'Save & next'}
         </Button>
       </div>
+
+      {kbd.open && (
+        <OnScreenKeyboard onInsert={kbd.insert} onBackspace={kbd.backspace} onDone={kbd.dismiss} />
+      )}
     </div>
   )
 }

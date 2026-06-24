@@ -28,18 +28,29 @@ const fieldLabel = (label: string, hint?: string, requiredEmpty?: boolean) => (
   </div>
 )
 
+// Wires an editable field to the capture screen's on-screen keyboard. Optional:
+// only the chute Capture screen passes it; the edit pop-up leaves it out and
+// behaves exactly as before.
+type BindKeyboard = (
+  key: string,
+  value: string,
+  setValue: (v: string) => void,
+) => { inputMode: 'none' | undefined; onFocus: () => void }
+
 export function AnimalAttributes({
   bootstrap,
   resolved,
   draft,
   patch,
   quickNotesLeading,
+  bindKeyboard,
 }: {
   bootstrap: CaptureBootstrap
   resolved: ResolvedFields
   draft: AnimalDraft
   patch: (p: Partial<AnimalDraft>) => void
   quickNotesLeading?: React.ReactNode
+  bindKeyboard?: BindKeyboard
 }) {
   const [breedExpanded, setBreedExpanded] = useState(false)
   const [noteOpen, setNoteOpen] = useState(false)
@@ -199,6 +210,7 @@ export function AnimalAttributes({
               onChange={(e) => patch({ notes: e.target.value })}
               placeholder="Note for this animal"
               rows={2}
+              {...(bindKeyboard ? bindKeyboard('notes', draft.notes, (v) => patch({ notes: v })) : {})}
               style={{ width: '100%', border: 'none', outline: 'none', resize: 'none', fontFamily: 'inherit', fontSize: 15, fontWeight: 600, color: '#1A1A1A', background: 'transparent' }}
             />
           </div>

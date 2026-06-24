@@ -133,3 +133,22 @@ export const SearchIcon = (p: IconProps) => (
     <path d="m21 21-4.3-4.3" />
   </Svg>
 )
+export const KeyboardIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <rect x="2" y="6" width="20" height="12" rx="2" />
+    <path d="M6 10h0" />
+    <path d="M10 10h0" />
+    <path d="M14 10h0" />
+    <path d="M18 10h0" />
+    <path d="M6 14h0" />
+    <path d="M18 14h0" />
+    <path d="M9 14h6" />
+  </Svg>
+)
+export const BackspaceIcon = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Z" />
+    <path d="m18 9-6 6" />
+    <path d="m12 9 6 6" />
+  </Svg>
+)
