@@ -71,6 +71,26 @@ export async function saveSettings(payload: SavePayload): Promise<SaveResult> {
       const { error } = await supabase.from('age_designation_option').insert(rows)
       if (error) throw new Error(`New age row — ${error.message}`)
     }
+
+    // Quick notes: toggling active is the soft on/off at the chute; sort_priority
+    // sets the order. Nothing is hard-deleted.
+    for (const { id, ...patch } of payload.quickNotes) {
+      const { error } = await supabase.from('quick_note_definition').update(patch).eq('id', id)
+      if (error) throw new Error(`Quick note — ${error.message}`)
+    }
+    if (payload.newQuickNotes.length > 0) {
+      // New notes added here are barn-level permanent notes (no sale day).
+      const rows = payload.newQuickNotes.map((n) => ({
+        barn_id: barnId,
+        label: n.label,
+        sort_priority: n.sort_priority,
+        scope: 'permanent',
+        active: true,
+        is_flag: false,
+      }))
+      const { error } = await supabase.from('quick_note_definition').insert(rows)
+      if (error) throw new Error(`New quick note — ${error.message}`)
+    }
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'Save failed.' }
   }

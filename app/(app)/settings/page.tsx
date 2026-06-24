@@ -52,8 +52,12 @@ export default async function SettingsPage() {
       .order('name'),
     supabase
       .from('quick_note_definition')
-      .select('label, scope, active, sort_priority')
-      .eq('active', true)
+      // Barn-level permanent notes only (day-scoped temporary notes are managed
+      // elsewhere). Include inactive ones so the manager can switch them back on.
+      // Ordered by sort_priority ascending to match the chute's ordering.
+      .select('id, label, scope, active, sort_priority, is_flag')
+      .eq('scope', 'permanent')
+      .order('sort_priority')
       .order('label'),
     user
       ? supabase.from('barn_member').select('role').eq('user_id', user.id).eq('barn_id', barn.id)
@@ -118,10 +122,12 @@ export default async function SettingsPage() {
       active: a.active,
     })),
     quickNotes: (notesRes.data ?? []).map((n) => ({
+      id: n.id,
       label: n.label,
       scope: n.scope,
       active: n.active,
-      sort_priority: n.sort_priority,
+      sort_priority: n.sort_priority ?? 0,
+      is_flag: n.is_flag,
     })),
   }
 
