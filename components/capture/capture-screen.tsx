@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { BatchInfo, CaptureBootstrap } from '@/lib/capture/types'
 import type { CapturedAnimal } from '@/lib/capture/save-animal'
+import type { PenFieldDefaults } from '@/lib/capture/fields'
 import { useCapture } from '@/lib/capture/use-capture'
 import { StartBatch } from './start-batch'
 import { CaptureForm } from './capture-form'
@@ -16,12 +17,14 @@ export function CaptureScreen({
   bootstrap,
   userId,
   initialBatch,
+  penDefaults,
 }: {
   bootstrap: CaptureBootstrap
   userId: string | null
   initialBatch?: { batch: BatchInfo; worked: number }
+  penDefaults?: PenFieldDefaults
 }) {
-  const api = useCapture(bootstrap, userId, initialBatch)
+  const api = useCapture(bootstrap, userId, initialBatch, penDefaults)
   const [closeOutOpen, setCloseOutOpen] = useState(false)
   const [sortSheetOpen, setSortSheetOpen] = useState(false)
   const [animalsOpen, setAnimalsOpen] = useState(false)

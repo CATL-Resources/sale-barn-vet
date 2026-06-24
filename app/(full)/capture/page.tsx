@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { fetchCaptureBootstrap } from '@/lib/capture/queries'
 import { CaptureScreen } from '@/components/capture/capture-screen'
+import { parsePenDefaults, type PenFieldDefaults } from '@/lib/capture/fields'
 import type { BatchInfo } from '@/lib/capture/types'
 
 export const dynamic = 'force-dynamic'
@@ -47,6 +48,7 @@ export default async function CapturePage({
   }
 
   let initialBatch: { batch: BatchInfo; worked: number } | undefined
+  let penDefaults: PenFieldDefaults | undefined
   const penWorkId = searchParams.penWork
   if (penWorkId) {
     const { data: rows } = await supabase
@@ -87,8 +89,27 @@ export default async function CapturePage({
         headExpected: pw.head_expected,
       }
       initialBatch = { batch, worked: pw.head_worked ?? count ?? 0 }
+
+      // The office's per-pen defaults for this pen + sale day, seeded into each
+      // new-animal draft at the chute. Absent / malformed → no defaults.
+      if (pw.pen_id) {
+        const { data: sess } = await supabase
+          .from('pen_session')
+          .select('field_defaults')
+          .eq('pen_id', pw.pen_id)
+          .eq('sale_day_id', pw.sale_day_id)
+          .maybeSingle()
+        penDefaults = parsePenDefaults(sess?.field_defaults)
+      }
     }
   }
 
-  return <CaptureScreen bootstrap={bootstrap} userId={user?.id ?? null} initialBatch={initialBatch} />
+  return (
+    <CaptureScreen
+      bootstrap={bootstrap}
+      userId={user?.id ?? null}
+      initialBatch={initialBatch}
+      penDefaults={penDefaults}
+    />
+  )
 }

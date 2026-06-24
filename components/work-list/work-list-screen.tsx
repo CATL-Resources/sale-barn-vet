@@ -6,8 +6,11 @@ import { useRouter } from 'next/navigation'
 import { STATUS_LABEL, type WorkStatus } from '@/lib/work-orders/status'
 import type { Barn, PenWorkFull, SaleDay } from '@/lib/work-orders/types'
 import { startCapture } from '@/lib/work-orders/start-capture'
-import { setPenUp } from '@/app/(office)/work-list/actions'
+import { setPenUp, setPenDefaults } from '@/app/(office)/work-list/actions'
 import { AnimalListModal } from '@/components/work-orders/board/animal-list-modal'
+import { AnimalAttributes } from '@/components/capture/animal-attributes'
+import { resolveFields, applyPenDefaults, extractPenDefaults, type PenFieldDefaults } from '@/lib/capture/fields'
+import { emptyDraft, type AnimalDraft, type CaptureBootstrap } from '@/lib/capture/types'
 import { ScreenHeader } from '@/components/ui/screen-header'
 import { HeaderBack } from '@/components/ui/header-back'
 import { SectionCard } from '@/components/ui/section-card'
@@ -79,26 +82,37 @@ function FilterChip({ active, label, count, onClick }: { active: boolean; label:
   )
 }
 
-// A small up-caret for the "Up" control.
-function CaretUp({ color }: { color: string }) {
+// A small up-caret for the "Staged" notation.
+function CaretUp({ color, size = 11 }: { color: string; size?: number }) {
   return (
-    <svg width={13} height={13} viewBox="0 0 24 24" fill="none" aria-hidden style={{ flexShrink: 0 }}>
-      <path d="M6 15l6-6 6 6" stroke={color} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden style={{ flexShrink: 0 }}>
+      <path d="M6 15l6-6 6 6" stroke={color} strokeWidth={2.8} strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
 
-// The yard-crew "Up" / brought-up control. A purple toggle, kept visually apart
-// from the gray/amber chute status so both can sit on the same card. Phone-sized
-// tap target. It's its own tap zone inside the card button, so it uses a
-// role="button" span (a real button can't nest inside the card's button).
-function UpToggle({ up, busy, onToggle }: { up: boolean; busy: boolean; onToggle: () => void }) {
+// A small gear for the "Set Default" notation.
+function GearIcon({ color, size = 16 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden style={{ flexShrink: 0 }}>
+      <circle cx="12" cy="12" r="3" stroke={color} strokeWidth={2} />
+      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// The yard-crew "Staged" marker — a small purple status notation (not a button),
+// kept visually apart from the gray/amber chute status so both sit on one card.
+// Its own tap zone inside the card button, so it's a role="button" span (a real
+// button can't nest inside the card's button). Tap toggles it; behavior, the
+// To Grab filter, and auto-clear are unchanged — only the wording and size.
+function StagedChip({ up, busy, onToggle }: { up: boolean; busy: boolean; onToggle: () => void }) {
   return (
     <span
       role="button"
       tabIndex={0}
       aria-pressed={up}
-      aria-label={up ? 'Brought up — tap to clear' : 'Mark this pen up'}
+      aria-label={up ? 'Staged — tap to clear' : 'Mark this pen staged'}
       onClick={(e) => { e.stopPropagation(); if (!busy) onToggle() }}
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); if (!busy) onToggle() } }}
       style={{
@@ -106,29 +120,57 @@ function UpToggle({ up, busy, onToggle }: { up: boolean; busy: boolean; onToggle
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 5,
-        height: 40,
-        minWidth: 60,
-        padding: '0 14px',
+        gap: 4,
+        height: 26,
+        padding: '0 10px',
         borderRadius: 999,
         cursor: busy ? 'default' : 'pointer',
         opacity: busy ? 0.6 : 1,
         background: up ? colors.purple : '#fff',
         border: `1px solid ${up ? colors.purple : '#C9B8F0'}`,
         color: up ? '#fff' : colors.purple,
-        fontSize: 14,
-        fontWeight: 800,
-        letterSpacing: '-0.01em',
+        fontSize: 12,
+        fontWeight: 700,
       }}
     >
-      {up ? <CheckIcon size={12} strokeWidth={3} style={{ color: '#fff' }} /> : <CaretUp color={colors.purple} />}
-      Up
+      {up ? <CheckIcon size={11} strokeWidth={3} style={{ color: '#fff' }} /> : <CaretUp color={colors.purple} />}
+      Staged
+    </span>
+  )
+}
+
+// The "Set Default" notation — a small gear, sized like the Staged chip. Tinted
+// teal when this pen already has defaults set. Its own tap zone inside the card.
+function SetDefaultChip({ hasDefaults, onOpen }: { hasDefaults: boolean; onOpen: () => void }) {
+  const tint = hasDefaults ? colors.teal : colors.textMuted
+  return (
+    <span
+      role="button"
+      tabIndex={0}
+      aria-label={hasDefaults ? 'Edit this pen’s default fields' : 'Set default fields for this pen'}
+      onClick={(e) => { e.stopPropagation(); onOpen() }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onOpen() } }}
+      style={{
+        flexShrink: 0,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 34,
+        height: 34,
+        borderRadius: 999,
+        cursor: 'pointer',
+        background: hasDefaults ? colors.tealPillBg : '#fff',
+        border: `1px solid ${hasDefaults ? colors.teal : colors.border}`,
+        color: tint,
+      }}
+    >
+      <GearIcon color={tint} size={16} />
     </span>
   )
 }
 
 export function WorkListScreen({
-  saleDay, barn, penWorks, workedById, productsById, upByPenId,
+  saleDay, barn, penWorks, workedById, productsById, upByPenId, bootstrap, defaultsByPenId,
 }: {
   saleDay: SaleDay
   barn: Barn
@@ -136,19 +178,26 @@ export function WorkListScreen({
   workedById: Record<string, number>
   productsById: Record<string, string[]>
   upByPenId: Record<string, boolean>
+  bootstrap: CaptureBootstrap | null
+  defaultsByPenId: Record<string, PenFieldDefaults>
 }) {
   const router = useRouter()
   const [selected, setSelected] = useState<PenWorkFull | null>(null)
   const [animalsFor, setAnimalsFor] = useState<PenWorkFull | null>(null)
   const [going, startGo] = useTransition()
-  // The yard-crew "Up" markers, kept locally so a tap flips instantly; seeded
+  // The yard-crew "Staged" markers, kept locally so a tap flips instantly; seeded
   // from the server and persisted through setPenUp. Keyed by pen, so two jobs in
   // the same pen read (and toggle) the one marker together.
   const [upState, setUpState] = useState<Record<string, boolean>>(upByPenId)
   const [upBusy, setUpBusy] = useState<Record<string, boolean>>({})
   const [, startUp] = useTransition()
-  // The "To Grab" view: only pens still needing work that aren't up yet.
+  // The "To Grab" view: only pens still needing work that aren't staged yet.
   const [toGrab, setToGrab] = useState(false)
+  // Per-pen capture defaults, kept locally so the gear's "has defaults" tint and
+  // the editor's pre-fill update instantly after a save. Keyed by pen.
+  const [defaultsState, setDefaultsState] = useState<Record<string, PenFieldDefaults>>(defaultsByPenId)
+  const [editing, setEditing] = useState<{ penId: string; penLabel: string; workTypeId: string | null; workTypeName: string } | null>(null)
+  const [defBusy, setDefBusy] = useState(false)
 
   const penUp = (penId: string | null | undefined) => !!(penId && upState[penId])
 
@@ -160,6 +209,35 @@ export function WorkListScreen({
       const res = await setPenUp(penId, saleDay.id, barn.id, next)
       if (!res.ok) setUpState((m) => ({ ...m, [penId]: !next })) // revert on failure
       setUpBusy((m) => ({ ...m, [penId]: false }))
+    })
+  }
+
+  function openDefaults(pw: PenWorkFull) {
+    if (!pw.pen?.id) return
+    setEditing({
+      penId: pw.pen.id,
+      penLabel: penLabel(pw),
+      workTypeId: pw.workType?.id ?? null,
+      workTypeName: pw.workType?.name ?? 'Work',
+    })
+  }
+
+  // Save (or clear, when empty) a pen's defaults, then update local state so the
+  // gear tint reflects it without a reload.
+  function saveDefaults(penId: string, defaults: PenFieldDefaults) {
+    setDefBusy(true)
+    startUp(async () => {
+      const res = await setPenDefaults(penId, saleDay.id, barn.id, defaults)
+      if (res.ok) {
+        setDefaultsState((m) => {
+          const next = { ...m }
+          if (Object.keys(defaults).length) next[penId] = defaults
+          else delete next[penId]
+          return next
+        })
+        setEditing(null)
+      }
+      setDefBusy(false)
     })
   }
 
@@ -258,7 +336,10 @@ export function WorkListScreen({
             </div>
             <StatusPill status={r.status} />
             {r.pw.pen?.id ? (
-              <UpToggle up={penUp(r.pw.pen.id)} busy={!!upBusy[r.pw.pen.id]} onToggle={() => toggleUp(r.pw.pen!.id)} />
+              <StagedChip up={penUp(r.pw.pen.id)} busy={!!upBusy[r.pw.pen.id]} onToggle={() => toggleUp(r.pw.pen!.id)} />
+            ) : null}
+            {r.pw.pen?.id && bootstrap ? (
+              <SetDefaultChip hasDefaults={!!defaultsState[r.pw.pen.id]} onOpen={() => openDefaults(r.pw)} />
             ) : null}
             <span
               role="button"
@@ -295,8 +376,92 @@ export function WorkListScreen({
           onClose={() => setAnimalsFor(null)}
         />
       ) : null}
+
+      {/* SET DEFAULTS — the per-pen editor (same fields the work type captures) */}
+      {editing && bootstrap ? (
+        <PenDefaultsEditor
+          bootstrap={bootstrap}
+          workTypeId={editing.workTypeId}
+          penLabel={editing.penLabel}
+          workTypeName={editing.workTypeName}
+          initial={defaultsState[editing.penId] ?? {}}
+          busy={defBusy}
+          onSave={(d) => saveDefaults(editing.penId, d)}
+          onClear={() => saveDefaults(editing.penId, {})}
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
       </div>
     </>
+  )
+}
+
+// The per-pen defaults editor. Reuses the shared AnimalAttributes so it renders
+// exactly the fields this work type captures (no hard-coded list) — the office
+// sets defaults on the ones they want and leaves the rest blank. Saves through
+// setPenDefaults into pen_session.field_defaults.
+function PenDefaultsEditor({
+  bootstrap, workTypeId, penLabel, workTypeName, initial, busy, onSave, onClear, onClose,
+}: {
+  bootstrap: CaptureBootstrap
+  workTypeId: string | null
+  penLabel: string
+  workTypeName: string
+  initial: PenFieldDefaults
+  busy: boolean
+  onSave: (d: PenFieldDefaults) => void
+  onClear: () => void
+  onClose: () => void
+}) {
+  const resolved = useMemo(() => resolveFields(bootstrap.fields, workTypeId), [bootstrap.fields, workTypeId])
+  const [draft, setDraft] = useState<AnimalDraft>(() => applyPenDefaults(emptyDraft(), initial))
+  const patch = (p: Partial<AnimalDraft>) => setDraft((d) => ({ ...d, ...p }))
+
+  // Only the attribute / note fields can be defaulted; identity tags are per-animal.
+  const hasFields = ['age', 'breed', 'hide_color', 'preg_stage', 'fetal_sex', 'quick_notes', 'notes'].some(
+    (k) => resolved.get(k)?.is_displayed,
+  )
+  const setCount = Object.keys(extractPenDefaults(draft)).length
+
+  return (
+    <Modal
+      size="md"
+      align="top"
+      zIndex={70}
+      onClose={onClose}
+      overlayStyle={{ padding: 0 }}
+      panelStyle={{ background: '#F5F5F0', borderRadius: 0, boxShadow: 'none' }}
+    >
+      <div style={{ background: colors.navy, flexShrink: 0, padding: '14px 16px 16px', color: '#fff' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button type="button" onClick={onClose} aria-label="Back" style={{ width: 34, height: 34, flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', color: '#fff', fontSize: 22 }}>‹</button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: '-0.01em' }}>Set Defaults · {penLabel}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#55BAAA', marginTop: 1 }}>{workTypeName} · pre-fills every animal in this pen</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 11, flex: 1, overflowY: 'auto' }}>
+        {hasFields ? (
+          <AnimalAttributes bootstrap={bootstrap} resolved={resolved} draft={draft} patch={patch} />
+        ) : (
+          <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 14, padding: '32px 20px', textAlign: 'center' }}>
+            <div style={{ fontSize: 15, fontWeight: 700, color: colors.navy }}>No default-able fields</div>
+            <div style={{ fontSize: 13, color: colors.textMuted, marginTop: 6 }}>This work type only collects per-animal tags, which can’t be defaulted.</div>
+          </div>
+        )}
+      </div>
+
+      <div style={{ flexShrink: 0, background: '#fff', borderTop: `1px solid ${colors.border}`, padding: '12px 16px 18px', display: 'flex', gap: 10 }}>
+        <Button variant="outline" type="button" onClick={onClear} disabled={busy} style={{ flexShrink: 0, height: 52, padding: '0 18px', borderRadius: 13, fontSize: 15, fontWeight: 700 }}>
+          Clear
+        </Button>
+        <Button variant="primary" type="button" onClick={() => onSave(extractPenDefaults(draft))} disabled={busy || !hasFields} fullWidth style={{ flex: 1, height: 52, borderRadius: 13, fontSize: 16, fontWeight: 800 }}>
+          {busy ? 'Saving…' : setCount > 0 ? `Save ${setCount} default${setCount === 1 ? '' : 's'}` : 'Save (no defaults)'}
+        </Button>
+      </div>
+    </Modal>
   )
 }
 

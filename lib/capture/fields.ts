@@ -120,3 +120,59 @@ export function draftWithDefaults(resolved: ResolvedFields): AnimalDraft {
   }
   return draft
 }
+
+// ---- Per-pen defaults (office "Set Default" → pen_session.field_defaults) ----
+// The office can preset the "every animal in this pen is the same" fields for a
+// pen: the attribute + note fields the shared AnimalAttributes renders. Identity
+// tags (EID, back tag, visual, metal) are per-animal and never defaulted. Values
+// stay TEXT — nothing here is coerced to a number — and stay fully editable per
+// animal at the chute.
+const PEN_DEFAULT_STRING_KEYS = ['color', 'breed', 'ageDesignation', 'pregStatus', 'pregTiming', 'fetalSex'] as const
+
+export type PenFieldDefaults = Partial<
+  Pick<AnimalDraft, 'color' | 'breed' | 'ageDesignation' | 'pregStatus' | 'pregTiming' | 'fetalSex' | 'quickNotes' | 'notes'>
+>
+
+// Pull the set defaults out of an editor draft — blank means "no default".
+export function extractPenDefaults(draft: AnimalDraft): PenFieldDefaults {
+  const out: PenFieldDefaults = {}
+  for (const k of PEN_DEFAULT_STRING_KEYS) {
+    const v = draft[k]
+    if (typeof v === 'string' && v.trim() !== '') out[k] = v
+  }
+  if (draft.quickNotes.length) out.quickNotes = draft.quickNotes
+  if (draft.notes.trim() !== '') out.notes = draft.notes
+  return out
+}
+
+// Read the stored jsonb back into a clean, typed object — unknown keys and
+// wrong-typed values are dropped so a bad row can never corrupt a draft.
+export function parsePenDefaults(raw: unknown): PenFieldDefaults {
+  if (!raw || typeof raw !== 'object') return {}
+  const src = raw as Record<string, unknown>
+  const out: PenFieldDefaults = {}
+  for (const k of PEN_DEFAULT_STRING_KEYS) {
+    const v = src[k]
+    if (typeof v === 'string' && v.trim() !== '') out[k] = v
+  }
+  if (Array.isArray(src.quickNotes)) {
+    const qs = src.quickNotes.filter((x): x is string => typeof x === 'string')
+    if (qs.length) out.quickNotes = qs
+  }
+  if (typeof src.notes === 'string' && src.notes.trim() !== '') out.notes = src.notes
+  return out
+}
+
+// Lay a pen's preset defaults over a base draft (which already carries the work
+// type's config defaults). Only non-blank values land; everything stays editable.
+export function applyPenDefaults(base: AnimalDraft, defaults: PenFieldDefaults | null | undefined): AnimalDraft {
+  if (!defaults) return base
+  const out: AnimalDraft = { ...base }
+  for (const k of PEN_DEFAULT_STRING_KEYS) {
+    const v = defaults[k]
+    if (typeof v === 'string' && v.trim() !== '') (out as unknown as Record<string, string>)[k] = v
+  }
+  if (defaults.quickNotes && defaults.quickNotes.length) out.quickNotes = [...defaults.quickNotes]
+  if (typeof defaults.notes === 'string' && defaults.notes.trim() !== '') out.notes = defaults.notes
+  return out
+}

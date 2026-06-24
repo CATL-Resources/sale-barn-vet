@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { fetchPageData, fetchPenWorks } from '@/lib/work-orders/queries'
+import { fetchCaptureBootstrap } from '@/lib/capture/queries'
+import { parsePenDefaults, type PenFieldDefaults } from '@/lib/capture/fields'
 import { WorkListScreen } from '@/components/work-list/work-list-screen'
 
 export const dynamic = 'force-dynamic'
@@ -30,19 +32,29 @@ export default async function WorkListPage({ params }: { params: { saleDay: stri
   const workedById: Record<string, number> = {}
   const productsById: Record<string, string[]> = {}
 
-  // The yard-crew "Up" markers for this sale day (pen_session.is_up), keyed by
-  // pen. Scratch yard state only — separate from the chute status, never touches
-  // pen_work or billing. A pen with no row is simply not up.
+  // The scratch yard state for this sale day from pen_session, keyed by pen:
+  //  - upByPenId: the "Staged" marker (is_up). Separate from the chute status,
+  //    never touches pen_work or billing. No row = not staged.
+  //  - defaultsByPenId: the office's per-pen capture defaults (field_defaults),
+  //    used to pre-fill the editor and seeded into the draft at the chute.
   const upByPenId: Record<string, boolean> = {}
+  const defaultsByPenId: Record<string, PenFieldDefaults> = {}
   {
     const { data: sessions } = await supabase
       .from('pen_session')
-      .select('pen_id, is_up')
+      .select('pen_id, is_up, field_defaults')
       .eq('sale_day_id', params.saleDay)
     for (const s of sessions ?? []) {
-      if (s.pen_id && s.is_up) upByPenId[s.pen_id] = true
+      if (!s.pen_id) continue
+      if (s.is_up) upByPenId[s.pen_id] = true
+      const d = parsePenDefaults(s.field_defaults)
+      if (Object.keys(d).length) defaultsByPenId[s.pen_id] = d
     }
   }
+
+  // The barn config + reference lists the per-pen defaults editor renders from
+  // (the same field set Capture uses, so nothing is hard-coded here).
+  const bootstrap = await fetchCaptureBootstrap(supabase)
 
   if (ids.length) {
     const [{ data: animals }, { data: charges }] = await Promise.all([
@@ -72,6 +84,8 @@ export default async function WorkListPage({ params }: { params: { saleDay: stri
       workedById={workedById}
       productsById={productsById}
       upByPenId={upByPenId}
+      bootstrap={bootstrap}
+      defaultsByPenId={defaultsByPenId}
     />
   )
 }
