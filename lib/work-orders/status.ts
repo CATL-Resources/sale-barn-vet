@@ -23,3 +23,32 @@ export const STATUS_LABEL: Record<WorkStatus, string> = {
   in_progress: 'In Progress',
   complete: 'Complete',
 }
+
+// The office line-status lifecycle, layered on top of the chute work status.
+// 'clean' and 'needs_resolution' are DERIVED from the counts (a worked count
+// that differs from the ordered/expected count needs resolution; a match is
+// clean) — a soft to-do, never a block. 'resolved' and 'billed' are sticky
+// stored states that win over the derived flag. 'open'/'worked' are the
+// pre-resolution stored states (e.g. before an expected count is set).
+export type LineStatus = 'open' | 'worked' | 'clean' | 'needs_resolution' | 'resolved' | 'billed'
+
+export function deriveLineStatus(pw: {
+  line_status: string
+  head_worked: number | null
+  head_expected: number | null
+}): LineStatus {
+  if (pw.line_status === 'resolved' || pw.line_status === 'billed') return pw.line_status
+  const w = pw.head_worked
+  const e = pw.head_expected
+  if (w != null && e != null) return w === e ? 'clean' : 'needs_resolution'
+  return (pw.line_status as LineStatus) || 'open'
+}
+
+export const LINE_STATUS_LABEL: Record<LineStatus, string> = {
+  open: 'Open',
+  worked: 'Worked',
+  clean: 'Clean',
+  needs_resolution: 'Needs Resolution',
+  resolved: 'Resolved',
+  billed: 'Billed',
+}

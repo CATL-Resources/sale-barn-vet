@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import type { TablesInsert } from '@/types/supabase'
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
@@ -333,6 +334,152 @@ export async function setHeadBilled(penWorkId: string, headBilled: number | null
 
   revalidatePath(`/work-orders/${pw.sale_day_id}`)
   return { ok: true }
+}
+
+export type ResolveMode = 'accept_actual' | 'approve_difference'
+export type ResolveResult = { ok: true } | { ok: false; error: string }
+
+/**
+ * Resolve a count-mismatch line (office, slice 2). Both paths set
+ * line_status='resolved' and audit a status_change; neither writes a frozen rate.
+ * The bill follows head_billed through pricing.ts, so we never persist the
+ * generated *_total columns.
+ *  - accept_actual: bill what was worked (head_billed = head_worked).
+ *  - approve_difference: keep head_billed as-is, but a typed reason is REQUIRED.
+ */
+export async function resolveLine(penWorkId: string, mode: ResolveMode, reason?: string): Promise<ResolveResult> {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const note = reason?.trim() ?? ''
+  if (mode === 'approve_difference' && !note) {
+    return { ok: false, error: 'A reason is required to approve the difference.' }
+  }
+
+  const { data: pw, error: readErr } = await supabase
+    .from('pen_work')
+    .select('barn_id, sale_day_id, head_worked, line_status')
+    .eq('id', penWorkId)
+    .is('deleted_at', null)
+    .maybeSingle()
+  if (readErr) return { ok: false, error: readErr.message }
+  if (!pw) return { ok: false, error: 'Work order not found.' }
+
+  const update: { line_status: string; head_billed?: number | null } = { line_status: 'resolved' }
+  if (mode === 'accept_actual') update.head_billed = pw.head_worked
+
+  const { error: upErr } = await supabase.from('pen_work').update(update).eq('id', penWorkId)
+  if (upErr) return { ok: false, error: upErr.message }
+
+  await supabase.from('pen_work_adjustment').insert({
+    barn_id: pw.barn_id,
+    sale_day_id: pw.sale_day_id,
+    pen_work_id: penWorkId,
+    kind: 'status_change',
+    from_value: pw.line_status,
+    to_value: 'resolved',
+    reason: mode === 'accept_actual' ? 'accept actual' : note,
+    created_by: user?.id ?? null,
+  })
+
+  revalidatePath(`/work-orders/${pw.sale_day_id}`)
+  return { ok: true }
+}
+
+export type MoveHeadInput = {
+  sourceId: string
+  n: number
+  // Either move to an existing line, or create a line for this owner in the pen.
+  targetId?: string | null
+  targetPartyId?: string | null
+  targetRole?: 'seller' | 'buyer'
+  reason?: string | null
+}
+export type MoveResult = { ok: true; targetId: string } | { ok: false; error: string }
+
+/**
+ * Move N head from one owner's line to another WITHIN THE SAME PEN (slice 2 move
+ * engine — how a mixed pen gets sorted). Only head_billed moves: source down by
+ * N, target up by N. The *_total columns are generated from head_worked and can't
+ * be written, so we never persist them — pricing.ts charges each line from its
+ * frozen rate × (head_billed ?? head_worked). Frozen rate columns are untouched.
+ * Writes one pen_work_adjustment (kind='move', target line, source_pen_work_id,
+ * head_delta). If the target owner has no line in the pen yet, one is created.
+ */
+export async function moveHead(input: MoveHeadInput): Promise<MoveResult> {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const n = Math.trunc(input.n)
+  if (!(n > 0)) return { ok: false, error: 'Enter a head count greater than zero.' }
+
+  const { data: source, error: srcErr } = await supabase
+    .from('pen_work')
+    .select('id, barn_id, sale_day_id, pen_id, head_worked, head_billed')
+    .eq('id', input.sourceId)
+    .is('deleted_at', null)
+    .maybeSingle()
+  if (srcErr) return { ok: false, error: srcErr.message }
+  if (!source) return { ok: false, error: 'Source line not found.' }
+
+  const srcBilled = source.head_billed ?? source.head_worked ?? 0
+  if (n > srcBilled) return { ok: false, error: `Can't move ${n} — that line only bills ${srcBilled}.` }
+
+  // Resolve (or create) the target line, in the SAME pen + sale day.
+  let target: { id: string; head_worked: number | null; head_billed: number | null }
+  if (input.targetId) {
+    const { data, error } = await supabase
+      .from('pen_work')
+      .select('id, pen_id, sale_day_id, head_worked, head_billed')
+      .eq('id', input.targetId)
+      .is('deleted_at', null)
+      .maybeSingle()
+    if (error) return { ok: false, error: error.message }
+    if (!data) return { ok: false, error: 'Target line not found.' }
+    if (data.pen_id !== source.pen_id || data.sale_day_id !== source.sale_day_id) {
+      return { ok: false, error: 'The target line must be in the same pen and sale day.' }
+    }
+    target = { id: data.id, head_worked: data.head_worked, head_billed: data.head_billed }
+  } else if (input.targetPartyId && input.targetRole) {
+    const payload: TablesInsert<'pen_work'> = {
+      barn_id: source.barn_id,
+      sale_day_id: source.sale_day_id,
+      pen_id: source.pen_id,
+      origin: 'office',
+    }
+    if (input.targetRole === 'buyer') payload.buyer_party_id = input.targetPartyId
+    else payload.seller_party_id = input.targetPartyId
+    const { data, error } = await supabase.from('pen_work').insert(payload).select('id, head_worked, head_billed').single()
+    if (error || !data) return { ok: false, error: error?.message ?? 'Could not create the target line.' }
+    target = { id: data.id, head_worked: data.head_worked, head_billed: data.head_billed }
+  } else {
+    return { ok: false, error: 'Pick an owner to move the head to.' }
+  }
+
+  const tgtBilled = target.head_billed ?? target.head_worked ?? 0
+
+  // Apply: head_billed only. pricing.ts turns these into the charges.
+  const { error: e1 } = await supabase.from('pen_work').update({ head_billed: srcBilled - n }).eq('id', source.id)
+  if (e1) return { ok: false, error: e1.message }
+  const { error: e2 } = await supabase.from('pen_work').update({ head_billed: tgtBilled + n }).eq('id', target.id)
+  if (e2) return { ok: false, error: e2.message }
+
+  await supabase.from('pen_work_adjustment').insert({
+    barn_id: source.barn_id,
+    sale_day_id: source.sale_day_id,
+    pen_work_id: target.id,
+    source_pen_work_id: source.id,
+    kind: 'move',
+    head_delta: n,
+    reason: input.reason?.trim() || null,
+    created_by: user?.id ?? null,
+  })
+
+  revalidatePath(`/work-orders/${source.sale_day_id}`)
+  return { ok: true, targetId: target.id }
 }
 
 /** Soft-delete a work order (set deleted_at). Per-barn RLS scopes the write. */

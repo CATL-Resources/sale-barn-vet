@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { colors, ease } from '@/components/ui/tokens'
 import { ChevronRightIcon, CheckIcon } from '@/components/ui/icons'
 import { penWorkCharges, formatUsd } from '@/lib/work-orders/pricing'
+import { deriveLineStatus } from '@/lib/work-orders/status'
 import type { AnimalType, Barn, PenWorkFull, View, WorkType } from '@/lib/work-orders/types'
 import type { PenWorksApi, StatusField } from '@/lib/work-orders/use-pen-works'
 import { PenWorkDetail } from './pen-work-detail'
@@ -298,9 +299,13 @@ export function PenWorkRow({
   )
 
   const mixed = pw.pen_id != null && api.mixedPenIds.has(pw.pen_id)
+  // Other owner lines in the same pen — the targets for a reassign move.
+  const moveTargets = api.penWorks
+    .filter((p) => p.id !== pw.id && p.pen_id != null && p.pen_id === pw.pen_id && !p.is_hold)
+    .map((p) => ({ id: p.id, name: p.buyer?.name ?? p.seller?.name ?? '—' }))
   const statusCell = (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flexWrap: 'wrap' }}>
-      <LineStatusPill status={pw.line_status} />
+      <LineStatusPill status={deriveLineStatus(pw)} />
       {mixed && <MiniPill text="Mixed" bg={colors.cardHeader} color={colors.navy} />}
       <StatusDot complete={pw.work_complete} onClick={() => api.toggleStatus(pw.id, 'work_complete' as StatusField)} />
       <StatusDot
@@ -342,6 +347,10 @@ export function PenWorkRow({
           barn={barn}
           onCommitCount={(field, value) => api.saveCountDetail(pw.id, field, value)}
           onCommitHeadBilled={(value) => api.saveHeadBilled(pw.id, value)}
+          lineStatus={deriveLineStatus(pw)}
+          moveTargets={moveTargets}
+          onResolve={(mode, reason) => api.resolveLine(pw.id, mode, reason)}
+          onMove={(n, targetId) => api.moveHead({ sourceId: pw.id, n, targetId })}
         />
       )}
     </>
