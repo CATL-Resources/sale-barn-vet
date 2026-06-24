@@ -129,6 +129,18 @@ export function useCapture(
     setDraft((d) => ({ ...d, ...fields }))
   }, [])
 
+  // Live mirror of the entered EIDs, updated synchronously the instant a scan
+  // routes — React state from a first wand read may not have re-rendered before a
+  // second read fires right behind it, so reading draft.eid from routeScan's
+  // closure can be stale. routeScan reads and writes these instead, so two
+  // back-to-back EID scans never both land on the primary slot (clipping one).
+  const liveEid = useRef(draft.eid)
+  const liveEid2 = useRef(draft.eid2)
+  useEffect(() => {
+    liveEid.current = draft.eid
+    liveEid2.current = draft.eid2
+  }, [draft.eid, draft.eid2])
+
   // Effective field config for the active work type — the barn-wide rows overlaid
   // with this work type's overrides. Shared with the edit pop-up (lib/capture/fields).
   const resolved = useMemo(
@@ -559,18 +571,23 @@ export function useCapture(
       const fifteenDigits = /^\d{15}$/.test(code)
 
       if (fifteenDigits) {
-        // Re-scan of a tag already on this cow — ignore it.
-        if (code === draft.eid.trim() || code === draft.eid2.trim()) return
+        // Re-scan of a tag already on this cow — ignore it. (Live refs, so an
+        // immediate second read of the same tag is caught even before re-render.)
+        if (code === liveEid.current.trim() || code === liveEid2.current.trim()) return
 
         // With the 2nd-EID slot open, full EIDs fill in order — the first empty
         // of [primary, second]. That covers a cow wearing two 840 tags, which
-        // the 840-vs-900 shape rule alone can't tell apart.
+        // the 840-vs-900 shape rule alone can't tell apart. We set the live ref
+        // synchronously so a back-to-back second read goes to the second slot,
+        // not back onto the primary.
         if (secondaryEidOpen) {
-          if (!draft.eid.trim()) {
+          if (!liveEid.current.trim()) {
+            liveEid.current = code
             patchDraft({ eid: code })
             setFocusTick((n) => n + 1)
             void flagIfDuplicate(code)
           } else {
+            liveEid2.current = code
             patchDraft({ eid2: code })
             setFocusTick((n) => n + 1)
           }
@@ -580,6 +597,7 @@ export function useCapture(
         // Slot closed: an 840 tag is the primary EID; show it at once and check
         // for a duplicate in the background.
         if (code.startsWith('840')) {
+          liveEid.current = code
           patchDraft({ eid: code })
           setFocusTick((n) => n + 1)
           void flagIfDuplicate(code)
@@ -596,7 +614,7 @@ export function useCapture(
       patchDraft({ backTag: code })
       setFocusTick((n) => n + 1)
     },
-    [batch, draft.eid, draft.eid2, secondaryEidOpen, patchDraft, flash, flagIfDuplicate],
+    [batch, secondaryEidOpen, patchDraft, flash, flagIfDuplicate],
   )
 
   const closeBatch = useCallback(async (): Promise<boolean> => {
