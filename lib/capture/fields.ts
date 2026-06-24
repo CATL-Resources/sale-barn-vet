@@ -3,7 +3,7 @@
 // field list. The effective config for a work type is the barn-default rows
 // (work_type_id IS NULL) overlaid with that work type's override rows.
 
-import { isBredStage, type CaptureBootstrap } from './types'
+import { emptyDraft, isBredStage, type AnimalDraft, type CaptureBootstrap } from './types'
 
 export type ResolvedField = {
   is_displayed: boolean
@@ -14,6 +14,16 @@ export type ResolvedField = {
 }
 
 export type ResolvedFields = Map<string, ResolvedField>
+
+// Safe baseline — what Capture falls back to when a work type resolves to no
+// displayed fields at all (a barn with no field config), so the screen is never
+// blank. eid + back tag to identify her, plus the two note fields.
+const BASELINE_FALLBACK: Array<[string, number]> = [
+  ['eid', 1],
+  ['back_tag', 2],
+  ['quick_notes', 3],
+  ['notes', 4],
+]
 
 export function resolveFields(
   fields: CaptureBootstrap['fields'],
@@ -43,19 +53,30 @@ export function resolveFields(
       })
     }
   }
+
+  // Never leave Capture blank: if nothing is set to display, fall back to a
+  // minimal baseline set.
+  const anyDisplayed = Array.from(map.values()).some((f) => f.is_displayed)
+  if (!anyDisplayed) {
+    const fb: ResolvedFields = new Map()
+    for (const [key, sort_order] of BASELINE_FALLBACK) {
+      fb.set(key, { is_displayed: true, is_required: false, sort_order, display_label: null, default_value: null })
+    }
+    return fb
+  }
+
   return map
 }
 
-// Which fields show. preg keeps a fallback on the work type's preg-check flag, so
-// a preg job with no per-work-type row still shows preg. preg_timing only shows
-// for a bred stage.
+// Which fields show — purely from the resolved config. preg_timing additionally
+// only shows for a bred stage. (Display is NOT wired to work_type.includes_preg_check
+// any more; the config row is the single source of truth.)
 export function fieldShows(
   key: string,
-  opts: { resolved: ResolvedFields; includesPregCheck: boolean; pregStatus: string | null },
+  opts: { resolved: ResolvedFields; pregStatus: string | null },
 ): boolean {
   const displayed = opts.resolved.get(key)?.is_displayed ?? false
-  if (key === 'preg_stage') return displayed || opts.includesPregCheck
-  if (key === 'preg_timing') return (displayed || opts.includesPregCheck) && isBredStage(opts.pregStatus)
+  if (key === 'preg_timing') return displayed && isBredStage(opts.pregStatus)
   return displayed
 }
 
@@ -65,4 +86,37 @@ export function fieldRequired(key: string, resolved: ResolvedFields): boolean {
 
 export function fieldLabelText(key: string, resolved: ResolvedFields, fallback: string): string {
   return resolved.get(key)?.display_label || fallback
+}
+
+// Which draft property each config field_key prefills. Identifier and note
+// fields are plain strings; the attribute fields are nullable strings — both
+// take a string default cleanly. quick_notes (a list) and the sort pen are not
+// config-defaulted, so they're left off.
+const DEFAULT_TARGETS: Partial<Record<string, keyof AnimalDraft>> = {
+  eid: 'eid',
+  back_tag: 'backTag',
+  visual_tag: 'visualTag',
+  metal_tag: 'metalTag',
+  hide_color: 'color',
+  breed: 'breed',
+  age: 'ageDesignation',
+  preg_stage: 'pregStatus',
+  preg_timing: 'pregTiming',
+  fetal_sex: 'fetalSex',
+  notes: 'notes',
+}
+
+// A fresh blank draft with each displayed field's default_value laid in. Only
+// displayed fields are seeded (a hidden field's default never reaches the form
+// or the save). Used for the new animal at the chute and after each save.
+export function draftWithDefaults(resolved: ResolvedFields): AnimalDraft {
+  const draft = emptyDraft()
+  for (const key of Object.keys(DEFAULT_TARGETS)) {
+    const target = DEFAULT_TARGETS[key]
+    const f = resolved.get(key)
+    if (!target || !f?.is_displayed) continue
+    if (f.default_value == null || f.default_value === '') continue
+    ;(draft as unknown as Record<string, string>)[target] = f.default_value
+  }
+  return draft
 }

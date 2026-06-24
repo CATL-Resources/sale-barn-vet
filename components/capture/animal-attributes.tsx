@@ -31,14 +31,12 @@ const fieldLabel = (label: string, hint?: string, requiredEmpty?: boolean) => (
 export function AnimalAttributes({
   bootstrap,
   resolved,
-  includesPregCheck,
   draft,
   patch,
   quickNotesLeading,
 }: {
   bootstrap: CaptureBootstrap
   resolved: ResolvedFields
-  includesPregCheck: boolean
   draft: AnimalDraft
   patch: (p: Partial<AnimalDraft>) => void
   quickNotesLeading?: React.ReactNode
@@ -47,7 +45,7 @@ export function AnimalAttributes({
   const [noteOpen, setNoteOpen] = useState(false)
   const [monthOpen, setMonthOpen] = useState(false)
 
-  const shows = (k: string) => fieldShows(k, { resolved, includesPregCheck, pregStatus: draft.pregStatus })
+  const shows = (k: string) => fieldShows(k, { resolved, pregStatus: draft.pregStatus })
   const required = (k: string) => fieldRequired(k, resolved)
 
   const orderedFields = CARD_FIELDS.filter((k) => shows(k)).sort(

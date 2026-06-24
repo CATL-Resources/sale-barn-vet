@@ -12,7 +12,7 @@ import {
   type CaptureBootstrap,
   type SortPen,
 } from './types'
-import { fieldRequired, fieldShows, resolveFields } from './fields'
+import { draftWithDefaults, fieldRequired, fieldShows, resolveFields } from './fields'
 import {
   findDuplicateEid,
   saveAnimalRecord,
@@ -78,7 +78,11 @@ export function useCapture(
 
   const [step, setStep] = useState<Step>(initial ? 'capture' : 'start')
   const [batch, setBatch] = useState<BatchInfo | null>(initial?.batch ?? null)
-  const [draft, setDraft] = useState<AnimalDraft>(emptyDraft)
+  // A bound batch opens straight on Capture, so seed the first draft with the
+  // work type's field defaults right away; otherwise start blank.
+  const [draft, setDraft] = useState<AnimalDraft>(() =>
+    initial ? draftWithDefaults(resolveFields(bootstrap.fields, initial.batch.workTypeId)) : emptyDraft(),
+  )
   const [worked, setWorked] = useState(initial?.worked ?? 0)
   const [sorted, setSorted] = useState(0)
   const [stageTally, setStageTally] = useState<Record<string, number>>({})
@@ -123,11 +127,12 @@ export function useCapture(
     [bootstrap.fields, batch],
   )
 
-  // Which fields show / are required — shared helpers so Capture and the pop-up agree.
+  // Which fields show / are required — shared helpers so Capture and the pop-up
+  // agree. Display comes purely from the resolved config (no includes_preg_check).
   const shows = useCallback(
     (key: string): boolean => {
       if (!batch) return false
-      return fieldShows(key, { resolved, includesPregCheck: batch.includesPregCheck, pregStatus: draft.pregStatus })
+      return fieldShows(key, { resolved, pregStatus: draft.pregStatus })
     },
     [batch, resolved, draft.pregStatus],
   )
@@ -286,7 +291,7 @@ export function useCapture(
         setWorked(0)
         setSorted(0)
         setStageTally({})
-        setDraft(emptyDraft())
+        setDraft(draftWithDefaults(resolveFields(bootstrap.fields, wt.id)))
         await loadSortPens(saleDayId)
         setStep('capture')
         return true
@@ -297,7 +302,7 @@ export function useCapture(
         setSaving(false)
       }
     },
-    [supabase, barnId, userId, bootstrap.pens, bootstrap.workTypes, resolveSaleDay, loadSortPens, flash],
+    [supabase, barnId, userId, bootstrap.pens, bootstrap.workTypes, bootstrap.fields, resolveSaleDay, loadSortPens, flash],
   )
 
   // Sort allocation — shared, all-day pens.
@@ -466,12 +471,12 @@ export function useCapture(
       const ok = await buildAndInsert(ev)
       if (ok) {
         setFlag(null)
-        setDraft(emptyDraft())
+        setDraft(draftWithDefaults(resolved))
         setSecondaryEidOpen(false)
       }
       return ok
     },
-    [batch, draft.eid, eidRequired, localDuplicate, checkDuplicate, buildAndInsert, patchDraft],
+    [batch, draft.eid, eidRequired, localDuplicate, checkDuplicate, buildAndInsert, patchDraft, resolved],
   )
 
   // Manual EID entry (typed into the EID box, not scanned). Fill and wait, same

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import type { CaptureApi } from '@/lib/capture/use-capture'
 import { useScanRouter } from '@/lib/capture/use-scan-router'
 import { ChevronLeft, ScanIcon, SortIcon, CloseOutIcon, FlagIcon, CheckIcon, XIcon } from './icons'
@@ -196,6 +196,62 @@ export function CaptureForm({
     </div>
   )
 
+  // The EID field — the rich scan/typed-tag block. Rendered in its config slot
+  // among the identity fields below.
+  const eidBlock = (
+    <div style={{ marginBottom: 9 }}>
+      {active ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <RequiredMark />}</div>
+          <div style={{ flex: 1, minWidth: 0, minHeight: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '6px 13px', borderRadius: 11, background: isEid15(draft.eid) ? '#E1F5EE' : '#FEF3C7', border: `1px solid ${isEid15(draft.eid) ? '#55BAAA' : '#F2C879'}` }}>
+            <ScanIcon size={19} color={isEid15(draft.eid) ? '#55BAAA' : '#B45309'} />
+            <EidNumber v={draft.eid} head={isEid15(draft.eid) ? '#55BAAA' : '#92580C'} tail={isEid15(draft.eid) ? '#0E2646' : '#7A4A06'} />
+            {!isEid15(draft.eid) && <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: '#B45309', fontVariantNumeric: 'tabular-nums' }}>{draft.eid.replace(/\D/g, '').length}/15</span>}
+            <button type="button" aria-label="Clear EID" onClick={() => patchDraft({ eid: '' })} style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
+              <XIcon size={15} color={isEid15(draft.eid) ? '#55BAAA' : '#B45309'} sw={2.2} />
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <RequiredMark />}</div>
+          <div style={{ flex: 1, minWidth: 0, height: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '0 13px', borderRadius: 11, background: flag ? FLAG_RED_BG : '#FFFFFF', border: flag ? `2px solid ${FLAG_RED}` : '2px solid #55BAAA', boxShadow: flag ? 'none' : '0 0 0 3px rgba(85,186,170,0.35)' }}>
+            <ScanIcon size={19} color={flag ? FLAG_RED : '#55BAAA'} />
+            {scanInput('Scan or type EID', false)}
+            {eidType.trim() && !isEid15(eidType) ? (
+              <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: '#B45309', fontVariantNumeric: 'tabular-nums' }}>{eidType.replace(/\D/g, '').length}/15</span>
+            ) : (
+              <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: flag ? FLAG_RED : '#55BAAA' }}>
+                <span style={{ width: 6, height: 6, borderRadius: 999, background: flag ? FLAG_RED : '#55BAAA' }} />
+                READER ON
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  // Identity fields shown for this work type, in config sort_order. The on-demand
+  // 2nd-EID slot stays pinned to the bottom of the card (it's off the normal flow).
+  const identityInput = (key: string) => {
+    switch (key) {
+      case 'eid':
+        return eidBlock
+      case 'back_tag':
+        return navyInput('backTag', 'Back Tag', 'Scan the back tag barcode')
+      case 'visual_tag':
+        return navyInput('visualTag', 'Tag #', 'Type the tag number')
+      case 'metal_tag':
+        return navyInput('metalTag', 'Metal Tag', 'Type the metal tag')
+      default:
+        return null
+    }
+  }
+  const orderedIdentity = (['eid', 'back_tag', 'visual_tag', 'metal_tag'] as const)
+    .filter((k) => api.shows(k))
+    .sort((a, b) => (resolved.get(a)?.sort_order ?? 0) - (resolved.get(b)?.sort_order ?? 0))
+
   return (
     <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       <ScreenHeader
@@ -273,47 +329,14 @@ export function CaptureForm({
             </div>
           )}
 
-          {/* identity */}
+          {/* identity — fields render in config sort_order; nothing else shows */}
           <div style={{ background: '#0E2646', borderRadius: 14, padding: 14 }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#8FA8CC', textTransform: 'uppercase', marginBottom: 11 }}>
               Identity · {bootstrap.barn.official_id_type} barn
             </div>
-            {api.shows('eid') && (
-              <div style={{ marginBottom: 9 }}>
-                {active ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <RequiredMark />}</div>
-                    <div style={{ flex: 1, minWidth: 0, minHeight: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '6px 13px', borderRadius: 11, background: isEid15(draft.eid) ? '#E1F5EE' : '#FEF3C7', border: `1px solid ${isEid15(draft.eid) ? '#55BAAA' : '#F2C879'}` }}>
-                      <ScanIcon size={19} color={isEid15(draft.eid) ? '#55BAAA' : '#B45309'} />
-                      <EidNumber v={draft.eid} head={isEid15(draft.eid) ? '#55BAAA' : '#92580C'} tail={isEid15(draft.eid) ? '#0E2646' : '#7A4A06'} />
-                      {!isEid15(draft.eid) && <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: '#B45309', fontVariantNumeric: 'tabular-nums' }}>{draft.eid.replace(/\D/g, '').length}/15</span>}
-                      <button type="button" aria-label="Clear EID" onClick={() => patchDraft({ eid: '' })} style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
-                        <XIcon size={15} color={isEid15(draft.eid) ? '#55BAAA' : '#B45309'} sw={2.2} />
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <RequiredMark />}</div>
-                    <div style={{ flex: 1, minWidth: 0, height: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '0 13px', borderRadius: 11, background: flag ? FLAG_RED_BG : '#FFFFFF', border: flag ? `2px solid ${FLAG_RED}` : '2px solid #55BAAA', boxShadow: flag ? 'none' : '0 0 0 3px rgba(85,186,170,0.35)' }}>
-                      <ScanIcon size={19} color={flag ? FLAG_RED : '#55BAAA'} />
-                      {scanInput('Scan or type EID', false)}
-                      {eidType.trim() && !isEid15(eidType) ? (
-                        <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: '#B45309', fontVariantNumeric: 'tabular-nums' }}>{eidType.replace(/\D/g, '').length}/15</span>
-                      ) : (
-                        <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: flag ? FLAG_RED : '#55BAAA' }}>
-                          <span style={{ width: 6, height: 6, borderRadius: 999, background: flag ? FLAG_RED : '#55BAAA' }} />
-                          READER ON
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-            {api.shows('back_tag') && navyInput('backTag', 'Back Tag', 'Scan the back tag barcode')}
-            {api.shows('visual_tag') && navyInput('visualTag', 'Tag #', 'Type the tag number')}
-            {api.shows('metal_tag') && navyInput('metalTag', 'Metal Tag', 'Type the metal tag')}
+            {orderedIdentity.map((k) => (
+              <Fragment key={k}>{identityInput(k)}</Fragment>
+            ))}
 
             {/* On-demand secondary EID — off the normal flow. */}
             {api.shows('eid') && (secondaryEidOpen || draft.eid2.trim() ? (
@@ -350,7 +373,6 @@ export function CaptureForm({
             key={worked}
             bootstrap={bootstrap}
             resolved={resolved}
-            includesPregCheck={batch.includesPregCheck}
             draft={draft}
             patch={patchDraft}
             quickNotesLeading={sortRow}
