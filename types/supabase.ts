@@ -235,6 +235,7 @@ export type Database = {
           preg_id_method: string
           preg_timing_format: string
           sales_tax_rate: number
+          special_sol_charge: number | null
           updated_at: string
           version: number
         }
@@ -256,6 +257,7 @@ export type Database = {
           preg_id_method?: string
           preg_timing_format?: string
           sales_tax_rate?: number
+          special_sol_charge?: number | null
           updated_at?: string
           version?: number
         }
@@ -277,6 +279,7 @@ export type Database = {
           preg_id_method?: string
           preg_timing_format?: string
           sales_tax_rate?: number
+          special_sol_charge?: number | null
           updated_at?: string
           version?: number
         }
