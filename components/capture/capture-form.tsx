@@ -15,6 +15,13 @@ import { FlagBanner, FLAG_RED, FLAG_RED_BG } from './flag'
 
 const isEid15 = (v: string) => /^\d{15}$/.test(v.trim())
 
+// An EID field takes digits only, 15 at most — strip anything else and cap the
+// length so a stray letter or an over-long read can't sit in the box.
+const cleanEid = (v: string) => v.replace(/\D/g, '').slice(0, 15)
+// A back tag is the 8-char shape 46MA1234 — upper-case the letters as they're
+// typed and never let it run past 8 characters.
+const cleanBackTag = (v: string) => v.toUpperCase().slice(0, 8)
+
 // The full EID number, with the last four digits bolded for quick matching.
 function EidNumber({ v, head, tail }: { v: string; head: string; tail: string }) {
   const n = v.trim()
@@ -129,8 +136,9 @@ export function CaptureForm({
   // keyboard. The moment a full EID settles, run the same guard a scan does so a
   // duplicate flags at once and clears, not only on Save.
   function setEidValue(v: string) {
-    setEidType(v)
-    if (/^\d{15}$/.test(v.trim())) void commitEid(v)
+    const clean = cleanEid(v)
+    setEidType(clean)
+    if (clean.length === 15) void commitEid(clean)
   }
 
   // Manual EID typed into the EID box and confirmed with Enter (wand scans are
@@ -155,6 +163,10 @@ export function CaptureForm({
   // --- identity inputs (typed tags) ---
   const navyInput = (key: 'backTag' | 'visualTag' | 'metalTag', label: string, placeholder: string) => {
     const fieldKey = key === 'backTag' ? 'back_tag' : key === 'visualTag' ? 'visual_tag' : 'metal_tag'
+    // The back-tag field takes only the 8-char shape 46MA1234: upper-case the
+    // letters and cap the length as it's typed (or filled by the on-screen
+    // keyboard). Other tag fields pass through untouched.
+    const clean = (raw: string): string => (key === 'backTag' ? cleanBackTag(raw) : raw)
     // Back tag must read NN-LL-NNNN (e.g. 46MA1234). Flag once 8+ chars don't fit.
     const v = draft[key].trim()
     const badBackTag = key === 'backTag' && v.length >= 8 && !isBackTag(v)
@@ -165,10 +177,10 @@ export function CaptureForm({
           <input
             ref={(el) => { idRefs.current[key] = el }}
             value={draft[key]}
-            onChange={(e) => patchDraft({ [key]: e.target.value } as Partial<typeof draft>)}
+            onChange={(e) => patchDraft({ [key]: clean(e.target.value) } as Partial<typeof draft>)}
             onKeyDown={swallowEnter}
             placeholder={placeholder}
-            {...kbd.bind(fieldKey, draft[key], (v) => patchDraft({ [key]: v } as Partial<typeof draft>))}
+            {...kbd.bind(fieldKey, draft[key], (v) => patchDraft({ [key]: clean(v) } as Partial<typeof draft>))}
             style={{ flex: 1, minWidth: 0, height: 46, padding: '0 13px', borderRadius: 11, background: 'rgba(255,255,255,0.08)', border: `1px solid ${badBackTag ? '#E24B4A' : 'rgba(255,255,255,0.18)'}`, color: '#FFFFFF', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, outline: 'none' }}
           />
         </div>
@@ -372,10 +384,10 @@ export function CaptureForm({
                   <input
                     ref={(el) => { idRefs.current['eid2'] = el }}
                     value={draft.eid2}
-                    onChange={(e) => patchDraft({ eid2: e.target.value })}
+                    onChange={(e) => patchDraft({ eid2: cleanEid(e.target.value) })}
                     onKeyDown={swallowEnter}
                     placeholder="Scan or type 2nd EID"
-                    {...kbd.bind('eid2', draft.eid2, (v) => patchDraft({ eid2: v }))}
+                    {...kbd.bind('eid2', draft.eid2, (v) => patchDraft({ eid2: cleanEid(v) }))}
                     style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, color: '#FFFFFF', fontVariantNumeric: 'tabular-nums' }}
                   />
                   <button type="button" aria-label="Remove second EID" onClick={() => { patchDraft({ eid2: '' }); setSecondaryEidOpen(false) }} style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>

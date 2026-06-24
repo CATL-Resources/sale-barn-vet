@@ -13,7 +13,7 @@ import {
   type SortPen,
 } from './types'
 import { applyPenDefaults, draftWithDefaults, fieldRequired, fieldShows, resolveFields, type PenFieldDefaults } from './fields'
-import { splitScans } from './scan-format'
+import { isEid, isBackTag } from './scan-format'
 import {
   findDuplicateEid,
   saveAnimalRecord,
@@ -568,52 +568,53 @@ export function useCapture(
       setToast(null)
       setFlag(null)
 
-      // Split the burst into validated tokens and route each by its SHAPE, so a
-      // back tag and an EID scanned at the same time each land in their own
-      // field instead of fighting over one — and two wands firing on the same
-      // animal at once (one combined burst) are pulled apart. A read that doesn't
-      // decompose into valid tags is flagged for a re-scan, never dumped into the
-      // wrong field and never truncated.
-      const tokens = splitScans(code)
-      if (!tokens) {
-        flash('warn', `Couldn’t read that scan — re-scan or type it (${code})`)
+      // The scan router hands us ONE complete tag at a time — it commits the
+      // moment a burst forms a whole shape, so a back tag and an EID scanned
+      // together arrive here as two separate calls, each landing in its own
+      // field. We just route by shape:
+      //   - 8-char back tag (2 digits, 2 letters, 4 digits)  -> back-tag field
+      //   - 15-digit EID                                     -> EID slot logic
+      //   - neither (a garbled or two-wand-interleaved read) -> re-scan flag
+      // A read that's neither shape is never dumped into a field or truncated.
+      if (isBackTag(code)) {
+        // Store the back tag in its canonical upper-case form (46MA1234).
+        patchDraft({ backTag: code.toUpperCase() })
+        setFocusTick((n) => n + 1)
         return
       }
 
-      for (const tok of tokens) {
-        if (tok.kind === 'back_tag') {
-          patchDraft({ backTag: tok.value })
-          setFocusTick((n) => n + 1)
-          continue
-        }
+      if (!isEid(code)) {
+        flash('warn', `Unrecognized scan — rescan (${code})`)
+        return
+      }
 
-        // EID token (15 digits). Live refs so two reads in one burst don't both
-        // land on the primary slot.
-        const value = tok.value
-        if (value === liveEid.current.trim() || value === liveEid2.current.trim()) continue
-        const is840 = value.startsWith('840')
+      // A 15-digit EID. Live refs so two reads back-to-back don't both land on
+      // the primary slot.
+      const value = code
+      if (value === liveEid.current.trim() || value === liveEid2.current.trim()) return
+      const is840 = value.startsWith('840')
 
-        if (secondaryEidOpen) {
-          // Slot open: an 840 fills the primary if it's empty, else the second.
-          if (!liveEid.current.trim() && is840) {
-            liveEid.current = value
-            patchDraft({ eid: value })
-            setFocusTick((n) => n + 1)
-            void flagIfDuplicate(value)
-          } else {
-            liveEid2.current = value
-            patchDraft({ eid2: value })
-            setFocusTick((n) => n + 1)
-          }
-        } else if (is840) {
+      if (secondaryEidOpen) {
+        // Slot open: an 840 fills the primary if it's empty, else the second.
+        if (!liveEid.current.trim() && is840) {
           liveEid.current = value
           patchDraft({ eid: value })
           setFocusTick((n) => n + 1)
           void flagIfDuplicate(value)
         } else {
-          // 15 digits but NOT an official 840 tag — flag it at once.
-          flash('warn', 'That EID doesn’t start with 840 — open “2nd EID” if it’s a second tag')
+          liveEid2.current = value
+          patchDraft({ eid2: value })
+          setFocusTick((n) => n + 1)
         }
+      } else if (is840) {
+        liveEid.current = value
+        patchDraft({ eid: value })
+        setFocusTick((n) => n + 1)
+        void flagIfDuplicate(value)
+      } else {
+        // 15 digits but NOT an official 840 tag — flag it at once (Warn, never
+        // blocks the save).
+        flash('warn', 'That EID doesn’t start with 840 — open “2nd EID” if it’s a second tag')
       }
     },
     [batch, secondaryEidOpen, patchDraft, flash, flagIfDuplicate],

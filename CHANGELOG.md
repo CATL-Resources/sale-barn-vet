@@ -43,6 +43,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Docs
 
+- regenerate changelog _(2026-06-24, `aab1dae`)_
 - log the chute flow + sale day fixes and the test-data wipe _(2026-06-20, `6816a18`)_
 - update CHANGELOG for the Work Orders panel + row fixes _(2026-06-20, `e2359d9`)_
 - update CHANGELOG for the Work Orders fixes _(2026-06-20, `561afdb`)_
