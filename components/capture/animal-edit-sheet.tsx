@@ -114,6 +114,9 @@ export function AnimalEditSheet({
         return
       }
       // HARD: a duplicate EID already in THIS pen_work — refuse, flag, clear it.
+      // A lookup error (dup.failed) is NOT treated as all-clear: it's logged by
+      // findDuplicateEid and we save anyway (never block), rather than silently
+      // assuming no duplicate.
       if (ev) {
         const dup = await findDuplicateEid(supabase, {
           barnId: bootstrap.barn.id,
@@ -121,8 +124,8 @@ export function AnimalEditSheet({
           eid: ev,
           excludeAnimalId: animal?.id,
         })
-        if (dup) {
-          setFlag(dup)
+        if (dup.hit) {
+          setFlag(dup.hit)
           patch({ eid: '' })
           return
         }
@@ -197,10 +200,12 @@ export function AnimalEditSheet({
       eid: v,
       excludeAnimalId: animal?.id,
     })
-    if (dup) {
-      setFlag(dup)
+    if (dup.hit) {
+      setFlag(dup.hit)
       patch({ eid: '' })
     }
+    // A failed check stays advisory here — the Save step decides; we never clear
+    // the field on an error.
   }
 
   const idInput = (

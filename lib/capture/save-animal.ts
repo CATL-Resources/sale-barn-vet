@@ -32,18 +32,32 @@ export function timeLabel(iso: string): string {
 export type DuplicateHit = { eid: string; time: string; status: string }
 
 /**
+ * Result of the duplicate-EID check:
+ *   - hit:    the worked-already detail when this EID is a duplicate, else null.
+ *   - failed: true when a lookup ERRORED, so we could NOT determine duplicate or
+ *             not. This is NOT the same as "no duplicate" — the caller must not
+ *             read a failed check as an all-clear. It never blocks a save; it
+ *             just lets the caller note that the check didn't run.
+ */
+export type DuplicateCheck = { hit: DuplicateHit | null; failed: boolean }
+
+/**
  * Is this EID already on another non-deleted animal in THIS pen_work? A match
  * under a DIFFERENT work order is fine (the same tag legitimately moves between
  * orders), so we only look inside this one. When editing, pass excludeAnimalId so
- * a record doesn't flag its own tag. Returns the worked-already detail for the
- * flag banner, or null.
+ * a record doesn't flag its own tag.
+ *
+ * IMPORTANT: a query error must NOT come back looking like "no duplicate." If
+ * either lookup errors we return { hit: null, failed: true } so the caller can
+ * show a brief "couldn't check" note instead of silently treating it as clear
+ * (which would let a real duplicate save with no warning — failing OPEN).
  */
 export async function findDuplicateEid(
   supabase: Client,
   opts: { barnId: string; penWorkId: string; eid: string; excludeAnimalId?: string },
-): Promise<DuplicateHit | null> {
+): Promise<DuplicateCheck> {
   const value = opts.eid.trim()
-  if (!value) return null
+  if (!value) return { hit: null, failed: false }
 
   let animalsQ = supabase
     .from('animal')
@@ -51,11 +65,15 @@ export async function findDuplicateEid(
     .eq('pen_work_id', opts.penWorkId)
     .is('deleted_at', null)
   if (opts.excludeAnimalId) animalsQ = animalsQ.neq('id', opts.excludeAnimalId)
-  const { data: animals } = await animalsQ
+  const { data: animals, error: animalsErr } = await animalsQ
+  if (animalsErr) {
+    console.error('findDuplicateEid: animal lookup failed', animalsErr)
+    return { hit: null, failed: true }
+  }
   const createdById = new Map((animals ?? []).map((a) => [a.id, a.created_at as string]))
-  if (createdById.size === 0) return null
+  if (createdById.size === 0) return { hit: null, failed: false }
 
-  const { data: hits } = await supabase
+  const { data: hits, error: hitsErr } = await supabase
     .from('identifier')
     .select('animal_id')
     .eq('barn_id', opts.barnId)
@@ -63,19 +81,28 @@ export async function findDuplicateEid(
     .eq('value', value)
     .is('deleted_at', null)
     .in('animal_id', Array.from(createdById.keys()))
+  if (hitsErr) {
+    console.error('findDuplicateEid: identifier lookup failed', hitsErr)
+    return { hit: null, failed: true }
+  }
   const hit = (hits ?? [])[0]
-  if (!hit) return null
+  if (!hit) return { hit: null, failed: false }
 
   const created = createdById.get(hit.animal_id) ?? null
+  // The work_complete lookup only sets the banner's status label, so an error
+  // here isn't a missed-duplicate risk — fall back to "Open" rather than fail.
   const { data: pw } = await supabase
     .from('pen_work')
     .select('work_complete')
     .eq('id', opts.penWorkId)
     .maybeSingle()
   return {
-    eid: value,
-    time: created ? timeLabel(created) : '',
-    status: pw?.work_complete ? 'Complete' : 'Open',
+    hit: {
+      eid: value,
+      time: created ? timeLabel(created) : '',
+      status: pw?.work_complete ? 'Complete' : 'Open',
+    },
+    failed: false,
   }
 }
 

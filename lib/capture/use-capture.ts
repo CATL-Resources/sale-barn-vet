@@ -18,6 +18,7 @@ import {
   findDuplicateEid,
   saveAnimalRecord,
   timeLabel,
+  type DuplicateCheck,
   type DuplicateHit,
   type IdentifierInput,
   type IdType,
@@ -368,8 +369,8 @@ export function useCapture(
   // the worked-already detail for the flag banner, or null. (A match under a
   // DIFFERENT work order is allowed and is NOT flagged.)
   const checkDuplicate = useCallback(
-    async (value: string): Promise<DuplicateHit | null> => {
-      if (!batch) return null
+    async (value: string): Promise<DuplicateCheck> => {
+      if (!batch) return { hit: null, failed: false }
       return findDuplicateEid(supabase, { barnId, penWorkId: batch.penWorkId, eid: value })
     },
     [supabase, barnId, batch],
@@ -482,17 +483,29 @@ export function useCapture(
       // HARD: a duplicate official EID already worked in THIS pen_work — refuse,
       // raise the flag, and CLEAR the entered value so it isn't left in the field.
       // (The same EID under a different work order is fine and flows through.)
+      let checkFailed = false
       if (ev) {
-        const dup = localDuplicate(ev) ?? (await checkDuplicate(ev))
-        if (dup) {
-          setFlag(dup)
+        const local = localDuplicate(ev)
+        if (local) {
+          setFlag(local)
           patchDraft({ eid: '' })
           return false
         }
+        const res = await checkDuplicate(ev)
+        if (res.hit) {
+          setFlag(res.hit)
+          patchDraft({ eid: '' })
+          return false
+        }
+        // The lookup errored — we could NOT confirm this isn't a duplicate. We
+        // still save (never block the chute), but we must NOT treat the error as
+        // an all-clear; note it after the save so the operator knows to spot-check.
+        checkFailed = res.failed
       }
       const ok = await buildAndInsert(ev)
       if (ok) {
         setFlag(null)
+        if (checkFailed) flash('warn', 'Couldn’t check for duplicates — saved anyway')
         // Re-seed for the next animal: config defaults, plus the pen's office
         // defaults but only while still on the pen they were set for.
         setDraft(
@@ -513,12 +526,20 @@ export function useCapture(
       if (!batch) return
       const v = value.trim()
       if (!v || v === draft.eid.trim()) return
-      const dup = localDuplicate(v) ?? (await checkDuplicate(v))
-      if (dup) {
-        setFlag(dup)
+      const local = localDuplicate(v)
+      if (local) {
+        setFlag(local)
         patchDraft({ eid: '' })
         return
       }
+      const res = await checkDuplicate(v)
+      if (res.hit) {
+        setFlag(res.hit)
+        patchDraft({ eid: '' })
+        return
+      }
+      // A failed check (res.failed) is left to the Save step to surface — the
+      // entry pre-check stays advisory and never clears or blocks the field.
       setFlag(null)
       patchDraft({ eid: v })
       setFocusTick((n) => n + 1)
@@ -550,11 +571,13 @@ export function useCapture(
         patchDraft({ eid: '' })
         return
       }
-      const dup = await checkDuplicate(value)
-      if (dup) {
-        setFlag(dup)
+      const res = await checkDuplicate(value)
+      if (res.hit) {
+        setFlag(res.hit)
         patchDraft({ eid: '' })
       }
+      // A failed check is left to the Save step to surface; the scan pre-check
+      // stays advisory and never clears the field on an error.
     },
     [localDuplicate, checkDuplicate, patchDraft],
   )
