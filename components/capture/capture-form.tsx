@@ -4,6 +4,7 @@ import { Fragment, useEffect, useRef, useState } from 'react'
 import type { CaptureApi } from '@/lib/capture/use-capture'
 import { useScanRouter } from '@/lib/capture/use-scan-router'
 import { useOnScreenKeyboard } from '@/lib/capture/use-onscreen-keyboard'
+import { isBackTag } from '@/lib/capture/scan-format'
 import { ChevronLeft, ScanIcon, SortIcon, CloseOutIcon, FlagIcon, CheckIcon, XIcon, KeyboardIcon } from './icons'
 import { ScreenHeader } from '@/components/ui/screen-header'
 import { Button } from '@/components/ui/button'
@@ -154,22 +155,36 @@ export function CaptureForm({
   // --- identity inputs (typed tags) ---
   const navyInput = (key: 'backTag' | 'visualTag' | 'metalTag', label: string, placeholder: string) => {
     const fieldKey = key === 'backTag' ? 'back_tag' : key === 'visualTag' ? 'visual_tag' : 'metal_tag'
+    // Back tag must read NN-LL-NNNN (e.g. 46MA1234). Flag once 8+ chars don't fit.
+    const v = draft[key].trim()
+    const badBackTag = key === 'backTag' && v.length >= 8 && !isBackTag(v)
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 9 }}>
-        <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>{label}{required(fieldKey) && <RequiredMark />}</div>
-        <input
-          ref={(el) => { idRefs.current[key] = el }}
-          value={draft[key]}
-          onChange={(e) => patchDraft({ [key]: e.target.value } as Partial<typeof draft>)}
-          onKeyDown={swallowEnter}
-          placeholder={placeholder}
-          {...kbd.bind(fieldKey, draft[key], (v) => patchDraft({ [key]: v } as Partial<typeof draft>))}
-          style={{ flex: 1, minWidth: 0, height: 46, padding: '0 13px', borderRadius: 11, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)', color: '#FFFFFF', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, outline: 'none' }}
-        />
+      <div style={{ marginBottom: 9 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>{label}{required(fieldKey) && <RequiredMark />}</div>
+          <input
+            ref={(el) => { idRefs.current[key] = el }}
+            value={draft[key]}
+            onChange={(e) => patchDraft({ [key]: e.target.value } as Partial<typeof draft>)}
+            onKeyDown={swallowEnter}
+            placeholder={placeholder}
+            {...kbd.bind(fieldKey, draft[key], (v) => patchDraft({ [key]: v } as Partial<typeof draft>))}
+            style={{ flex: 1, minWidth: 0, height: 46, padding: '0 13px', borderRadius: 11, background: 'rgba(255,255,255,0.08)', border: `1px solid ${badBackTag ? '#E24B4A' : 'rgba(255,255,255,0.18)'}`, color: '#FFFFFF', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, outline: 'none' }}
+          />
+        </div>
+        {badBackTag && (
+          <div style={{ marginLeft: 70, marginTop: 4, fontSize: 11, fontWeight: 600, color: '#F3B0B0' }}>
+            Back tag format is 46MA1234 — two numbers, two letters, four numbers.
+          </div>
+        )}
       </div>
     )
   }
 
+  // The official EID starts with 840. Flag a non-840 entry at once (red text),
+  // allowing the partial "8"/"84"/"840" while it's being typed.
+  const eidTyped = eidType.trim()
+  const eidBad840 = eidTyped.length >= 3 && !eidTyped.startsWith('840') && !'840'.startsWith(eidTyped)
   const scanInput = (placeholder: string, dashed: boolean) => (
     <input
       ref={eidRef}
@@ -183,8 +198,9 @@ export function CaptureForm({
         }
       }}
       placeholder={placeholder}
+      title={eidBad840 ? 'EID should start with 840' : undefined}
       {...kbd.bind('eid', eidType, setEidValue)}
-      style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: dashed ? 14 : 16, fontWeight: 700, color: '#1A1A1A', fontVariantNumeric: 'tabular-nums' }}
+      style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: dashed ? 14 : 16, fontWeight: 700, color: eidBad840 ? '#E24B4A' : '#1A1A1A', fontVariantNumeric: 'tabular-nums' }}
     />
   )
 
