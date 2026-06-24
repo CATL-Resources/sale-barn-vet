@@ -240,6 +240,7 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
       if (JSON.stringify(barn.preg_active_months) !== JSON.stringify(initial.barn.preg_active_months)) p.preg_active_months = barn.preg_active_months
       if (barn.admin_fee_rate !== initial.barn.admin_fee_rate) p.admin_fee_rate = barn.admin_fee_rate
       if (barn.sales_tax_rate !== initial.barn.sales_tax_rate) p.sales_tax_rate = barn.sales_tax_rate
+      if (barn.special_sol_charge !== initial.barn.special_sol_charge) p.special_sol_charge = barn.special_sol_charge
       return Object.keys(p).length ? ({ id: barn.id, ...p } as SavePayload['barn']) : undefined
     })()
 
@@ -404,6 +405,10 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
         <RowShell first={false}>
           <span style={labelCell}>Sales Tax</span>
           <NumField ariaLabel="Sales tax percent" step={0.1} suffix="%" value={round(barn.sales_tax_rate * 100, 4)} onChange={(v) => setBarn((b) => ({ ...b, sales_tax_rate: v == null ? 0 : round(v / 100, 6) }))} />
+        </RowShell>
+        <RowShell first={false}>
+          <span style={labelCell}>Special SOL (per head)</span>
+          <NumField ariaLabel="Special SOL charge per head" step={0.25} prefix="$" value={round(barn.special_sol_charge, 2)} onChange={(v) => setBarn((b) => ({ ...b, special_sol_charge: v == null ? 0 : round(v, 2) }))} />
         </RowShell>
       </SectionCard>
 

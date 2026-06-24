@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { TablesInsert, TablesUpdate } from '@/types/supabase'
 import { fetchPenWorks, fetchSpecialCharges } from './queries'
+import { computePenWorkCharges } from './pricing'
 import { upsertPen } from './pens'
 import {
   setHeadBilled,
@@ -28,7 +29,8 @@ export type NewSpecialChargeInput = {
   description: string
   partyId: string | null
   role: Role
-  amount: number
+  head: number
+  vetCharge: number // per-head vet charge; SOL comes from the barn standard
 }
 export type CountField = 'head_started' | 'head_expected' | 'head_returned'
 export type StatusField = 'work_complete' | 'health_complete'
@@ -431,14 +433,38 @@ export function usePenWorks(pageData: WorkOrdersPageData, saleDayId: string) {
   )
 
   const addSpecialCharge = useCallback(
-    async ({ description, partyId, role, amount }: NewSpecialChargeInput) => {
+    async ({ description, partyId, role, head, vetCharge }: NewSpecialChargeInput) => {
+      // A special is priced like a work-type line: a per-head vet charge plus the
+      // barn's standard per-head SOL, with tax and the admin fee applied. We
+      // compute it here and FREEZE the rates onto the row (same shape as a
+      // pen_work bill), so editing the barn's rates later never moves a charge
+      // already entered. Unlike pen_work, the special_charge totals are plain
+      // columns, so we store the computed numbers directly.
+      const taxRate = pageData.barn.sales_tax_rate
+      const adminRate = pageData.barn.admin_fee_rate
+      const solCharge = pageData.barn.special_sol_charge ?? 0
+      const { vetTotal, adminTotal, solTotal, lineCharge } = computePenWorkCharges(
+        vetCharge,
+        solCharge,
+        head,
+        taxRate,
+        adminRate,
+      )
       const { error: e } = await supabase.from('special_charge').insert({
         barn_id: barnId,
         sale_day_id: saleDayId,
         party_id: partyId,
         role,
         description: description.trim() || null,
-        customer_charge: amount,
+        head,
+        frozen_vet_charge: vetCharge,
+        frozen_sol_charge: solCharge,
+        frozen_admin_rate: adminRate,
+        frozen_tax_rate: taxRate,
+        vet_total: vetTotal,
+        admin_total: adminTotal,
+        sol_total: solTotal,
+        customer_charge: lineCharge,
       })
       if (e) {
         flashError(errMsg(e, 'Could not add charge'))
@@ -446,7 +472,7 @@ export function usePenWorks(pageData: WorkOrdersPageData, saleDayId: string) {
       }
       await reload()
     },
-    [supabase, barnId, saleDayId, flashError, reload],
+    [supabase, barnId, saleDayId, pageData.barn, flashError, reload],
   )
 
   const deleteSpecialCharge = useCallback(

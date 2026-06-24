@@ -250,6 +250,7 @@ export function WorkOrdersScreen({
         <SpecialChargesCard
           specialCharges={specialCharges}
           partyOptions={partyOptions}
+          rates={{ taxRate: barn.sales_tax_rate, adminRate: barn.admin_fee_rate, solCharge: barn.special_sol_charge ?? 0 }}
           onAdd={api.addSpecialCharge}
           onDelete={api.deleteSpecialCharge}
         />
