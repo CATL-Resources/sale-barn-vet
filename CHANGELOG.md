@@ -28,6 +28,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
+- **capture:** commit a scan the instant it forms a whole tag, not on Enter _(2026-06-24, `23ef6ac`)_
 - **capture:** route EID + back tag by validated shape so simultaneous scans don't fight _(2026-06-24, `002dfc8`)_
 - **capture:** instant EID fill + 2nd EID works for two 840 tags _(2026-06-21, `a34d6e9`)_
 - **capture:** stop the wand EID scan splitting into a couple of digits _(2026-06-21, `41f9a98`)_
