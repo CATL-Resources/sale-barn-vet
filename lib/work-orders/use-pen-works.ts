@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import type { TablesInsert, TablesUpdate } from '@/types/supabase'
 import { fetchPenWorks, fetchSpecialCharges } from './queries'
 import { upsertPen } from './pens'
-import { setHeadBilled } from '@/app/(office)/work-orders/actions'
+import { setHeadBilled, resolveLine as resolveLineAction, moveHead as moveHeadAction, type ResolveMode, type MoveHeadInput } from '@/app/(office)/work-orders/actions'
 import type {
   PenWorkFull,
   Role,
@@ -183,6 +183,38 @@ export function usePenWorks(pageData: WorkOrdersPageData, saleDayId: string) {
       }
     },
     [patch, flashError, reload],
+  )
+
+  // Resolve a count-mismatch line (slice 2). Server action sets line_status and
+  // audits; we patch locally so the board updates without a reload. accept_actual
+  // also pulls head_billed down to the worked count.
+  const resolveLine = useCallback(
+    async (id: string, mode: ResolveMode, reason?: string): Promise<boolean> => {
+      const res = await resolveLineAction(id, mode, reason)
+      if (!res.ok) {
+        flashError(res.error || 'Could not resolve the line')
+        return false
+      }
+      const worked = penWorks.find((p) => p.id === id)?.head_worked ?? null
+      patch(id, mode === 'accept_actual' ? { line_status: 'resolved', head_billed: worked } : { line_status: 'resolved' })
+      return true
+    },
+    [patch, flashError, penWorks],
+  )
+
+  // Move N head between owner lines in the same pen (slice 2 move engine). A move
+  // can change two lines and create a third, so we re-sync from the server.
+  const moveHead = useCallback(
+    async (input: MoveHeadInput): Promise<boolean> => {
+      const res = await moveHeadAction(input)
+      if (!res.ok) {
+        flashError(res.error || 'Could not move head')
+        return false
+      }
+      await reload()
+      return true
+    },
+    [flashError, reload],
   )
 
   // Pens with more than one work order on this sale day — surfaced as "Mixed".
@@ -393,6 +425,8 @@ export function usePenWorks(pageData: WorkOrdersPageData, saleDayId: string) {
     saveHeadWorked,
     saveCountDetail,
     saveHeadBilled,
+    resolveLine,
+    moveHead,
     mixedPenIds,
     toggleStatus,
     addPenWork,
