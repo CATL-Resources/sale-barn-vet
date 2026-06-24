@@ -4,7 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **capture:** on-screen keyboard for the chute _(2026-06-24, `32b6b8b`)_
+- **db:** office-layer schema for pen_work (migration only) _(2026-06-24, `7f08a9a`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -57,6 +57,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- on-screen keyboard for the chute _(2026-06-23, `ae3b8bb`)_
 - Claude/peaceful lovelace nud54g _(2026-06-23, `cd97dcd`)_
 - show fields from each work type's config _(2026-06-23, `1940605`)_
 - Yard-crew Up marker and To Grab filter on the Pen List _(2026-06-23, `6f89d6b`)_

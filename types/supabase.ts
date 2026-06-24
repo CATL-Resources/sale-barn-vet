@@ -854,12 +854,15 @@ export type Database = {
           frozen_sol_charge: number | null
           frozen_tax_rate: number | null
           frozen_vet_charge: number | null
+          head_billed: number | null
           head_expected: number | null
           head_returned: number | null
           head_started: number | null
           head_worked: number | null
           health_complete: boolean
           id: string
+          is_hold: boolean
+          line_status: string
           notes: string | null
           origin: string
           origin_location_id: string | null
@@ -890,12 +893,15 @@ export type Database = {
           frozen_sol_charge?: number | null
           frozen_tax_rate?: number | null
           frozen_vet_charge?: number | null
+          head_billed?: number | null
           head_expected?: number | null
           head_returned?: number | null
           head_started?: number | null
           head_worked?: number | null
           health_complete?: boolean
           id?: string
+          is_hold?: boolean
+          line_status?: string
           notes?: string | null
           origin?: string
           origin_location_id?: string | null
@@ -926,12 +932,15 @@ export type Database = {
           frozen_sol_charge?: number | null
           frozen_tax_rate?: number | null
           frozen_vet_charge?: number | null
+          head_billed?: number | null
           head_expected?: number | null
           head_returned?: number | null
           head_started?: number | null
           head_worked?: number | null
           health_complete?: boolean
           id?: string
+          is_hold?: boolean
+          line_status?: string
           notes?: string | null
           origin?: string
           origin_location_id?: string | null
@@ -976,6 +985,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "pen_work_origin_location_id_fkey"
+            columns: ["origin_location_id"]
+            isOneToOne: false
+            referencedRelation: "party_location"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "pen_work_pen_id_fkey"
             columns: ["pen_id"]
             isOneToOne: false
@@ -1001,6 +1017,66 @@ export type Database = {
             columns: ["work_type_id"]
             isOneToOne: false
             referencedRelation: "work_type"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pen_work_adjustment: {
+        Row: {
+          barn_id: string
+          created_at: string
+          created_by: string | null
+          from_value: string | null
+          head_delta: number | null
+          id: string
+          kind: string
+          pen_work_id: string
+          reason: string | null
+          sale_day_id: string | null
+          source_pen_work_id: string | null
+          to_value: string | null
+        }
+        Insert: {
+          barn_id: string
+          created_at?: string
+          created_by?: string | null
+          from_value?: string | null
+          head_delta?: number | null
+          id?: string
+          kind: string
+          pen_work_id: string
+          reason?: string | null
+          sale_day_id?: string | null
+          source_pen_work_id?: string | null
+          to_value?: string | null
+        }
+        Update: {
+          barn_id?: string
+          created_at?: string
+          created_by?: string | null
+          from_value?: string | null
+          head_delta?: number | null
+          id?: string
+          kind?: string
+          pen_work_id?: string
+          reason?: string | null
+          sale_day_id?: string | null
+          source_pen_work_id?: string | null
+          to_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pen_work_adjustment_pen_work_id_fkey"
+            columns: ["pen_work_id"]
+            isOneToOne: false
+            referencedRelation: "pen_work"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pen_work_adjustment_source_pen_work_id_fkey"
+            columns: ["source_pen_work_id"]
+            isOneToOne: false
+            referencedRelation: "pen_work"
             referencedColumns: ["id"]
           },
         ]
