@@ -4,7 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- yard-crew Up marker and To Grab filter on the Pen List _(2026-06-23, `c6a66c2`)_
+- **capture:** show fields from each work type's config _(2026-06-24, `e28187c`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -25,6 +25,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 - customer import — schema + data + idempotent load script _(2026-06-19, `61c2629`)_
 - **capture:** record a cow — per-work-type fields, scan loop, dup guard, scroll _(2026-06-19, `6f72a8b`)_
 - **capture:** chute capture screen wired to live schema with shared sort pens _(2026-06-18, `5217e93`)_
+- **settings:** build the Settings screen on St. Onge's real config _(2026-06-18, `f61ddd6`)_
 
 ## Fixes
 
@@ -56,6 +57,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Yard-crew Up marker and To Grab filter on the Pen List _(2026-06-23, `6f89d6b`)_
 - Add pen_session table (schema only, additive) _(2026-06-23, `75d8a43`)_
 - Resume an in-progress chute batch after a page refresh _(2026-06-23, `29d5226`)_
 - Layout polish: Work Orders board columns and Pen List mobile header _(2026-06-23, `d2e8ef8`)_
@@ -83,3 +85,18 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 - Work Orders: Animal list with copy / CSV export for health papers _(2026-06-20, `af37735`)_
 - drop "Scan the next cow", close-out returns to Work Orders, Print label in row menu _(2026-06-20, `cca98c4`)_
 - hide the Age field for chute ID jobs _(2026-06-20, `fb4fd74`)_
+- Settings prefs: field options store + age/ID flexibility, seed St. Onge defaults _(2026-06-17, `3d38126`)_
+- St. Onge capture form: turn off age, breed, fetal sex (settings-driven) _(2026-06-17, `ece0ea1`)_
+- Capture screen design brief (preg fields + quick notes) _(2026-06-17, `43adb01`)_
+- Add missing back-tag columns to barn (schema + seed) _(2026-06-17, `c3593de`)_
+- Quick notes table + work-type preg-check flag (schema + seed) _(2026-06-17, `824523c`)_
+- Barn preferences schema — field config, age designation, preg stage _(2026-06-17, `b06482d`)_
+- Office work-orders screen (pen_work model) _(2026-06-17, `984aa66`)_
+- Schema fix: pen + pen_work _(2026-06-16, `c0e1bd8`)_
+- Build 2: chuteside Capture screen _(2026-06-16, `38dbb49`)_
+- Build 1: app shell + Sale Day home _(2026-06-16, `a42ab7c`)_
+- RLS hardening _(2026-06-16, `5ece64d`)_
+- Auth + RLS _(2026-06-16, `07acbdf`)_
+- Spec sync + live Supabase wiring + Next.js foundation _(2026-06-16, `5cf5e34`)_
+- Scaffold Sale Barn Vet v1 _(2026-06-14, `9d65ec6`)_
+- first commit _(2026-06-14, `45e0d6a`)_
