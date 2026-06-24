@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import type { Json } from '@/types/supabase'
 
 /**
  * Mark a work order started (so it reads "In progress") before the crew drops
@@ -56,6 +57,37 @@ export async function setPenUp(
         barn_id: barnId,
         is_up: isUp,
         up_at: isUp ? new Date().toISOString() : null,
+      },
+      { onConflict: 'pen_id,sale_day_id' },
+    )
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
+}
+
+/**
+ * The office's per-pen capture defaults for a sale day. Saved into the same
+ * pen_session row as the staged marker (one row per pen per sale day), in the
+ * field_defaults jsonb. The chute seeds each new animal's draft from these so a
+ * pen of look-alikes pre-fills (still fully editable per animal). Mirrors
+ * setPenUp exactly: same barn_id pass-through (re-checked by RLS) and the same
+ * onConflict on (pen_id, sale_day_id). Only field_defaults is written, so it
+ * never disturbs the staged marker on the same row.
+ */
+export async function setPenDefaults(
+  penId: string,
+  saleDayId: string,
+  barnId: string,
+  fieldDefaults: Record<string, unknown>,
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('pen_session')
+    .upsert(
+      {
+        pen_id: penId,
+        sale_day_id: saleDayId,
+        barn_id: barnId,
+        field_defaults: fieldDefaults as unknown as Json,
       },
       { onConflict: 'pen_id,sale_day_id' },
     )
