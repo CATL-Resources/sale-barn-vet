@@ -269,7 +269,6 @@ export function AnimalEditSheet({
         <AnimalAttributes
           bootstrap={bootstrap}
           resolved={resolved}
-          includesPregCheck={batch.includesPregCheck}
           draft={draft}
           patch={patch}
         />
