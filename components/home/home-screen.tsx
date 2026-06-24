@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import { colors } from '@/components/ui/tokens'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
-import { StatTile } from '@/components/ui/stat-tile'
 import { GoldButton } from '@/components/ui/gold-button'
 import { ChevronRightIcon } from '@/components/ui/icons'
 import { createSaleDay } from '@/app/(home)/actions'
@@ -26,6 +25,27 @@ function shortDate(iso: string) {
   return new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 const cap = (s: string) => (s ? s[0].toUpperCase() + s.slice(1) : s)
+
+// Diagonal-gradient stat cards (starting stops — fine-tuned later). The lead
+// "head worked" metric is the highlight; orders gets its own indigo gradient.
+const STAT_GRADIENTS = {
+  default: 'linear-gradient(135deg, #0E2646 0%, #2B7A70 100%)',
+  highlight: 'linear-gradient(135deg, #1B6B63 0%, #55BAAA 55%, #CBD24F 100%)',
+  orders: 'linear-gradient(135deg, #0E2646 0%, #2E2F6E 100%)',
+} as const
+type StatVariant = keyof typeof STAT_GRADIENTS
+
+function GradientStat({ value, label, variant }: { value: React.ReactNode; label: string; variant: StatVariant }) {
+  return (
+    <div
+      className="sbv-stat-tile"
+      style={{ background: STAT_GRADIENTS[variant], border: '1px solid rgba(255,255,255,0.08)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10)' }}
+    >
+      <div className="tnum" style={{ fontSize: 19, fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.02em', lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.85)', lineHeight: 1.2, marginTop: 5 }}>{label}</div>
+    </div>
+  )
+}
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -135,13 +155,13 @@ export function HomeScreen({
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {[
-                  { value: String(currentMetrics.headWorked), label: 'Head Worked' },
-                  { value: String(currentMetrics.toWork), label: 'To Work' },
-                  { value: String(currentMetrics.pensInUse), label: 'Pens' },
-                  { value: `${currentMetrics.orders}`, label: `Orders · ${currentMetrics.openOrders} Open` },
+                  { value: String(currentMetrics.headWorked), label: 'Head Worked', variant: 'highlight' as StatVariant },
+                  { value: String(currentMetrics.toWork), label: 'To Work', variant: 'default' as StatVariant },
+                  { value: String(currentMetrics.pensInUse), label: 'Pens', variant: 'default' as StatVariant },
+                  { value: `${currentMetrics.orders}`, label: `Orders · ${currentMetrics.openOrders} Open`, variant: 'orders' as StatVariant },
                 ].map((s) => (
                   <div key={s.label} style={{ flex: '1 1 72px', minWidth: 72 }}>
-                    <StatTile value={s.value} label={s.label} />
+                    <GradientStat value={s.value} label={s.label} variant={s.variant} />
                   </div>
                 ))}
               </div>

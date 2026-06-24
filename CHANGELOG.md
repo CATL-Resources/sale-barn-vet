@@ -4,6 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
+- **ui:** gradient stat cards + Sale Dashboard polish _(2026-06-24, `df48475`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -28,7 +29,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
-- **capture:** protect rapid back-to-back scans from clipping an EID _(2026-06-24, `795a383`)_
 - **capture:** instant EID fill + 2nd EID works for two 840 tags _(2026-06-21, `a34d6e9`)_
 - **capture:** stop the wand EID scan splitting into a couple of digits _(2026-06-21, `41f9a98`)_
 - **layout:** app fills the screen on phone and tablet (remove the 390px frame) _(2026-06-21, `4b7054e`)_
@@ -43,6 +43,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Docs
 
+- regenerate changelog _(2026-06-24, `ce9fc08`)_
 - log the chute flow + sale day fixes and the test-data wipe _(2026-06-20, `6816a18`)_
 - update CHANGELOG for the Work Orders panel + row fixes _(2026-06-20, `e2359d9`)_
 - update CHANGELOG for the Work Orders fixes _(2026-06-20, `561afdb`)_
@@ -57,6 +58,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Fix rapid double-scan EID clipping (burst-detector handoff) _(2026-06-24, `59f7920`)_
 - Office layer slice 1: head_billed lever, billing by billed count, audit _(2026-06-24, `70d4f83`)_
 - Pen List: rename Up to Staged + per-pen capture defaults _(2026-06-24, `a0c68af`)_
 - Office-layer schema for pen_work (migration only) _(2026-06-23, `b642e5a`)_

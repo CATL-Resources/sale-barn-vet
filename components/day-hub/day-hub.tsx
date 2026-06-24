@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { colors } from '@/components/ui/tokens'
 import { AppContainer } from '@/components/ui/app-container'
 import { ScreenHeader } from '@/components/ui/screen-header'
-import { StatTile } from '@/components/ui/stat-tile'
 import { GoldButton } from '@/components/ui/gold-button'
 import { HeaderBack } from '@/components/ui/header-back'
 import { ChevronRightIcon } from '@/components/ui/icons'
@@ -13,8 +12,30 @@ function fullDate(iso: string) {
   return new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 }
 
-// One of the three working-screen cards (navy).
-function NavCard({ href, title, badge, sub }: { href: string; title: string; badge: string; sub: string }) {
+// Diagonal-gradient stat cards (starting stops — fine-tuned later). Orange is
+// always the Billed · Office card; the lead "to work" metric is the highlight.
+const STAT_GRADIENTS = {
+  default: 'linear-gradient(135deg, #0E2646 0%, #2B7A70 100%)',
+  highlight: 'linear-gradient(135deg, #1B6B63 0%, #55BAAA 55%, #CBD24F 100%)',
+  orders: 'linear-gradient(135deg, #0E2646 0%, #2E2F6E 100%)',
+  billed: 'linear-gradient(135deg, #6B3410 0%, #E0822E 100%)',
+} as const
+type StatVariant = keyof typeof STAT_GRADIENTS
+
+function GradientStat({ value, label, variant }: { value: React.ReactNode; label: string; variant: StatVariant }) {
+  return (
+    <div
+      className="sbv-stat-tile"
+      style={{ background: STAT_GRADIENTS[variant], border: '1px solid rgba(255,255,255,0.08)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10)' }}
+    >
+      <div className="tnum" style={{ fontSize: 19, fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.02em', lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.85)', lineHeight: 1.2, marginTop: 5 }}>{label}</div>
+    </div>
+  )
+}
+
+// One of the three working-screen cards (navy). Title + count/status pill only.
+function NavCard({ href, title, badge }: { href: string; title: string; badge: string }) {
   return (
     <Link
       href={href}
@@ -26,7 +47,6 @@ function NavCard({ href, title, badge, sub }: { href: string; title: string; bad
         <ChevronRightIcon size={16} strokeWidth={2.4} style={{ color: colors.navySubText }} />
       </div>
       <div style={{ fontSize: 12, fontWeight: 700, color: colors.teal }}>{badge}</div>
-      <div style={{ fontSize: 13, fontWeight: 500, color: colors.navySubText, lineHeight: 1.45 }}>{sub}</div>
     </Link>
   )
 }
@@ -37,12 +57,16 @@ export function DayHub({ saleDay, barn, metrics }: { saleDay: SaleDay; barn: Bar
   const label = saleDay.notes?.trim()
   const statusLine = `${label ? `${label} · ` : ''}${barn.name} · ${open ? 'Open' : 'Closed'}`
 
-  const stats: { value: React.ReactNode; label: string }[] = [
-    { value: String(metrics.toWork), label: 'Animals To Work' },
-    { value: String(metrics.headWorked), label: 'Head Worked' },
-    { value: String(metrics.pensInUse), label: 'Pens In Use' },
-    { value: String(metrics.orders), label: `Work Orders · ${metrics.openOrders} Open` },
-    { value: <span style={{ fontSize: 12, fontWeight: 700, color: colors.navySubText }}>Placeholder</span>, label: 'Billed · Office' },
+  // Capture button: total head for the day, minus what's worked, is what's left.
+  const totalHead = metrics.headExpected
+  const remaining = Math.max(0, totalHead - metrics.headWorked)
+
+  const stats: { value: React.ReactNode; label: string; variant: StatVariant }[] = [
+    { value: String(metrics.toWork), label: 'Animals To Work', variant: 'highlight' },
+    { value: String(metrics.headWorked), label: 'Head Worked', variant: 'default' },
+    { value: String(metrics.pensInUse), label: 'Pens In Use', variant: 'default' },
+    { value: String(metrics.orders), label: `Work Orders · ${metrics.openOrders} Open`, variant: 'orders' },
+    { value: <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>Placeholder</span>, label: 'Billed · Office', variant: 'billed' },
   ]
 
   return (
@@ -53,16 +77,18 @@ export function DayHub({ saleDay, barn, metrics }: { saleDay: SaleDay; barn: Bar
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {stats.map((s) => (
             <div key={s.label} style={{ flex: '1 1 100px', minWidth: 100 }}>
-              <StatTile value={s.value} label={s.label} />
+              <GradientStat value={s.value} label={s.label} variant={s.variant} />
             </div>
           ))}
         </div>
 
         {/* CAPTURE — gold primary. Lands on the Pen List so the operator picks a
-            pen and goes straight into capture bound to that work order, instead
-            of the old New Batch start screen. */}
+            pen and goes straight into capture bound to that work order. */}
         <GoldButton href={`/work-list/${saleDay.id}`}>
-          Continue Working at the Chute · {metrics.headWorked} of {metrics.headExpected}
+          <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, lineHeight: 1.15 }}>
+            <span style={{ fontSize: 18, fontWeight: 800 }}>Continue Working Cows!</span>
+            <span style={{ fontSize: 12.5, fontWeight: 700, opacity: 0.9 }}>{remaining} Head of {totalHead} Head Remaining</span>
+          </span>
         </GoldButton>
 
         {/* WORKING SCREENS */}
@@ -71,20 +97,13 @@ export function DayHub({ saleDay, barn, metrics }: { saleDay: SaleDay; barn: Bar
             href={`/work-orders/${saleDay.id}`}
             title="Work Orders"
             badge={`${metrics.orders} Orders · ${metrics.openOrders} Open`}
-            sub="The office board — set up and bill the day's work: consignors, buyers, pens, and charges."
           />
           <NavCard
             href={`/work-list/${saleDay.id}`}
             title="Pen List"
             badge={`${metrics.pensInUse} Pens · ${metrics.toWork} Head To Work`}
-            sub="The working list — go through the day's pens one job at a time, straight into capture."
           />
-          <NavCard
-            href="/find"
-            title="Animals"
-            badge={`${metrics.animals} Animals`}
-            sub="Search the animals worked this sale by tag or attributes."
-          />
+          <NavCard href="/find" title="Animals" badge={`${metrics.animals} Animals`} />
         </div>
       </AppContainer>
     </>
