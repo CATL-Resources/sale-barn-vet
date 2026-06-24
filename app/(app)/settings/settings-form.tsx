@@ -12,6 +12,7 @@ import type {
   FieldConfig,
   FieldOption,
   PregStage,
+  QuickNote,
   SavePayload,
   SettingsData,
   WorkType,
@@ -208,6 +209,8 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
   const [options, setOptions] = useState<FieldOption[]>(() => clone(data.options))
   const [pregStages, setPregStages] = useState<PregStage[]>(() => clone(data.pregStages))
   const [ages, setAges] = useState<AgeDesignation[]>(() => clone(data.ageDesignations))
+  const [quickNotes, setQuickNotes] = useState<QuickNote[]>(() => clone(data.quickNotes))
+  const [newNoteText, setNewNoteText] = useState('')
 
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -225,6 +228,8 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
     setOptions(clone(data.options))
     setPregStages(clone(data.pregStages))
     setAges(clone(data.ageDesignations))
+    setQuickNotes(clone(data.quickNotes))
+    setNewNoteText('')
     setError(null)
   }, [sig, data])
 
@@ -292,6 +297,18 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
       .filter((a) => isNew(a.id) && a.designation_value.trim() !== '' && a.age_label.trim() !== '')
       .map(({ designation_value, age_label, age_code, age_min_years, age_max_years, sort_order }) => ({ designation_value: designation_value.trim(), age_label: age_label.trim(), age_code: age_code.trim(), age_min_years, age_max_years, sort_order }))
 
+    const initNote = new Map(initial.quickNotes.map((n) => [n.id, n]))
+    const changedNotes = quickNotes
+      .filter((n) => {
+        if (isNew(n.id)) return false
+        const o = initNote.get(n.id)
+        return o && (o.active !== n.active || o.sort_priority !== n.sort_priority)
+      })
+      .map(({ id, active, sort_priority }) => ({ id, active, sort_priority }))
+    const newNotes = quickNotes
+      .filter((n) => isNew(n.id) && n.label.trim() !== '')
+      .map(({ label, sort_priority }) => ({ label: label.trim(), sort_priority }))
+
     return {
       barn: barnPatch,
       fields: changedFields,
@@ -301,8 +318,10 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
       pregStages: changedStages,
       ageDesignations: changedAges,
       newAgeDesignations: newAges,
+      quickNotes: changedNotes,
+      newQuickNotes: newNotes,
     }
-  }, [barn, fields, workTypes, options, pregStages, ages, initial])
+  }, [barn, fields, workTypes, options, pregStages, ages, quickNotes, initial])
 
   const dirty =
     !!payload.barn ||
@@ -312,7 +331,9 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
     payload.newOptions.length > 0 ||
     payload.pregStages.length > 0 ||
     payload.ageDesignations.length > 0 ||
-    payload.newAgeDesignations.length > 0
+    payload.newAgeDesignations.length > 0 ||
+    payload.quickNotes.length > 0 ||
+    payload.newQuickNotes.length > 0
 
   async function onSave() {
     setSaving(true)
@@ -335,6 +356,8 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
     setOptions(clone(initial.options))
     setPregStages(clone(initial.pregStages))
     setAges(clone(initial.ageDesignations))
+    setQuickNotes(clone(initial.quickNotes))
+    setNewNoteText('')
     setError(null)
     setSaved(false)
   }
@@ -366,9 +389,37 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
     })
   }
 
+  const patchNote = (id: string, p: Partial<QuickNote>) => setQuickNotes((xs) => xs.map((x) => (x.id === id ? { ...x, ...p } : x)))
+  // Quick notes order ASCENDING by sort_priority (same as the chute). Moving a
+  // note swaps its place and re-indexes the whole list, so the order works even
+  // when several notes share the default priority of 0.
+  function moveNote(id: string, dir: 'up' | 'down') {
+    setQuickNotes((prev) => {
+      const sorted = [...prev].sort((a, b) => a.sort_priority - b.sort_priority)
+      const i = sorted.findIndex((x) => x.id === id)
+      const j = dir === 'up' ? i - 1 : i + 1
+      if (i < 0 || j < 0 || j >= sorted.length) return prev
+      const tmp = sorted[i]
+      sorted[i] = sorted[j]
+      sorted[j] = tmp
+      return sorted.map((n, idx) => ({ ...n, sort_priority: idx }))
+    })
+  }
+  function addNote() {
+    const label = newNoteText.trim()
+    if (!label) return
+    setQuickNotes((prev) => {
+      const maxOrder = prev.reduce((m, n) => Math.max(m, n.sort_priority), -1)
+      return [...prev, { id: `new:qn:${Date.now()}:${Math.random()}`, label, scope: 'permanent', active: true, sort_priority: maxOrder + 1, is_flag: false }]
+    })
+    setNewNoteText('')
+  }
+
   const breeds = options.filter((o) => o.field_key === 'breed').sort(byOrder)
   const bodyColors = options.filter((o) => o.field_key === 'hide_color').sort(byOrder)
   const shownCount = fields.filter((f) => f.is_displayed).length
+  const sortedNotes = [...quickNotes].sort((a, b) => a.sort_priority - b.sort_priority)
+  const activeNoteCount = quickNotes.filter((n) => n.active).length
 
   return (
     <div style={{ padding: '16px 16px 96px', display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -523,14 +574,37 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
         </div>
       </SectionCard>
 
-      {/* ---- Quick notes (read-only) ---- */}
-      <SectionCard title="Quick Notes">
-        <Caption>The tap labels at the chute. Editing these comes later — shown here for reference.</Caption>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {data.quickNotes.map((n) => (
-            <span key={n.label} className="sbv-pill" data-selected={(n.sort_priority ?? 0) > 0}>{n.label}</span>
+      {/* ---- Quick notes ---- */}
+      <SectionCard title={`Quick Notes · ${activeNoteCount} on`}>
+        <Caption>The tap labels at the chute. Turn one off to hide it without losing it, reorder to pin the important ones to the top, or add a new one. Order here matches the chute.</Caption>
+        <div>
+          {sortedNotes.map((n, i) => (
+            <RowShell key={n.id} first={i === 0}>
+              <Reorder canUp={i > 0} canDown={i < sortedNotes.length - 1} onUp={() => moveNote(n.id, 'up')} onDown={() => moveNote(n.id, 'down')} />
+              <span style={{ flex: '1 1 0%', display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 14, fontWeight: 600, color: n.active ? colors.textPrimary : '#9A9AA6' }}>
+                {n.label}
+                {n.is_flag ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.03em', color: colors.bronze, background: '#FDF1DC', border: '1px solid #F1D9A8', borderRadius: 999, padding: '1px 7px' }}>FLAG</span> : null}
+              </span>
+              <Switch on={n.active} onToggle={() => patchNote(n.id, { active: !n.active })} label={`${n.label} on`} />
+            </RowShell>
           ))}
-          {data.quickNotes.length === 0 ? <span style={{ fontSize: 13, color: '#9A9AA6' }}>None set up.</span> : null}
+          {sortedNotes.length === 0 ? <span style={{ fontSize: 13, color: '#9A9AA6' }}>None set up.</span> : null}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
+          <TextField
+            ariaLabel="New quick note"
+            placeholder="New quick note (e.g. Lump jaw)"
+            value={newNoteText}
+            onChange={setNewNoteText}
+          />
+          <button
+            type="button"
+            onClick={addNote}
+            disabled={!newNoteText.trim()}
+            style={{ flexShrink: 0, height: 38, padding: '0 16px', borderRadius: 9, border: 'none', cursor: newNoteText.trim() ? 'pointer' : 'default', fontSize: 14, fontWeight: 700, background: colors.navy, color: '#fff', opacity: newNoteText.trim() ? 1 : 0.5 }}
+          >
+            Add
+          </button>
         </div>
       </SectionCard>
 

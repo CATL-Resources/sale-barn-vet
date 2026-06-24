@@ -63,10 +63,12 @@ export type AgeDesignation = {
 }
 
 export type QuickNote = {
+  id: string // a temporary id starting with 'new:' marks an unsaved row
   label: string
   scope: string
   active: boolean
-  sort_priority: number | null
+  sort_priority: number
+  is_flag: boolean
 }
 
 // Everything the page hands to the form.
@@ -101,4 +103,7 @@ export type SavePayload = {
       'designation_value' | 'age_label' | 'age_code' | 'age_min_years' | 'age_max_years' | 'sort_order'
     >
   >
+  // Existing quick notes whose active / order changed, then brand-new notes to add.
+  quickNotes: Array<Pick<QuickNote, 'id' | 'active' | 'sort_priority'>>
+  newQuickNotes: Array<{ label: string; sort_priority: number }>
 }
