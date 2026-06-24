@@ -4,7 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **db:** frozen_* rate columns on special_charge (migration only) _(2026-06-24, `42cd308`)_
+- **db:** barn.special_sol_charge + special_charge freeze columns (migration only) _(2026-06-24, `3f174dc`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -57,6 +57,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Add frozen_* rate columns to special_charge (migration only) _(2026-06-24, `a2b98a1`)_
 - Office layer slice 3: the Hold bucket (un-placeable head) _(2026-06-24, `14d6039`)_
 - Office layer slice 2: count-mismatch resolution + move engine _(2026-06-24, `a6daff7`)_
 - Hub + Sale Dashboard: gradient stat cards, nav-card cleanup, Capture copy _(2026-06-24, `896e3a8`)_
