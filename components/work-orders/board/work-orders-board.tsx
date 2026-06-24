@@ -14,12 +14,15 @@ import { WorkOrderForm } from './work-order-form'
 import { AnimalListModal } from './animal-list-modal'
 
 // Pen first (kept apart from the head count so the two numbers don't blur
-// together), then consignor, work type, head, worked, status, actions. Work type
-// gets the most room and is allowed to wrap to two lines, so a full name like
-// "Preg and Mouth Combo" shows in full; the other columns are tightened to make
-// room. Fluid widths so the table fits a tablet (>=768px) without sideways
-// scroll; the phone gets stacked cards instead (see .wo-cards / .wo-board-table).
-const GRID = '56px minmax(110px, 1fr) minmax(150px, 1.1fr) 52px 80px 104px 116px'
+// together), then consignor, work type, head, worked, status, actions. The pen
+// column is wide enough for a full typed label (not just a 2-digit number) and
+// its cell wraps, so a longer pen label like "North 3" shows in full instead of
+// being clipped. Work type gets the most room and is allowed to wrap to two
+// lines, so a full name like "Preg and Mouth Combo" shows in full; the other
+// columns are tightened to make room. Fluid widths so the table fits a tablet
+// (>=768px) without sideways scroll; the phone gets stacked cards instead (see
+// .wo-cards / .wo-board-table).
+const GRID = '88px minmax(110px, 1fr) minmax(150px, 1.1fr) 52px 80px 104px 116px'
 
 const STATUS_STYLE: Record<WorkStatus, { bg: string; border: string; color: string; dot: string }> = {
   not_started: { bg: '#F3F3F0', border: '#E4E4DE', color: '#717182', dot: '#C2C2CA' },
@@ -177,7 +180,7 @@ export function WorkOrdersBoard({
                 return (
                   <div key={r.pw.id} style={{ background: i % 2 === 1 ? '#FAFBFC' : '#fff', borderBottom: i < rows.length - 1 ? `1px solid ${colors.rowDivider}` : 'none' }}>
                     <div onClick={() => openEdit(r.pw)} style={{ display: 'grid', gridTemplateColumns: GRID, alignItems: 'stretch', minHeight: 46, padding: '0 18px', cursor: 'pointer' }}>
-                      <Cell pad weight={800} size={16} color={colors.navy}>{r.pw.pen?.pen_number ?? '—'}</Cell>
+                      <Cell pad wrap weight={800} size={16} color={colors.navy}>{r.pw.pen?.pen_number ?? '—'}</Cell>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0, padding: '0 10px 0 12px', borderRight: '1px solid #EFF0F4' }}>
                         <span style={{ fontSize: 14, fontWeight: 700, color: colors.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</span>
                         <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap', color: r.isBuyer ? '#946A00' : colors.navy, background: r.isBuyer ? '#FBEFC2' : '#E7ECF5', border: `1px solid ${r.isBuyer ? '#EBD489' : '#CBD5E8'}` }}>{r.isBuyer ? `Buyer #${r.pw.buyer_number_text ?? '—'}` : 'Seller'}</span>
