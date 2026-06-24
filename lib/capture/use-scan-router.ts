@@ -69,6 +69,10 @@ export function useScanRouter(onScan: (code: string) => void, active: boolean) {
       buffer = ''
       leakEl = null
       leakPrior = ''
+      // Clear the timing too, so no gap/average state bleeds from one burst into
+      // the next back-to-back scan.
+      startTime = 0
+      lastTime = 0
     }
 
     function onKeyDown(e: KeyboardEvent) {
@@ -88,7 +92,14 @@ export function useScanRouter(onScan: (code: string) => void, active: boolean) {
           // hand the whole code on to be routed by its shape.
           e.preventDefault()
           e.stopPropagation()
-          if (el) {
+          // Only wipe the field we tracked if it's STILL the focused, mounted
+          // element. If a previous scan's save/advance swapped focus or unmounted
+          // it between this burst's start and its Enter, leakEl is stale — skip
+          // the wipe rather than clobber a different (or gone) field. Per the
+          // file's hard rule, worst case the raw characters stay put for the
+          // normal Save path; we never type into a stale field and never drop a
+          // digit.
+          if (el && el.isConnected && document.activeElement === el) {
             try {
               setNativeValue(el, prior)
             } catch {
