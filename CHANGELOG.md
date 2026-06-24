@@ -28,7 +28,8 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
-- **capture:** a failed duplicate-EID check no longer reads as "no duplicate" _(2026-06-24, `7c0813a`)_
+- **work-orders:** stop the pen label clipping on the office board _(2026-06-24, `f60a20f`)_
+- duplicate-EID check must not fail silently on a query error _(2026-06-24, `2440e84`)_
 - **capture:** instant EID fill + 2nd EID works for two 840 tags _(2026-06-21, `a34d6e9`)_
 - **capture:** stop the wand EID scan splitting into a couple of digits _(2026-06-21, `41f9a98`)_
 - **layout:** app fills the screen on phone and tablet (remove the 390px frame) _(2026-06-21, `4b7054e`)_
