@@ -4,7 +4,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **work-orders:** price specials like a work type — per-head entry, compute, freeze _(2026-06-24, `9b30523`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -29,6 +28,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
+- **capture:** a failed duplicate-EID check no longer reads as "no duplicate" _(2026-06-24, `7c0813a`)_
 - **capture:** instant EID fill + 2nd EID works for two 840 tags _(2026-06-21, `a34d6e9`)_
 - **capture:** stop the wand EID scan splitting into a couple of digits _(2026-06-21, `41f9a98`)_
 - **layout:** app fills the screen on phone and tablet (remove the 390px frame) _(2026-06-21, `4b7054e`)_
@@ -57,6 +57,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Specials as a flexible work type: per-head entry + compute + freeze _(2026-06-24, `bc599ed`)_
 - Capture/animal-edit: layout fixes + Remove-Animal safety _(2026-06-24, `c9a171a`)_
 - commit on shape match + EID/back-tag validation _(2026-06-24, `7fbbff0`)_
 - barn.special_sol_charge + special_charge freeze columns (migration only) _(2026-06-24, `077061b`)_
