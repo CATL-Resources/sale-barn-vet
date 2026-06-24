@@ -1235,6 +1235,10 @@ export type Database = {
           customer_charge: number
           deleted_at: string | null
           description: string | null
+          frozen_admin_rate: number | null
+          frozen_sol_charge: number | null
+          frozen_tax_rate: number | null
+          frozen_vet_charge: number | null
           head: number
           id: string
           party_id: string | null
@@ -1254,6 +1258,10 @@ export type Database = {
           customer_charge?: number
           deleted_at?: string | null
           description?: string | null
+          frozen_admin_rate?: number | null
+          frozen_sol_charge?: number | null
+          frozen_tax_rate?: number | null
+          frozen_vet_charge?: number | null
           head?: number
           id?: string
           party_id?: string | null
@@ -1273,6 +1281,10 @@ export type Database = {
           customer_charge?: number
           deleted_at?: string | null
           description?: string | null
+          frozen_admin_rate?: number | null
+          frozen_sol_charge?: number | null
+          frozen_tax_rate?: number | null
+          frozen_vet_charge?: number | null
           head?: number
           id?: string
           party_id?: string | null
