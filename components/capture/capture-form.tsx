@@ -300,27 +300,31 @@ export function CaptureForm({
         }
         title={`${batch.penNumber ? `Pen ${batch.penNumber}` : 'No pen'}${batch.sellerName ? ` · ${batch.sellerName}` : ''}`}
         subtitle={batch.workTypeName}
-        right={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <button
-              type="button"
-              onClick={onOpenAnimals}
-              aria-label="Animals worked"
-              style={{ height: 36, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0 13px', borderRadius: 999, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.28)', color: '#FFFFFF', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontVariantNumeric: 'tabular-nums' }}
-            >
-              Animals {worked}
-            </button>
-            <button
-              type="button"
-              onClick={onOpenCloseOut}
-              style={{ height: 36, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '0 13px', borderRadius: 999, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.28)', color: '#FFFFFF', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
-            >
-              <CloseOutIcon size={14} color="#FFFFFF" sw={2.2} />
-              Close out
-            </button>
-          </div>
-        }
       />
+
+      {/* Animals + Close out sit on their OWN row beneath the title, so the pen +
+          consignor name gets the full width of the header and isn't clipped on a
+          phone (it used to share the row with these two buttons). */}
+      <div className="sbv-screenheader" style={{ flexShrink: 0 }}>
+        <div className="sbv-container" style={{ paddingTop: 0, paddingBottom: 10, display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            onClick={onOpenAnimals}
+            aria-label="Animals worked"
+            style={{ flex: 1, minHeight: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0 13px', borderRadius: 999, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.28)', color: '#FFFFFF', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontVariantNumeric: 'tabular-nums' }}
+          >
+            Animals {worked}
+          </button>
+          <button
+            type="button"
+            onClick={onOpenCloseOut}
+            style={{ flex: 1, minHeight: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0 13px', borderRadius: 999, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.28)', color: '#FFFFFF', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+          >
+            <CloseOutIcon size={15} color="#FFFFFF" sw={2.2} />
+            Close out
+          </button>
+        </div>
+      </div>
 
       <div className="sbv-screenheader" style={{ position: 'relative', zIndex: 1, boxShadow: '0 6px 18px rgba(8,18,40,0.30)' }}>
         <div className="sbv-container" style={{ paddingTop: 0, paddingBottom: 14 }}>

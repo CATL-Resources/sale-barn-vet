@@ -119,7 +119,7 @@ export function AnimalAttributes({
                     key={s.id}
                     type="button"
                     onClick={() => patch({ pregStatus: selected ? null : s.stage_code, pregTiming: isBredStage(s.stage_code) ? draft.pregTiming : null })}
-                    style={{ height: 44, padding: '0 16px', borderRadius: 11, background: selected ? '#0E2646' : '#FFFFFF', color: selected ? '#FFFFFF' : '#1A1A1A', border: `1px solid ${selected ? '#0E2646' : '#D4D4D0'}`, fontFamily: 'inherit', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
+                    style={{ minHeight: 46, padding: '8px 16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1.1, borderRadius: 11, background: selected ? '#0E2646' : '#FFFFFF', color: selected ? '#FFFFFF' : '#1A1A1A', border: `1px solid ${selected ? '#0E2646' : '#D4D4D0'}`, fontFamily: 'inherit', fontSize: 15, fontWeight: 700, cursor: 'pointer' }}
                   >
                     {s.display_label}
                   </button>
@@ -155,7 +155,7 @@ export function AnimalAttributes({
                     key={fx}
                     type="button"
                     onClick={() => patch({ fetalSex: selected ? null : fx })}
-                    style={{ height: 40, padding: '0 16px', borderRadius: 999, background: selected ? '#0E2646' : '#FFFFFF', color: selected ? '#FFFFFF' : '#1A1A1A', border: `1px solid ${selected ? '#0E2646' : '#D4D4D0'}`, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+                    style={{ minHeight: 42, padding: '8px 16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1.1, borderRadius: 999, background: selected ? '#0E2646' : '#FFFFFF', color: selected ? '#FFFFFF' : '#1A1A1A', border: `1px solid ${selected ? '#0E2646' : '#D4D4D0'}`, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
                   >
                     {fx}
                   </button>
@@ -189,7 +189,7 @@ export function AnimalAttributes({
                   key={q.id}
                   type="button"
                   onClick={() => toggleNote(q.label)}
-                  style={{ height: 42, padding: on && flag ? '0 13px 0 14px' : '0 16px', display: 'inline-flex', alignItems: 'center', gap: 7, borderRadius: 999, background: on ? (flag ? '#FEF3C7' : '#0E2646') : '#FFFFFF', border: `1px solid ${on ? (flag ? '#F59E0B' : '#0E2646') : '#D4D4D0'}`, color: on ? (flag ? '#7A4A06' : '#FFFFFF') : '#1A1A1A', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+                  style={{ minHeight: 42, padding: on && flag ? '8px 13px 8px 14px' : '8px 16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1.1, gap: 7, borderRadius: 999, background: on ? (flag ? '#FEF3C7' : '#0E2646') : '#FFFFFF', border: `1px solid ${on ? (flag ? '#F59E0B' : '#0E2646') : '#D4D4D0'}`, color: on ? (flag ? '#7A4A06' : '#FFFFFF') : '#1A1A1A', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
                 >
                   {on && flag && <FlagIcon size={13} color="#B45309" sw={2.4} />}
                   {q.label}

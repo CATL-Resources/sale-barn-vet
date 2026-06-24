@@ -25,6 +25,7 @@ import {
 import { AnimalAttributes } from './animal-attributes'
 import { FlagBanner, FLAG_RED, FLAG_RED_BG, FieldFlagLabel } from './flag'
 import { BottomSheet, SheetHeader } from './sheets'
+import { AlertIcon } from './icons'
 import { RequiredMark } from '@/components/ui/required-mark'
 
 export type EditTarget = { mode: 'add' } | { mode: 'edit'; animal: CapturedAnimal }
@@ -75,6 +76,9 @@ export function AnimalEditSheet({
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState<string | null>(null)
   const [workComplete, setWorkComplete] = useState(false)
+  // Two-step guard for Remove: the first tap only arms it, the second confirms.
+  // So a single mis-tap can never wipe an animal.
+  const [confirmRemove, setConfirmRemove] = useState(false)
 
   const patch = (p: Partial<AnimalDraft>) => setDraft((d) => ({ ...d, ...p }))
 
@@ -243,6 +247,53 @@ export function AnimalEditSheet({
       <div style={{ overflowY: 'auto', padding: '0 16px 18px', display: 'flex', flexDirection: 'column', gap: 11 }}>
         {flag && <FlagBanner title="Duplicate tag" detail={`${flag.eid} already worked · ${flag.time} · ${flag.status}`} />}
 
+        {/* Remove sits at the TOP, far from Save, and asks before it deletes, so
+            a single mis-tap can't wipe an animal. A finished order is locked —
+            the office handles those. */}
+        {target.mode === 'edit' &&
+          (workComplete ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 44, padding: '8px 12px', borderRadius: 11, background: '#F5F5F0', border: '1px solid #E4E4DE', color: '#9A9AA6', fontSize: 12.5, fontWeight: 700, textAlign: 'center', lineHeight: 1.25 }}>
+              Remove is locked — the office handles a finished order
+            </div>
+          ) : confirmRemove ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 9, padding: 12, borderRadius: 12, background: FLAG_RED_BG, border: `1px solid ${FLAG_RED}` }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <AlertIcon size={18} color={FLAG_RED} />
+                <span style={{ fontSize: 14, fontWeight: 800, color: FLAG_RED }}>Remove this animal?</span>
+              </div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: '#8A3B3B', lineHeight: 1.3 }}>
+                This takes the record out of this batch and drops the head count by one.
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => setConfirmRemove(false)}
+                  style={{ flex: 1, minHeight: 44, borderRadius: 11, background: '#FFFFFF', border: '1px solid #D4D4D0', color: '#1A1A1A', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: saving ? 'default' : 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={() => void remove()}
+                  style={{ flex: 1, minHeight: 44, borderRadius: 11, background: FLAG_RED, border: `1px solid ${FLAG_RED}`, color: '#FFFFFF', fontFamily: 'inherit', fontSize: 14, fontWeight: 800, cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1 }}
+                >
+                  {saving ? 'Removing…' : 'Remove'}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={saving}
+              onClick={() => setConfirmRemove(true)}
+              style={{ alignSelf: 'flex-start', minHeight: 44, padding: '8px 16px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7, borderRadius: 11, background: '#FFFFFF', border: '1px solid #E2B4B4', color: FLAG_RED, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: saving ? 'default' : 'pointer' }}
+            >
+              Remove animal
+            </button>
+          ))}
+
         {/* identity */}
         <div style={{ background: '#FFFFFF', border: '1px solid #D4D4D0', borderRadius: 12, padding: 12, display: 'flex', flexDirection: 'column', gap: 9 }}>
           {shows('eid') && (
@@ -274,17 +325,6 @@ export function AnimalEditSheet({
         />
 
         {err && <div style={{ fontSize: 13, fontWeight: 700, color: FLAG_RED }}>{err}</div>}
-
-        {target.mode === 'edit' && (
-          <button
-            type="button"
-            disabled={saving || workComplete}
-            onClick={() => void remove()}
-            style={{ height: 46, borderRadius: 11, background: '#FFFFFF', border: `1px solid ${workComplete ? '#E4E4DE' : '#E2B4B4'}`, color: workComplete ? '#9A9AA6' : FLAG_RED, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: saving || workComplete ? 'default' : 'pointer' }}
-          >
-            {workComplete ? 'Remove (locked — office handles a finished order)' : 'Remove animal'}
-          </button>
-        )}
       </div>
 
       <div style={{ flexShrink: 0, background: '#FFFFFF', borderTop: '1px solid #E4E4DE', padding: '12px 16px 20px' }}>
