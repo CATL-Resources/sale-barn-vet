@@ -5,7 +5,17 @@ import { createClient } from '@/lib/supabase/client'
 import type { TablesInsert, TablesUpdate } from '@/types/supabase'
 import { fetchPenWorks, fetchSpecialCharges } from './queries'
 import { upsertPen } from './pens'
-import { setHeadBilled, resolveLine as resolveLineAction, moveHead as moveHeadAction, type ResolveMode, type MoveHeadInput } from '@/app/(office)/work-orders/actions'
+import {
+  setHeadBilled,
+  resolveLine as resolveLineAction,
+  moveHead as moveHeadAction,
+  parkHold as parkHoldAction,
+  resolveHold as resolveHoldAction,
+  billPen as billPenAction,
+  type ResolveMode,
+  type MoveHeadInput,
+  type ResolveHoldInput,
+} from '@/app/(office)/work-orders/actions'
 import type {
   PenWorkFull,
   Role,
@@ -215,6 +225,48 @@ export function usePenWorks(pageData: WorkOrdersPageData, saleDayId: string) {
       return true
     },
     [flashError, reload],
+  )
+
+  // Park N head off an over-count owner line onto the pen's Hold line (slice 3).
+  // Park / resolve / bill change or create lines, so re-sync from the server.
+  const parkHold = useCallback(
+    async (sourceId: string, n: number): Promise<boolean> => {
+      const res = await parkHoldAction(sourceId, n)
+      if (!res.ok) {
+        flashError(res.error || 'Could not park to Hold')
+        return false
+      }
+      await reload()
+      return true
+    },
+    [flashError, reload],
+  )
+
+  const resolveHold = useCallback(
+    async (input: ResolveHoldInput): Promise<boolean> => {
+      const res = await resolveHoldAction(input)
+      if (!res.ok) {
+        flashError(res.error || 'Could not resolve Hold')
+        return false
+      }
+      await reload()
+      return true
+    },
+    [flashError, reload],
+  )
+
+  // Bill a pen's lines — blocked (with a flash) if head is still on Hold.
+  const billPen = useCallback(
+    async (penId: string, penLabel: string): Promise<boolean> => {
+      const res = await billPenAction(penId, saleDayId, penLabel)
+      if (!res.ok) {
+        flashError(res.error || 'Could not bill the pen')
+        return false
+      }
+      await reload()
+      return true
+    },
+    [flashError, reload, saleDayId],
   )
 
   // Pens with more than one work order on this sale day — surfaced as "Mixed".
@@ -427,6 +479,9 @@ export function usePenWorks(pageData: WorkOrdersPageData, saleDayId: string) {
     saveHeadBilled,
     resolveLine,
     moveHead,
+    parkHold,
+    resolveHold,
+    billPen,
     mixedPenIds,
     toggleStatus,
     addPenWork,

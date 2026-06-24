@@ -4,7 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **work-orders:** office slice 2 — count-mismatch resolution + move engine _(2026-06-24, `4a66bc1`)_
+- **work-orders:** office slice 3 — the Hold bucket for un-placeable head _(2026-06-24, `f9510e7`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -43,7 +43,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Docs
 
-- regenerate changelog _(2026-06-24, `9bb7801`)_
 - log the chute flow + sale day fixes and the test-data wipe _(2026-06-20, `6816a18`)_
 - update CHANGELOG for the Work Orders panel + row fixes _(2026-06-20, `e2359d9`)_
 - update CHANGELOG for the Work Orders fixes _(2026-06-20, `561afdb`)_
@@ -58,6 +57,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Office layer slice 2: count-mismatch resolution + move engine _(2026-06-24, `a6daff7`)_
 - Hub + Sale Dashboard: gradient stat cards, nav-card cleanup, Capture copy _(2026-06-24, `896e3a8`)_
 - Fix rapid double-scan EID clipping (burst-detector handoff) _(2026-06-24, `59f7920`)_
 - Office layer slice 1: head_billed lever, billing by billed count, audit _(2026-06-24, `70d4f83`)_

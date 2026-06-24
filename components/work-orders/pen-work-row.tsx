@@ -303,6 +303,7 @@ export function PenWorkRow({
   const moveTargets = api.penWorks
     .filter((p) => p.id !== pw.id && p.pen_id != null && p.pen_id === pw.pen_id && !p.is_hold)
     .map((p) => ({ id: p.id, name: p.buyer?.name ?? p.seller?.name ?? '—' }))
+  const penLbl = pw.pen?.pen_number ? `Pen ${pw.pen.pen_number}` : 'this pen'
   const statusCell = (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, flexWrap: 'wrap' }}>
       <LineStatusPill status={deriveLineStatus(pw)} />
@@ -314,6 +315,38 @@ export function PenWorkRow({
       />
     </div>
   )
+
+  // The Hold line is rendered as its own distinct row (it has no owner, no rate,
+  // and bills $0). Expanding it opens the resolve control.
+  if (pw.is_hold) {
+    const holdHead = pw.head_billed ?? 0
+    return (
+      <>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minHeight: 44, padding: '0 14px', borderBottom: `1px solid ${colors.rowDivider}`, background: '#FFF7ED' }}>
+          {expander}
+          <MiniPill text="Hold" bg="#FDE6CF" color={colors.bronze} />
+          <span style={{ fontSize: 13, fontWeight: 700, color: colors.bronze, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            Unknown / Hold · {holdHead} head
+          </span>
+          <span style={{ flex: 1 }} />
+          <span className="tnum" style={{ fontSize: 14, fontWeight: 800, color: colors.textFaint }}>$0.00</span>
+        </div>
+        {isOpen && (
+          <PenWorkDetail
+            pw={pw}
+            barn={barn}
+            onCommitCount={(field, value) => api.saveCountDetail(pw.id, field, value)}
+            onCommitHeadBilled={(value) => api.saveHeadBilled(pw.id, value)}
+            lineStatus={deriveLineStatus(pw)}
+            moveTargets={moveTargets}
+            onResolve={(mode, reason) => api.resolveLine(pw.id, mode, reason)}
+            onMove={(n, targetId) => api.moveHead({ sourceId: pw.id, n, targetId })}
+            onResolveHold={(n, targetId) => api.resolveHold({ holdId: pw.id, n, targetId })}
+          />
+        )}
+      </>
+    )
+  }
 
   const cells =
     view === 'owner'
@@ -351,6 +384,8 @@ export function PenWorkRow({
           moveTargets={moveTargets}
           onResolve={(mode, reason) => api.resolveLine(pw.id, mode, reason)}
           onMove={(n, targetId) => api.moveHead({ sourceId: pw.id, n, targetId })}
+          onParkHold={(n) => api.parkHold(pw.id, n)}
+          onBillPen={pw.pen_id ? () => api.billPen(pw.pen_id as string, penLbl) : undefined}
         />
       )}
     </>
