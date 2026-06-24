@@ -28,8 +28,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
-- **capture:** commit a scan the instant it forms a whole tag, not on Enter _(2026-06-24, `23ef6ac`)_
-- **capture:** route EID + back tag by validated shape so simultaneous scans don't fight _(2026-06-24, `002dfc8`)_
+- **capture:** safer Remove-Animal, unclip stage/quick-note text, reflow working-pen header _(2026-06-24, `62b3980`)_
 - **capture:** instant EID fill + 2nd EID works for two 840 tags _(2026-06-21, `a34d6e9`)_
 - **capture:** stop the wand EID scan splitting into a couple of digits _(2026-06-21, `41f9a98`)_
 - **layout:** app fills the screen on phone and tablet (remove the 390px frame) _(2026-06-21, `4b7054e`)_
@@ -44,7 +43,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Docs
 
-- regenerate changelog _(2026-06-24, `aab1dae`)_
 - log the chute flow + sale day fixes and the test-data wipe _(2026-06-20, `6816a18`)_
 - update CHANGELOG for the Work Orders panel + row fixes _(2026-06-20, `e2359d9`)_
 - update CHANGELOG for the Work Orders fixes _(2026-06-20, `561afdb`)_
@@ -59,6 +57,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- commit on shape match + EID/back-tag validation _(2026-06-24, `7fbbff0`)_
 - barn.special_sol_charge + special_charge freeze columns (migration only) _(2026-06-24, `077061b`)_
 - Add frozen_* rate columns to special_charge (migration only) _(2026-06-24, `a2b98a1`)_
 - Office layer slice 3: the Hold bucket (un-placeable head) _(2026-06-24, `14d6039`)_
