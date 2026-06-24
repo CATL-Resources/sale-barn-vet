@@ -4,7 +4,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **db:** barn.special_sol_charge + special_charge freeze columns (migration only) _(2026-06-24, `3f174dc`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -29,6 +28,8 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
+- **capture:** commit a scan the instant it forms a whole tag, not on Enter _(2026-06-24, `23ef6ac`)_
+- **capture:** route EID + back tag by validated shape so simultaneous scans don't fight _(2026-06-24, `002dfc8`)_
 - **capture:** instant EID fill + 2nd EID works for two 840 tags _(2026-06-21, `a34d6e9`)_
 - **capture:** stop the wand EID scan splitting into a couple of digits _(2026-06-21, `41f9a98`)_
 - **layout:** app fills the screen on phone and tablet (remove the 390px frame) _(2026-06-21, `4b7054e`)_
@@ -43,6 +44,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Docs
 
+- regenerate changelog _(2026-06-24, `aab1dae`)_
 - log the chute flow + sale day fixes and the test-data wipe _(2026-06-20, `6816a18`)_
 - update CHANGELOG for the Work Orders panel + row fixes _(2026-06-20, `e2359d9`)_
 - update CHANGELOG for the Work Orders fixes _(2026-06-20, `561afdb`)_
@@ -57,6 +59,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- barn.special_sol_charge + special_charge freeze columns (migration only) _(2026-06-24, `077061b`)_
 - Add frozen_* rate columns to special_charge (migration only) _(2026-06-24, `a2b98a1`)_
 - Office layer slice 3: the Hold bucket (un-placeable head) _(2026-06-24, `14d6039`)_
 - Office layer slice 2: count-mismatch resolution + move engine _(2026-06-24, `a6daff7`)_
