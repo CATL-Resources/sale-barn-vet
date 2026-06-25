@@ -306,30 +306,27 @@ export function CaptureForm({
           consignor name gets the full width of the header and isn't clipped on a
           phone (it used to share the row with these two buttons). */}
       <div className="sbv-screenheader" style={{ flexShrink: 0 }}>
-        {/* Each button is content-sized and centered in its own half, so they sit
-            apart with room to breathe instead of two heavy bars meeting in the
-            middle — same split we use on the home current-sale card. */}
-        <div className="sbv-container" style={{ paddingTop: 0, paddingBottom: 10, display: 'flex', gap: 8 }}>
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-            <button
-              type="button"
-              onClick={onOpenAnimals}
-              aria-label="Animals worked"
-              style={{ minHeight: 34, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0 16px', borderRadius: 999, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.28)', color: '#FFFFFF', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontVariantNumeric: 'tabular-nums' }}
-            >
-              Animals {worked}
-            </button>
-          </div>
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-            <button
-              type="button"
-              onClick={onOpenCloseOut}
-              style={{ minHeight: 34, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0 16px', borderRadius: 999, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.28)', color: '#FFFFFF', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
-            >
-              <CloseOutIcon size={15} color="#FFFFFF" sw={2.2} />
-              Close out
-            </button>
-          </div>
+        {/* Two distinct buttons, pushed to the edges of the content column:
+            Animals (teal) hugs the left like the title/labels, Close out (gold)
+            hugs the right. Different colors so they don't read as one pair, and
+            edge-aligned with the rest of the text instead of floating centered. */}
+        <div className="sbv-container" style={{ paddingTop: 0, paddingBottom: 10, display: 'flex', gap: 8, justifyContent: 'space-between' }}>
+          <button
+            type="button"
+            onClick={onOpenAnimals}
+            aria-label="Animals worked"
+            style={{ minHeight: 34, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0 16px', borderRadius: 999, background: 'rgba(85,186,170,0.16)', border: '1px solid rgba(85,186,170,0.55)', color: '#7FD3C4', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontVariantNumeric: 'tabular-nums' }}
+          >
+            Animals {worked}
+          </button>
+          <button
+            type="button"
+            onClick={onOpenCloseOut}
+            style={{ minHeight: 34, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0 16px', borderRadius: 999, background: 'rgba(243,209,42,0.16)', border: '1px solid rgba(243,209,42,0.55)', color: '#F3D12A', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+          >
+            <CloseOutIcon size={15} color="#F3D12A" sw={2.2} />
+            Close out
+          </button>
         </div>
       </div>
 
