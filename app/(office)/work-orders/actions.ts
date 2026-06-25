@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import type { TablesInsert } from '@/types/supabase'
+import { computePenWorkCharges } from '@/lib/work-orders/pricing'
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
@@ -20,11 +21,13 @@ export type PartyLocation = {
   is_default: boolean
 }
 
+// A special is priced like a work-type line: perHead is the flat per-head fee
+// (the vet charge); the barn's standard per-head SOL, the admin fee, and tax are
+// added on top, and the rates are frozen onto the row at save (see saveWorkOrder).
 export type SpecialInput = {
   description: string
   head: number
   perHead: number
-  bucket: 'vet' | 'admin' | 'sol'
 }
 
 export type WorkOrderInput = {
@@ -121,7 +124,11 @@ export async function saveWorkOrder(input: WorkOrderInput): Promise<SaveResult> 
 
   if (!input.partyId) return { ok: false, error: 'Pick a consignor or buyer first.' }
 
-  const { data: barn } = await supabase.from('barn').select('id').limit(1).maybeSingle()
+  const { data: barn } = await supabase
+    .from('barn')
+    .select('id, sales_tax_rate, admin_fee_rate, special_sol_charge')
+    .limit(1)
+    .maybeSingle()
   if (!barn) return { ok: false, error: 'No barn is visible for your account.' }
   const barnId = barn.id
 
@@ -176,11 +183,26 @@ export async function saveWorkOrder(input: WorkOrderInput): Promise<SaveResult> 
     penWorkId = data.id
   }
 
-  // Insert any new special charges, each tied to this work order.
+  // Insert any new special charges, each tied to this work order. A special is
+  // priced like a work-type line: the flat per-head fee is the vet charge, the
+  // barn's standard per-head SOL is added, and tax + the admin fee go on top —
+  // all via the same computePenWorkCharges used for pen-work lines, so the two
+  // always agree. The rates are FROZEN onto the row so editing the barn's rates
+  // later never moves a special already entered. (special_charge totals are
+  // plain columns, unlike pen_work, so the computed numbers are stored directly.)
+  const taxRate = barn.sales_tax_rate
+  const adminRate = barn.admin_fee_rate
+  const solCharge = barn.special_sol_charge ?? 0
   const rows = input.newSpecials
     .filter((s) => s.description.trim() !== '' && s.head > 0)
     .map((s) => {
-      const total = round2(s.perHead * s.head)
+      const { vetTotal, adminTotal, solTotal, lineCharge } = computePenWorkCharges(
+        s.perHead,
+        solCharge,
+        s.head,
+        taxRate,
+        adminRate,
+      )
       return {
         sale_day_id: input.saleDayId,
         barn_id: barnId,
@@ -189,10 +211,14 @@ export async function saveWorkOrder(input: WorkOrderInput): Promise<SaveResult> 
         role: input.role,
         description: s.description.trim(),
         head: s.head,
-        customer_charge: total,
-        vet_total: s.bucket === 'vet' ? total : 0,
-        admin_total: s.bucket === 'admin' ? total : 0,
-        sol_total: s.bucket === 'sol' ? total : 0,
+        frozen_vet_charge: s.perHead,
+        frozen_sol_charge: solCharge,
+        frozen_admin_rate: adminRate,
+        frozen_tax_rate: taxRate,
+        vet_total: round2(vetTotal),
+        admin_total: round2(adminTotal),
+        sol_total: round2(solTotal),
+        customer_charge: round2(lineCharge),
       }
     })
   if (rows.length > 0) {
