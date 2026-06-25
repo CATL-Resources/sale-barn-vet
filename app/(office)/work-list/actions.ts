@@ -65,6 +65,31 @@ export async function setPenUp(
 }
 
 /**
+ * Save (or clear) the note on a work order. The crew writes a free-text note from
+ * the pen-list job popup; it lands in pen_work.notes. An empty note clears the
+ * field (stored as null). barn_id is passed through and re-checked by RLS, so a
+ * note can only be set on a job in the user's own barn. Returns the saved text so
+ * the screen can show it right away.
+ */
+export async function setPenWorkNote(
+  penWorkId: string,
+  barnId: string,
+  note: string,
+): Promise<{ ok: boolean; note: string | null; error?: string }> {
+  const supabase = createClient()
+  const trimmed = note.trim()
+  const value = trimmed.length ? trimmed : null
+  const { error } = await supabase
+    .from('pen_work')
+    .update({ notes: value })
+    .eq('id', penWorkId)
+    .eq('barn_id', barnId)
+    .is('deleted_at', null)
+  if (error) return { ok: false, note: null, error: error.message }
+  return { ok: true, note: value }
+}
+
+/**
  * The office's per-pen capture defaults for a sale day. Saved into the same
  * pen_session row as the staged marker (one row per pen per sale day), in the
  * field_defaults jsonb. The chute seeds each new animal's draft from these so a
