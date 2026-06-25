@@ -753,3 +753,86 @@ button {
     padding: 13px 16px;
   }
 }
+
+/* ===========================================================================
+   Desktop office shell — fixed left sidebar + slim top bar. Used by office
+   desktop screens (the chute/capture screens keep the mobile layout). Colors
+   come from inline styles in the component; this owns positioning + responsive.
+   =========================================================================== */
+.office-shell {
+  min-height: 100dvh;
+  background: var(--page);
+}
+.office-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 248px;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.office-main {
+  margin-left: 248px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.office-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 56px;
+  padding: 0 22px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(245, 245, 240, 0.92);
+  backdrop-filter: blur(8px);
+}
+.office-content {
+  flex: 1;
+  min-width: 0;
+  padding: 22px;
+}
+.office-content-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+}
+/* Responsive fallback: on a narrow screen the fixed rail would eat the page, so
+   it drops to a full-width strip at the top and the content flows beneath. */
+@media (max-width: 880px) {
+  .office-shell {
+    display: flex;
+    flex-direction: column;
+  }
+  .office-sidebar {
+    position: static;
+    width: 100%;
+    bottom: auto;
+    min-height: 0;
+  }
+  .office-main {
+    margin-left: 0;
+  }
+}
+/* The dashboard's responsive tile / card grids. */
+.office-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+  gap: 12px;
+}
+.office-jumpin {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+.office-twocol {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+  align-items: start;
+}
