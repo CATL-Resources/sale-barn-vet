@@ -1,9 +1,9 @@
-// The printable pen card, sized as a 4in x 6in shipping label (portrait: 4in
-// wide, 6in tall). Rendered at TRUE physical size; the @page size in the print
-// route MUST match this, or the print comes out scaled wrong. Reusable: hand it
-// the fields and it picks the seller or buyer layout automatically.
+// The printable pen card, sized as a Dymo 30323 shipping label (landscape: 4in
+// wide, 2.125in tall). Rendered at TRUE physical size; the @page size in the
+// print route MUST match this, or the print comes out scaled wrong. Reusable:
+// hand it the fields and it picks the seller or buyer layout automatically.
 //
-// The card uses border-box sizing and a ~0.18in inner margin so content never
+// The card uses border-box sizing and a ~0.12in inner margin so content never
 // runs to the very edge (printers can't print edge-to-edge). The consignor name
 // and the notes WRAP to as many lines as needed and are never truncated — they
 // are required content. Black fills (work-type pill, buyer-number pill, divider)
@@ -21,17 +21,15 @@ export type PenCardData = {
 
 const BLACK = '#000'
 
-// Big PEN value: shrink as the pen label gets longer so it never clips the 4in
-// width. The label is 4in wide either way, so this step-down is about width; the
-// taller card just lets the short, common pens print huge.
+// Big PEN value: shrink as the pen label gets longer so it never clips the fixed
+// PEN column on the narrow (2.125in tall) landscape label. Short, common pens
+// still print large.
 function penFontSize(pen: string): number {
   const n = pen.trim().length
-  if (n <= 2) return 150
-  if (n <= 3) return 118
-  if (n <= 4) return 96
-  if (n <= 6) return 64
-  if (n <= 9) return 46
-  if (n <= 12) return 34
+  if (n <= 2) return 64
+  if (n <= 3) return 52
+  if (n <= 4) return 44
+  if (n <= 6) return 34
   return 26
 }
 
@@ -42,7 +40,7 @@ const solidBlack: React.CSSProperties = {
   printColorAdjust: 'exact',
 }
 
-const fieldLabel: React.CSSProperties = { fontSize: 11, fontWeight: 800, letterSpacing: '0.12em' }
+const microLabel: React.CSSProperties = { fontSize: 8, fontWeight: 800, letterSpacing: '0.12em' }
 
 export function PenCardLabel({ data }: { data: PenCardData }) {
   return (
@@ -51,69 +49,72 @@ export function PenCardLabel({ data }: { data: PenCardData }) {
       style={{
         boxSizing: 'border-box',
         width: '4in',
-        height: '6in',
+        height: '2.125in',
         background: '#fff',
         color: BLACK,
         border: `2px solid ${BLACK}`,
-        borderRadius: 8,
-        padding: '0.18in',
+        borderRadius: 6,
+        padding: '0.12in',
         display: 'flex',
         flexDirection: 'column',
-        gap: 14,
         overflow: 'hidden',
         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
         WebkitPrintColorAdjust: 'exact',
         printColorAdjust: 'exact',
       }}
     >
-      {/* PEN — the hero, top of the card */}
-      <div style={{ minWidth: 0 }}>
-        <div style={fieldLabel}>PEN</div>
-        <div style={{ fontSize: penFontSize(data.pen), fontWeight: 800, lineHeight: 0.86, letterSpacing: '-0.02em', marginTop: 2, whiteSpace: 'nowrap' }}>
-          {data.pen}
+      {/* TOP ZONE — PEN (left) · name + work type (middle) · HEAD (right). */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        {/* PEN — fixed left column, the hero number */}
+        <div style={{ width: '1.05in', flexShrink: 0, minWidth: 0 }}>
+          <div style={microLabel}>PEN</div>
+          <div style={{ fontSize: penFontSize(data.pen), fontWeight: 800, lineHeight: 0.9, letterSpacing: '-0.02em', marginTop: 1, whiteSpace: 'nowrap' }}>
+            {data.pen}
+          </div>
         </div>
-      </div>
 
-      <div style={{ height: 4, background: BLACK, borderRadius: 2, ...solidBlack }} />
-
-      {/* NAME — consignor, or buyer number + name. Wraps fully, never truncated. */}
-      <div style={{ minWidth: 0 }}>
-        <div style={fieldLabel}>{data.isBuyer ? 'BUYER' : 'CONSIGNOR'}</div>
-        {data.isBuyer ? (
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 4 }}>
-            <span style={{ ...solidBlack, flexShrink: 0, fontSize: 22, fontWeight: 800, padding: '2px 9px', borderRadius: 5, letterSpacing: '-0.01em' }}>
-              #{data.buyerNumber ?? '—'}
-            </span>
-            <span style={{ flex: 1, minWidth: 0, fontSize: 30, fontWeight: 700, lineHeight: 1.12, letterSpacing: '-0.01em', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
+        {/* NAME — consignor, or buyer #number + name. Wraps fully, never truncated.
+            Work-type pill sits on its own line beneath the name. */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={microLabel}>{data.isBuyer ? 'BUYER' : 'CONSIGNOR'}</div>
+          {data.isBuyer ? (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginTop: 3 }}>
+              <span style={{ ...solidBlack, flexShrink: 0, fontSize: 13, fontWeight: 800, padding: '1px 6px', borderRadius: 4, letterSpacing: '-0.01em' }}>
+                #{data.buyerNumber ?? '—'}
+              </span>
+              <span style={{ flex: 1, minWidth: 0, fontSize: 18, fontWeight: 700, lineHeight: 1.08, letterSpacing: '-0.01em', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
+                {data.partyName}
+              </span>
+            </div>
+          ) : (
+            <div style={{ marginTop: 2, fontSize: 18, fontWeight: 700, lineHeight: 1.08, letterSpacing: '-0.01em', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
               {data.partyName}
+            </div>
+          )}
+          <div style={{ marginTop: 5 }}>
+            <span style={{ ...solidBlack, display: 'inline-block', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 5, whiteSpace: 'nowrap' }}>
+              {data.workType || '—'}
             </span>
           </div>
-        ) : (
-          <div style={{ marginTop: 2, fontSize: 32, fontWeight: 700, lineHeight: 1.12, letterSpacing: '-0.01em', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
-            {data.partyName}
-          </div>
-        )}
-      </div>
+        </div>
 
-      {/* HEAD + WORK TYPE */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={fieldLabel}>HEAD</div>
-          <div className="tnum" style={{ fontSize: 46, fontWeight: 800, lineHeight: 0.9, letterSpacing: '-0.02em', marginTop: 2, whiteSpace: 'nowrap' }}>
+        {/* HEAD — fixed right column, right-aligned, its own number */}
+        <div style={{ width: '0.82in', flexShrink: 0, textAlign: 'right' }}>
+          <div style={microLabel}>HEAD</div>
+          <div className="tnum" style={{ fontSize: 22, fontWeight: 800, lineHeight: 0.9, letterSpacing: '-0.02em', marginTop: 1, whiteSpace: 'nowrap' }}>
             {data.head}
-            <span style={{ fontSize: 24, fontWeight: 700 }}> hd</span>
+            <span style={{ fontSize: 12, fontWeight: 700 }}> hd</span>
           </div>
         </div>
-        <span style={{ ...solidBlack, flexShrink: 0, fontSize: 18, fontWeight: 700, padding: '7px 12px', borderRadius: 6, whiteSpace: 'nowrap' }}>
-          {data.workType || '—'}
-        </span>
       </div>
 
-      {/* NOTES — required content, wraps to as many lines as needed, never cut.
-          Takes the remaining vertical room on the tall label. */}
-      <div style={{ flex: 1, minHeight: 0, marginTop: 2 }}>
-        <div style={fieldLabel}>NOTES</div>
-        <div style={{ marginTop: 4, fontSize: 17, fontWeight: 500, lineHeight: 1.3, whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
+      {/* Thin divider, dropped down a bit so the name/buyer line has room to breathe. */}
+      <div style={{ height: 2, background: BLACK, borderRadius: 1, marginTop: '0.14in', ...solidBlack }} />
+
+      {/* NOTES — required content, wraps to fill the remaining height, never cut. */}
+      <div style={{ flex: 1, minHeight: 0, marginTop: 6 }}>
+        <div style={microLabel}>NOTES</div>
+        <div style={{ marginTop: 3, fontSize: 11, fontWeight: 500, lineHeight: 1.28, whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
           {data.notes?.trim() ? data.notes : '—'}
         </div>
       </div>
