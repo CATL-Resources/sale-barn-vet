@@ -5,10 +5,9 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ScreenHeader } from '@/components/ui/screen-header'
 import { HeaderBack } from '@/components/ui/header-back'
-import { PlusIcon, SearchIcon, ChevronDownIcon, TrashIcon } from '@/components/ui/icons'
+import { PlusIcon, SearchIcon, TrashIcon } from '@/components/ui/icons'
 import { deriveStatus, STATUS_LABEL, type WorkStatus } from '@/lib/work-orders/status'
 import type { AnimalType, Barn, PenWorkFull, SaleDay, SpecialChargeFull, WorkType } from '@/lib/work-orders/types'
-import { startCapture } from '@/lib/work-orders/start-capture'
 import { deleteWorkOrder } from '@/app/(office)/work-orders/actions'
 import { WorkOrderForm } from './work-order-form'
 import { AnimalListModal } from './animal-list-modal'
@@ -31,17 +30,15 @@ const STATUS_STYLE: Record<WorkStatus, { bg: string; border: string; color: stri
 }
 const SORT_RANK: Record<WorkStatus, number> = { in_progress: 0, not_started: 1, complete: 2 }
 
-type DaySummary = { id: string; sale_date: string; status: string; notes: string | null }
 
 function longDate(iso: string) {
   return new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
 export function WorkOrdersBoard({
-  saleDay, saleDays, barn, workTypes, animalTypes, pens, penWorks, specialsByPenWork,
+  saleDay, barn, workTypes, animalTypes, pens, penWorks, specialsByPenWork,
 }: {
   saleDay: SaleDay
-  saleDays: DaySummary[]
   barn: Barn
   workTypes: WorkType[]
   animalTypes: AnimalType[]
@@ -54,7 +51,6 @@ export function WorkOrdersBoard({
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<PenWorkFull | null>(null)
   const [notesOpen, setNotesOpen] = useState<Record<string, boolean>>({})
-  const [dayMenu, setDayMenu] = useState(false)
   const [rowMenu, setRowMenu] = useState<{ pw: PenWorkFull; x: number; y: number } | null>(null)
   const [animalList, setAnimalList] = useState<{ penWorkId: string; title: string } | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -97,8 +93,6 @@ export function WorkOrdersBoard({
     return `${pw.pen?.pen_number ? `Pen ${pw.pen.pen_number}` : 'No pen'} · ${p?.name ?? '—'}`
   }
   function onSaved(msg: string) { setFormOpen(false); flash(msg); router.refresh() }
-  // "Work Cows" — shared with the chute list: mark started, open Capture bound to it.
-  function onWorkCows(pw: PenWorkFull) { void startCapture(pw.id, (href) => router.push(href)) }
   async function onDelete(pw: PenWorkFull) {
     if (!window.confirm('Delete this work order? This can’t be undone from here.')) return
     const res = await deleteWorkOrder(pw.id)
@@ -115,33 +109,16 @@ export function WorkOrdersBoard({
       <ScreenHeader title="Work Orders" subtitle={longDate(saleDay.sale_date)} back={<HeaderBack href={`/day/${saleDay.id}`} label="Back to Sale Dashboard" />} />
 
       <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 'var(--content-max)', width: '100%', margin: '0 auto' }}>
-        {/* TOOLBAR — wraps onto two rows on a phone so nothing is cut off. */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative' }}>
-            <button type="button" onClick={() => setDayMenu((v) => !v)} style={{ height: 44, display: 'inline-flex', alignItems: 'center', gap: 9, padding: '0 14px', background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 9, fontFamily: 'inherit', cursor: 'pointer' }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: colors.navy }}>{longDate(saleDay.sale_date)}</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: colors.textPlaceholder }}>{barn.name}</span>
-              <ChevronDownIcon size={14} style={{ color: colors.textPlaceholder }} />
-            </button>
-            {dayMenu ? (
-              <div style={{ position: 'absolute', top: 46, left: 0, zIndex: 30, minWidth: 240, background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 10, boxShadow: '0 12px 28px rgba(14,38,70,0.16)', overflow: 'hidden' }}>
-                {saleDays.map((d) => (
-                  <button key={d.id} type="button" onClick={() => { setDayMenu(false); if (d.id !== saleDay.id) router.push(`/work-orders/${d.id}`) }}
-                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', background: d.id === saleDay.id ? '#F3F6FB' : '#fff', border: 'none', borderBottom: `1px solid ${colors.rowDivider}`, fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left' }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: colors.textPrimary }}>{longDate(d.sale_date)}</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: colors.textPlaceholder }}>{d.status}</span>
-                  </button>
-                ))}
-                {saleDays.length === 0 ? <div style={{ padding: '10px 12px', fontSize: 13, color: colors.textPlaceholder }}>No sale days.</div> : null}
-              </div>
-            ) : null}
-          </div>
-          <div style={{ flex: '1 1 220px', display: 'flex', alignItems: 'center', gap: 9, height: 44, background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 9, padding: '0 12px' }}>
+        {/* TOOLBAR — one line: search + a compact "+" to add a work order. The
+            past-sales switcher lived here before; it's gone (it duplicated the
+            header and switching days will live elsewhere). */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ flex: '1 1 auto', maxWidth: 460, display: 'flex', alignItems: 'center', gap: 9, height: 44, background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 9, padding: '0 12px' }}>
             <SearchIcon size={16} style={{ color: colors.textPlaceholder }} />
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search customer or buyer #" style={{ flex: 1, minWidth: 0, border: 'none', background: 'transparent', fontSize: 14, fontWeight: 500, color: colors.textPrimary, outline: 'none', fontFamily: 'inherit' }} />
           </div>
-          <button type="button" onClick={openNew} style={{ height: 44, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0 16px', borderRadius: 9, background: colors.gold, color: colors.navy, border: 'none', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
-            <PlusIcon size={16} style={{ color: colors.navy }} />New Work Order
+          <button type="button" onClick={openNew} aria-label="New work order" style={{ width: 44, height: 44, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 9, background: colors.gold, color: colors.navy, border: 'none', cursor: 'pointer' }}>
+            <PlusIcon size={20} style={{ color: colors.navy }} />
           </button>
         </div>
 
@@ -197,14 +174,7 @@ export function WorkOrdersBoard({
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 12px', borderRight: '1px solid #EFF0F4' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 24, padding: '0 10px', borderRadius: 999, background: st.bg, border: `1px solid ${st.border}`, fontSize: 12, fontWeight: 700, color: st.color, whiteSpace: 'nowrap' }}><span style={{ width: 7, height: 7, borderRadius: 999, background: st.dot }} />{STATUS_LABEL[r.status]}</span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10, paddingLeft: 16 }}>
-                        {r.status !== 'complete' ? (
-                          <button type="button" onClick={(e) => { e.stopPropagation(); onWorkCows(r.pw) }} title="Mark started and open Capture bound to this order"
-                            style={{ height: 32, padding: '0 14px', borderRadius: 7, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', background: colors.gold, color: colors.navy, border: 'none', whiteSpace: 'nowrap' }}>Work</button>
-                        ) : (
-                          <button type="button" onClick={(e) => { e.stopPropagation(); openEdit(r.pw) }}
-                            style={{ height: 32, padding: '0 12px', borderRadius: 7, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', background: 'transparent', color: colors.textMuted, border: '1px solid #E4E4DE', whiteSpace: 'nowrap' }}>View</button>
-                        )}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingLeft: 16 }}>
                         <button type="button" onClick={(e) => openRowMenu(e, r.pw)} aria-label="More actions"
                           style={{ width: 32, height: 32, borderRadius: 7, background: rowMenu?.pw.id === r.pw.id ? '#EEF1F6' : '#fff', border: `1px solid ${colors.border}`, color: colors.navy, fontSize: 17, fontWeight: 800, lineHeight: 1, cursor: 'pointer', flexShrink: 0 }}>⋯</button>
                       </div>
@@ -226,34 +196,42 @@ export function WorkOrdersBoard({
               </div>
             </div>
 
-            {/* PHONE : one order per stacked card — legible without sideways scroll. */}
+            {/* PHONE : one order per stacked card with labeled rows — legible
+                without sideways scroll, no cramped columns. */}
             <div className="wo-cards">
               {rows.map((r) => {
                 const st = STATUS_STYLE[r.status]
                 const worked = r.status === 'not_started' ? '—' : r.status === 'in_progress' ? `${r.pw.head_worked ?? 0} of ${r.pw.head_expected ?? 0}` : String(r.pw.head_worked ?? 0)
                 const workedColor = r.status === 'not_started' ? '#C2C2CA' : r.status === 'in_progress' ? '#B45309' : colors.textPrimary
                 return (
-                  <div key={r.pw.id} onClick={() => openEdit(r.pw)} className="press-card" style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: 14, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 9 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                      <span style={{ fontSize: 17, fontWeight: 800, color: colors.navy, letterSpacing: '-0.01em' }}>{r.pw.pen?.pen_number ? `Pen ${r.pw.pen.pen_number}` : 'No pen'}</span>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 24, padding: '0 10px', borderRadius: 999, background: st.bg, border: `1px solid ${st.border}`, fontSize: 12, fontWeight: 700, color: st.color, whiteSpace: 'nowrap', flexShrink: 0 }}><span style={{ width: 7, height: 7, borderRadius: 999, background: st.dot }} />{STATUS_LABEL[r.status]}</span>
+                  <div key={r.pw.id} onClick={() => openEdit(r.pw)} className="press-card" style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: 14, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 11 }}>
+                    {/* pen + consignor / buyer on top */}
+                    <div>
+                      <div style={{ fontSize: 19, fontWeight: 800, color: colors.navy, letterSpacing: '-0.01em' }}>{r.pw.pen?.pen_number ? `Pen ${r.pw.pen.pen_number}` : 'No pen'}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
+                        <span style={{ fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>{r.name}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '2px 8px', color: r.isBuyer ? '#946A00' : colors.navy, background: r.isBuyer ? '#FBEFC2' : '#E7ECF5', border: `1px solid ${r.isBuyer ? '#EBD489' : '#CBD5E8'}` }}>{r.isBuyer ? `Buyer #${r.pw.buyer_number_text ?? '—'}` : 'Seller'}</span>
+                        {r.custNo ? <span style={{ fontSize: 11, fontWeight: 600, color: colors.textPlaceholder }}>#{r.custNo}</span> : null}
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>{r.name}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '2px 8px', color: r.isBuyer ? '#946A00' : colors.navy, background: r.isBuyer ? '#FBEFC2' : '#E7ECF5', border: `1px solid ${r.isBuyer ? '#EBD489' : '#CBD5E8'}` }}>{r.isBuyer ? `Buyer #${r.pw.buyer_number_text ?? '—'}` : 'Seller'}</span>
-                      {r.custNo ? <span style={{ fontSize: 11, fontWeight: 600, color: colors.textPlaceholder }}>#{r.custNo}</span> : null}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: r.pw.workType ? colors.textPrimary : colors.textPlaceholder }}>{r.pw.workType?.name ?? 'No work type'}</span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: colors.textMuted, whiteSpace: 'nowrap' }}><span style={{ color: colors.teal }}>{r.pw.head_expected ?? 0}</span> exp · <span style={{ color: workedColor }}>{worked}</span> worked</span>
+                    {/* labeled rows */}
+                    <div style={{ borderTop: `1px solid ${colors.rowDivider}` }}>
+                      <CardRow label="Work type" value={<span style={{ color: r.pw.workType ? colors.textPrimary : colors.textPlaceholder }}>{r.pw.workType?.name ?? 'No work type'}</span>} />
+                      <CardRow label="Head" value={<span style={{ color: colors.teal }}>{r.pw.head_expected ?? 0}</span>} />
+                      <CardRow label="Worked" value={<span style={{ color: workedColor }}>{worked}</span>} />
+                      <CardRow
+                        label="Status"
+                        last
+                        value={
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 24, padding: '0 10px', borderRadius: 999, background: st.bg, border: `1px solid ${st.border}`, fontSize: 12, fontWeight: 700, color: st.color, whiteSpace: 'nowrap' }}>
+                            <span style={{ width: 7, height: 7, borderRadius: 999, background: st.dot }} />{STATUS_LABEL[r.status]}
+                          </span>
+                        }
+                      />
                     </div>
                     {r.pw.notes ? <div style={{ fontSize: 13, fontWeight: 500, color: colors.textPrimary, background: '#FDF7EA', border: '1px solid #F1D9A8', borderRadius: 9, padding: '8px 10px', lineHeight: 1.45 }}>{r.pw.notes}</div> : null}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {r.status !== 'complete' ? (
-                        <button type="button" onClick={(e) => { e.stopPropagation(); onWorkCows(r.pw) }} style={{ flex: 1, height: 44, borderRadius: 9, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer', background: colors.gold, color: colors.navy, border: 'none' }}>Work</button>
-                      ) : (
-                        <button type="button" onClick={(e) => { e.stopPropagation(); openEdit(r.pw) }} style={{ flex: 1, height: 44, borderRadius: 9, fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer', background: '#fff', color: colors.textMuted, border: '1px solid #E4E4DE' }}>View</button>
-                      )}
+                    {/* per-card actions — the ⋯ menu (edit / animal list / print / delete) */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <button type="button" onClick={(e) => openRowMenu(e, r.pw)} aria-label="More actions" style={{ width: 44, height: 44, borderRadius: 9, background: '#fff', border: `1px solid ${colors.border}`, color: colors.navy, fontSize: 18, fontWeight: 800, lineHeight: 1, cursor: 'pointer', flexShrink: 0 }}>⋯</button>
                     </div>
                   </div>
@@ -325,6 +303,16 @@ function SummaryCount({ dot, n, label }: { dot: string; n: number; label: string
     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: colors.textMuted }}>
       <span style={{ width: 9, height: 9, borderRadius: 999, background: dot }} />{n} {label}
     </span>
+  )
+}
+
+// One labeled line in a phone order card: muted label on the left, value on the right.
+function CardRow({ label, value, last }: { label: string; value: React.ReactNode; last?: boolean }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 38, padding: '7px 0', borderBottom: last ? 'none' : `1px solid ${colors.rowDivider}` }}>
+      <span style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted }}>{label}</span>
+      <span style={{ fontSize: 14, fontWeight: 700, color: colors.textPrimary, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
+    </div>
   )
 }
 
