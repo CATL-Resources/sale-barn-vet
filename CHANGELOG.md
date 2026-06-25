@@ -4,7 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **settings:** manage the chute's quick notes (add, turn on/off, reorder) _(2026-06-24, `52bff2f`)_
+- **work-orders:** finish specials compute+freeze — shared math + form breakdown _(2026-06-25, `6a8b88a`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -59,6 +59,8 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- saveWorkOrder computes + freezes a special (stashed half) _(2026-06-25, `bc3bedd`)_
+- Quick Notes manager (add / on-off / reorder) _(2026-06-24, `b6d205f`)_
 - Specials as a flexible work type: per-head entry + compute + freeze _(2026-06-24, `bc599ed`)_
 - Capture/animal-edit: layout fixes + Remove-Animal safety _(2026-06-24, `c9a171a`)_
 - commit on shape match + EID/back-tag validation _(2026-06-24, `7fbbff0`)_
