@@ -359,16 +359,41 @@ function WorkTypeRow({
               <AddButton onClick={onCustomize}>+ Customize fields for this work type</AddButton>
             </div>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${colors.rowDivider}`, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted }}>Vet</span>
-            <NumField ariaLabel={`${wt.name} vet charge`} prefix="$" step={0.5} value={wt.vet_charge} onChange={(v) => patchWt({ vet_charge: v == null ? 0 : round(v, 2) })} />
-            <span style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted }}>SOL</span>
-            <NumField ariaLabel={`${wt.name} SOL charge`} prefix="$" step={0.5} value={wt.sol_charge} onChange={(v) => patchWt({ sol_charge: v == null ? 0 : round(v, 2) })} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${colors.rowDivider}`, flexWrap: 'wrap' }}>
             <TogglePill on={wt.includes_preg_check} onToggle={() => patchWt({ includes_preg_check: !wt.includes_preg_check })}>Preg</TogglePill>
             <Switch on={wt.active} onToggle={() => patchWt({ active: !wt.active })} label={`${wt.name} active`} />
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#9A9AA6' }}>Prices live in the Charges section.</span>
           </div>
         </div>
       ) : null}
+    </div>
+  )
+}
+
+// All work-type prices in one place, side by side — every work type on its own
+// row with its Vet and SOL charge, so you can scan and compare them at a glance
+// instead of digging into each work type. Edits save the same way as before.
+function ChargesTable({ workTypes, patchWt }: { workTypes: WorkType[]; patchWt: (id: string, p: Partial<WorkType>) => void }) {
+  const cell: React.CSSProperties = { width: 96, display: 'flex', justifyContent: 'flex-end', flexShrink: 0 }
+  return (
+    <div>
+      <Caption>Per-head charges for every work type, side by side. Vet and SOL set what each job bills.</Caption>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 0 6px' }}>
+        <span style={{ flex: '1 1 0%', fontSize: 11, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: colors.textMuted }}>Work Type</span>
+        <span style={{ ...cell, fontSize: 11, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: colors.textMuted, paddingRight: 6 }}>Vet</span>
+        <span style={{ ...cell, fontSize: 11, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: colors.textMuted, paddingRight: 6 }}>SOL</span>
+      </div>
+      {workTypes.map((w, i) => (
+        <div key={w.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderTop: i === 0 ? `1px solid ${colors.rowDivider}` : `1px solid ${colors.rowDivider}`, opacity: w.active ? 1 : 0.55 }}>
+          <span style={{ flex: '1 1 0%', fontSize: 14, fontWeight: 700, color: colors.navy }}>{w.name}{w.active ? '' : ' · Off'}</span>
+          <span style={cell}>
+            <NumField ariaLabel={`${w.name} vet charge`} prefix="$" step={0.5} width={56} value={w.vet_charge} onChange={(v) => patchWt(w.id, { vet_charge: v == null ? 0 : round(v, 2) })} />
+          </span>
+          <span style={cell}>
+            <NumField ariaLabel={`${w.name} SOL charge`} prefix="$" step={0.5} width={56} value={w.sol_charge} onChange={(v) => patchWt(w.id, { sol_charge: v == null ? 0 : round(v, 2) })} />
+          </span>
+        </div>
+      ))}
     </div>
   )
 }
@@ -776,8 +801,8 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
       <OptionList title="Body Color Choices" caption="Off at St. Onge, but the list is here for any barn that turns it on. Strict pick list — never free text." list={bodyColors} fieldKey="hide_color" patchOpt={patchOpt} onReorder={reorderOptions} add={addOption} />
 
       {/* ---- Work types & rates ---- */}
-      <CollapsibleSection title="Work Types & Rates" summary={`${workTypes.length} types`}>
-        <Caption>Each work type has its own field list and rates. Tap one to open it — its field list is exactly what shows at the chute for that job. “Reset to default” snaps it back to the Default Capture Fields list.</Caption>
+      <CollapsibleSection title="Work Type Fields" summary={`${workTypes.length} types`}>
+        <Caption>Each work type has its own field list. Tap one to open it — its field list is exactly what shows at the chute for that job. “Reset to default” snaps it back to the Default Capture Fields list. (Prices are in the Charges section below.)</Caption>
         <div>
           {workTypes.map((w) => (
             <WorkTypeRow
@@ -792,6 +817,11 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
             />
           ))}
         </div>
+      </CollapsibleSection>
+
+      {/* ---- Charges: every work type's price, side by side ---- */}
+      <CollapsibleSection title="Charges" summary={`${workTypes.length} types`}>
+        <ChargesTable workTypes={workTypes} patchWt={patchWt} />
       </CollapsibleSection>
 
       {/* ---- Quick notes ---- */}
