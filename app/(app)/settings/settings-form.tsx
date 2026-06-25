@@ -69,19 +69,68 @@ const round = (n: number, dp: number) => {
 const slug = (s: string) =>
   s.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '')
 
-/** Swap a row with its neighbour by exchanging sort_order (only those two change). */
-function reordered<T extends { id: string; sort_order: number }>(list: T[], id: string, dir: 'up' | 'down'): T[] {
-  const sorted = [...list].sort((a, b) => a.sort_order - b.sort_order)
-  const i = sorted.findIndex((x) => x.id === id)
-  const j = dir === 'up' ? i - 1 : i + 1
-  if (i < 0 || j < 0 || j >= sorted.length) return list
-  const so = sorted[i].sort_order
-  sorted[i] = { ...sorted[i], sort_order: sorted[j].sort_order }
-  sorted[j] = { ...sorted[j], sort_order: so }
-  return sorted
+/**
+ * Renumber a list to match a new order of ids, writing 0..n-1 into the order
+ * column (sort_order or sort_priority). Only the rows whose number actually
+ * changes land in the Save diff.
+ */
+function reindexBy<T extends { id: string }>(list: T[], orderedIds: string[], key: 'sort_order' | 'sort_priority'): T[] {
+  const pos = new Map(orderedIds.map((id, i) => [id, i]))
+  return list.map((row) => (pos.has(row.id) ? ({ ...row, [key]: pos.get(row.id)! } as T) : row))
 }
 
 const byOrder = <T extends { sort_order: number }>(a: T, b: T) => a.sort_order - b.sort_order
+
+// Drag-to-reorder for the settings lists. Pointer-based so it works the same with
+// a finger or a mouse, no library. As you drag a row's grip past a neighbour the
+// list re-sorts live; on drop the new order (0..n-1) is written to the order
+// column and saved with everything else. Replaces the old up/down arrows.
+function useDragReorder(orderedIds: string[], onReorder: (ids: string[]) => void) {
+  const rowEls = useRef(new Map<string, HTMLElement | null>())
+  const idsRef = useRef(orderedIds)
+  idsRef.current = orderedIds
+  const [dragId, setDragId] = useState<string | null>(null)
+
+  const setRow = (id: string) => (el: HTMLElement | null) => { rowEls.current.set(id, el) }
+
+  function onMove(e: React.PointerEvent) {
+    if (!dragId) return
+    const ids = idsRef.current
+    const y = e.clientY
+    // The slot the finger is over = the first row whose middle is below it.
+    let target = ids.length - 1
+    for (let i = 0; i < ids.length; i++) {
+      const el = rowEls.current.get(ids[i])
+      if (!el) continue
+      const r = el.getBoundingClientRect()
+      if (y < r.top + r.height / 2) { target = i; break }
+    }
+    const from = ids.indexOf(dragId)
+    if (from < 0 || from === target) return
+    const next = [...ids]
+    next.splice(from, 1)
+    next.splice(target, 0, dragId)
+    onReorder(next)
+  }
+
+  function end(e: React.PointerEvent) {
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId)
+    setDragId(null)
+  }
+
+  const handleProps = (id: string): React.DOMAttributes<HTMLButtonElement> => ({
+    onPointerDown: (e) => {
+      e.preventDefault()
+      e.currentTarget.setPointerCapture?.(e.pointerId)
+      setDragId(id)
+    },
+    onPointerMove: onMove,
+    onPointerUp: end,
+    onPointerCancel: end,
+  })
+
+  return { dragId, setRow, handleProps }
+}
 
 // ---- tiny UI atoms ----
 
@@ -120,17 +169,34 @@ function TogglePill({ on, onToggle, children }: { on: boolean; onToggle: () => v
   )
 }
 
-function Reorder({ onUp, onDown, canUp, canDown }: { onUp: () => void; onDown: () => void; canUp: boolean; canDown: boolean }) {
-  const btn = (enabled: boolean): React.CSSProperties => ({
-    width: 30, height: 26, borderRadius: 7, border: `1px solid ${colors.border}`, background: '#fff',
-    color: enabled ? colors.navy : '#CBCBC6', cursor: enabled ? 'pointer' : 'default', fontSize: 13, fontWeight: 800,
-    lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-  })
+function GripIcon({ color }: { color: string }) {
   return (
-    <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-      <button type="button" aria-label="Move up" disabled={!canUp} onClick={onUp} style={btn(canUp)}>↑</button>
-      <button type="button" aria-label="Move down" disabled={!canDown} onClick={onDown} style={btn(canDown)}>↓</button>
-    </div>
+    <svg width={16} height={16} viewBox="0 0 16 16" fill={color} aria-hidden style={{ flexShrink: 0 }}>
+      <circle cx="5" cy="4" r="1.4" /><circle cx="11" cy="4" r="1.4" />
+      <circle cx="5" cy="8" r="1.4" /><circle cx="11" cy="8" r="1.4" />
+      <circle cx="5" cy="12" r="1.4" /><circle cx="11" cy="12" r="1.4" />
+    </svg>
+  )
+}
+
+// The drag grip that replaces the up/down arrows. Press and drag it to move the
+// row. `handleProps` carries the pointer wiring from useDragReorder.
+function DragHandle({ active, handleProps }: { active: boolean; handleProps: React.DOMAttributes<HTMLButtonElement> }) {
+  return (
+    <button
+      type="button"
+      aria-label="Drag to reorder"
+      {...handleProps}
+      style={{
+        width: 30, height: 34, borderRadius: 7, flexShrink: 0, padding: 0,
+        border: `1px solid ${active ? colors.navy : colors.border}`,
+        background: active ? colors.navy : '#fff',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'grab', touchAction: 'none',
+      }}
+    >
+      <GripIcon color={active ? '#fff' : '#9A9AA6'} />
+    </button>
   )
 }
 
@@ -175,9 +241,9 @@ function Caption({ children }: { children: ReactNode }) {
   return <p style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 500, color: '#9A9AA6', lineHeight: 1.4 }}>{children}</p>
 }
 
-function RowShell({ first, children }: { first: boolean; children: ReactNode }) {
+function RowShell({ first, rowRef, children }: { first: boolean; rowRef?: (el: HTMLElement | null) => void; children: ReactNode }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderTop: first ? 'none' : `1px solid ${colors.rowDivider}` }}>
+    <div ref={rowRef} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderTop: first ? 'none' : `1px solid ${colors.rowDivider}` }}>
       {children}
     </div>
   )
@@ -369,11 +435,11 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
   const patchAge = (id: string, p: Partial<AgeDesignation>) => setAges((xs) => xs.map((x) => (x.id === id ? { ...x, ...p } : x)))
   const patchOpt = (id: string, p: Partial<FieldOption>) => setOptions((xs) => xs.map((x) => (x.id === id ? { ...x, ...p } : x)))
 
-  function reorderOption(fieldKey: string, id: string, dir: 'up' | 'down') {
+  function reorderOptions(fieldKey: string, ids: string[]) {
     setOptions((prev) => {
       const subset = prev.filter((o) => o.field_key === fieldKey)
       const others = prev.filter((o) => o.field_key !== fieldKey)
-      return [...others, ...reordered(subset, id, dir)]
+      return [...others, ...reindexBy(subset, ids, 'sort_order')]
     })
   }
   function addOption(fieldKey: string) {
@@ -390,21 +456,6 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
   }
 
   const patchNote = (id: string, p: Partial<QuickNote>) => setQuickNotes((xs) => xs.map((x) => (x.id === id ? { ...x, ...p } : x)))
-  // Quick notes order ASCENDING by sort_priority (same as the chute). Moving a
-  // note swaps its place and re-indexes the whole list, so the order works even
-  // when several notes share the default priority of 0.
-  function moveNote(id: string, dir: 'up' | 'down') {
-    setQuickNotes((prev) => {
-      const sorted = [...prev].sort((a, b) => a.sort_priority - b.sort_priority)
-      const i = sorted.findIndex((x) => x.id === id)
-      const j = dir === 'up' ? i - 1 : i + 1
-      if (i < 0 || j < 0 || j >= sorted.length) return prev
-      const tmp = sorted[i]
-      sorted[i] = sorted[j]
-      sorted[j] = tmp
-      return sorted.map((n, idx) => ({ ...n, sort_priority: idx }))
-    })
-  }
   function addNote() {
     const label = newNoteText.trim()
     if (!label) return
@@ -418,8 +469,18 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
   const breeds = options.filter((o) => o.field_key === 'breed').sort(byOrder)
   const bodyColors = options.filter((o) => o.field_key === 'hide_color').sort(byOrder)
   const shownCount = fields.filter((f) => f.is_displayed).length
+  const sortedFields = [...fields].sort(byOrder)
+  const sortedAges = [...ages].sort(byOrder)
+  const sortedStages = [...pregStages].sort(byOrder)
   const sortedNotes = [...quickNotes].sort((a, b) => a.sort_priority - b.sort_priority)
   const activeNoteCount = quickNotes.filter((n) => n.active).length
+
+  // One drag-reorder controller per list. Dropping a row writes the new order
+  // (0..n-1) into that list's order column; Save persists it.
+  const fieldsDnd = useDragReorder(sortedFields.map((f) => f.id), (ids) => setFields((xs) => reindexBy(xs, ids, 'sort_order')))
+  const agesDnd = useDragReorder(sortedAges.map((a) => a.id), (ids) => setAges((xs) => reindexBy(xs, ids, 'sort_order')))
+  const stagesDnd = useDragReorder(sortedStages.map((s) => s.id), (ids) => setPregStages((xs) => reindexBy(xs, ids, 'sort_order')))
+  const notesDnd = useDragReorder(sortedNotes.map((n) => n.id), (ids) => setQuickNotes((xs) => reindexBy(xs, ids, 'sort_priority')))
 
   return (
     <div style={{ padding: '16px 16px 96px', display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -467,10 +528,10 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
       <SectionCard title={`Capture Fields · ${shownCount} on`}>
         <Caption>Switch a field on or off, mark it required, set its order, and give it a default. The chute screen follows this list.</Caption>
         <div>
-          {[...fields].sort(byOrder).map((f, i) => (
-            <div key={f.id} style={{ padding: '10px 0', borderTop: i === 0 ? 'none' : `1px solid ${colors.rowDivider}` }}>
+          {sortedFields.map((f, i) => (
+            <div key={f.id} ref={fieldsDnd.setRow(f.id)} style={{ padding: '10px 0', borderTop: i === 0 ? 'none' : `1px solid ${colors.rowDivider}` }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Reorder canUp={i > 0} canDown={i < fields.length - 1} onUp={() => setFields((xs) => reordered(xs, f.id, 'up'))} onDown={() => setFields((xs) => reordered(xs, f.id, 'down'))} />
+                <DragHandle active={fieldsDnd.dragId === f.id} handleProps={fieldsDnd.handleProps(f.id)} />
                 <span style={{ flex: '1 1 0%', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 14, fontWeight: 600, color: f.is_displayed ? colors.textPrimary : '#9A9AA6' }}>
                   {f.display_label || FIELD_LABELS[f.field_key] || f.field_key}
                   {f.is_required && <RequiredMark />}
@@ -499,10 +560,10 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
         </RowShell>
         <Caption>Each row maps an observed tag color to an age. Turn a row off to retire it.</Caption>
         <div>
-          {[...ages].sort(byOrder).map((a, i) => (
-            <div key={a.id} style={{ padding: '10px 0', borderTop: i === 0 ? 'none' : `1px solid ${colors.rowDivider}`, opacity: a.active ? 1 : 0.55 }}>
+          {sortedAges.map((a, i) => (
+            <div key={a.id} ref={agesDnd.setRow(a.id)} style={{ padding: '10px 0', borderTop: i === 0 ? 'none' : `1px solid ${colors.rowDivider}`, opacity: a.active ? 1 : 0.55 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Reorder canUp={i > 0} canDown={i < ages.length - 1} onUp={() => setAges((xs) => reordered(xs, a.id, 'up'))} onDown={() => setAges((xs) => reordered(xs, a.id, 'down'))} />
+                <DragHandle active={agesDnd.dragId === a.id} handleProps={agesDnd.handleProps(a.id)} />
                 <span style={{ width: 16, height: 16, borderRadius: 999, flexShrink: 0, background: TAG_COLOR_HEX[a.designation_value] ?? '#D4D4D0', boxShadow: 'inset 0 0 0 1.5px rgba(0,0,0,0.12)' }} />
                 <TextField ariaLabel="Tag color" placeholder="Color" width={92} value={a.designation_value} onChange={(v) => patchAge(a.id, { designation_value: v })} />
                 <TextField ariaLabel="Age label" placeholder="Age label" value={a.age_label} onChange={(v) => patchAge(a.id, { age_label: v })} />
@@ -536,9 +597,9 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
         <div style={{ marginTop: 12 }}>
           <Caption>Pregnancy stages — rename or retire. The stage code stays fixed.</Caption>
           <div>
-            {[...pregStages].sort(byOrder).map((s, i) => (
-              <RowShell key={s.id} first={i === 0}>
-                <Reorder canUp={i > 0} canDown={i < pregStages.length - 1} onUp={() => setPregStages((xs) => reordered(xs, s.id, 'up'))} onDown={() => setPregStages((xs) => reordered(xs, s.id, 'down'))} />
+            {sortedStages.map((s, i) => (
+              <RowShell key={s.id} first={i === 0} rowRef={stagesDnd.setRow(s.id)}>
+                <DragHandle active={stagesDnd.dragId === s.id} handleProps={stagesDnd.handleProps(s.id)} />
                 <span style={{ width: 86, fontSize: 11, fontWeight: 700, color: colors.textMuted, letterSpacing: '0.03em' }}>{s.stage_code}</span>
                 <TextField ariaLabel={`Label for ${s.stage_code}`} value={s.display_label} onChange={(v) => patchStage(s.id, { display_label: v })} />
                 <Switch on={s.active} onToggle={() => patchStage(s.id, { active: !s.active })} label={`${s.stage_code} on`} />
@@ -549,8 +610,8 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
       </SectionCard>
 
       {/* ---- Breed + Body color option lists ---- */}
-      <OptionList title="Breed Choices" caption="A fixed pick list — never free text. Pin the ones that show up front; turn a choice off to retire it." list={breeds} fieldKey="breed" patchOpt={patchOpt} reorder={reorderOption} add={addOption} />
-      <OptionList title="Body Color Choices" caption="Off at St. Onge, but the list is here for any barn that turns it on. Strict pick list — never free text." list={bodyColors} fieldKey="hide_color" patchOpt={patchOpt} reorder={reorderOption} add={addOption} />
+      <OptionList title="Breed Choices" caption="A fixed pick list — never free text. Pin the ones that show up front; turn a choice off to retire it." list={breeds} fieldKey="breed" patchOpt={patchOpt} onReorder={reorderOptions} add={addOption} />
+      <OptionList title="Body Color Choices" caption="Off at St. Onge, but the list is here for any barn that turns it on. Strict pick list — never free text." list={bodyColors} fieldKey="hide_color" patchOpt={patchOpt} onReorder={reorderOptions} add={addOption} />
 
       {/* ---- Work types & rates ---- */}
       <SectionCard title="Work Types & Rates">
@@ -579,8 +640,8 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
         <Caption>The tap labels at the chute. Turn one off to hide it without losing it, reorder to pin the important ones to the top, or add a new one. Order here matches the chute.</Caption>
         <div>
           {sortedNotes.map((n, i) => (
-            <RowShell key={n.id} first={i === 0}>
-              <Reorder canUp={i > 0} canDown={i < sortedNotes.length - 1} onUp={() => moveNote(n.id, 'up')} onDown={() => moveNote(n.id, 'down')} />
+            <RowShell key={n.id} first={i === 0} rowRef={notesDnd.setRow(n.id)}>
+              <DragHandle active={notesDnd.dragId === n.id} handleProps={notesDnd.handleProps(n.id)} />
               <span style={{ flex: '1 1 0%', display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 14, fontWeight: 600, color: n.active ? colors.textPrimary : '#9A9AA6' }}>
                 {n.label}
                 {n.is_flag ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.03em', color: colors.bronze, background: '#FDF1DC', border: '1px solid #F1D9A8', borderRadius: 999, padding: '1px 7px' }}>FLAG</span> : null}
@@ -632,23 +693,24 @@ const labelCell: React.CSSProperties = { flex: '1 1 0%', fontSize: 13, fontWeigh
 
 // ---- option-list editor (breed / body color) ----
 function OptionList({
-  title, caption, list, fieldKey, patchOpt, reorder, add,
+  title, caption, list, fieldKey, patchOpt, onReorder, add,
 }: {
   title: string
   caption: string
   list: FieldOption[]
   fieldKey: string
   patchOpt: (id: string, p: Partial<FieldOption>) => void
-  reorder: (fieldKey: string, id: string, dir: 'up' | 'down') => void
+  onReorder: (fieldKey: string, ids: string[]) => void
   add: (fieldKey: string) => void
 }) {
+  const dnd = useDragReorder(list.map((o) => o.id), (ids) => onReorder(fieldKey, ids))
   return (
     <SectionCard title={title}>
       <Caption>{caption}</Caption>
       <div>
         {list.map((o, i) => (
-          <RowShell key={o.id} first={i === 0}>
-            <Reorder canUp={i > 0} canDown={i < list.length - 1} onUp={() => reorder(fieldKey, o.id, 'up')} onDown={() => reorder(fieldKey, o.id, 'down')} />
+          <RowShell key={o.id} first={i === 0} rowRef={dnd.setRow(o.id)}>
+            <DragHandle active={dnd.dragId === o.id} handleProps={dnd.handleProps(o.id)} />
             <TextField ariaLabel="Option label" placeholder="New choice" value={o.label} onChange={(v) => patchOpt(o.id, { label: v })} />
             <TogglePill on={o.is_pinned} onToggle={() => patchOpt(o.id, { is_pinned: !o.is_pinned })}>Pinned</TogglePill>
             <Switch on={o.active} onToggle={() => patchOpt(o.id, { active: !o.active })} label="Option on" />
