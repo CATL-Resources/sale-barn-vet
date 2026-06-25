@@ -3,9 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import type { TablesInsert } from '@/types/supabase'
-import { computePenWorkCharges } from '@/lib/work-orders/pricing'
-
-const round2 = (n: number) => Math.round(n * 100) / 100
+import { buildSpecialChargeFields } from '@/lib/work-orders/pricing'
 
 export type PartyMatch = { id: string; name: string; customer_number: string | null; city: string | null; state: string | null }
 export type PartyLocation = {
@@ -184,43 +182,24 @@ export async function saveWorkOrder(input: WorkOrderInput): Promise<SaveResult> 
   }
 
   // Insert any new special charges, each tied to this work order. A special is
-  // priced like a work-type line: the flat per-head fee is the vet charge, the
-  // barn's standard per-head SOL is added, and tax + the admin fee go on top —
-  // all via the same computePenWorkCharges used for pen-work lines, so the two
-  // always agree. The rates are FROZEN onto the row so editing the barn's rates
-  // later never moves a special already entered. (special_charge totals are
-  // plain columns, unlike pen_work, so the computed numbers are stored directly.)
-  const taxRate = barn.sales_tax_rate
-  const adminRate = barn.admin_fee_rate
-  const solCharge = barn.special_sol_charge ?? 0
+  // priced like a work-type line — per-head fee + tax + the admin fee + the
+  // barn's standard SOL — and the rates are FROZEN onto the row. The math lives
+  // in buildSpecialChargeFields so the save and the form's preview share one
+  // source and can't drift. (special_charge totals are plain columns, unlike
+  // pen_work, so the computed numbers are stored directly.) A special needs only
+  // a head count; the description is optional and stored null when blank.
   const rows = input.newSpecials
-    .filter((s) => s.description.trim() !== '' && s.head > 0)
-    .map((s) => {
-      const { vetTotal, adminTotal, solTotal, lineCharge } = computePenWorkCharges(
-        s.perHead,
-        solCharge,
-        s.head,
-        taxRate,
-        adminRate,
-      )
-      return {
-        sale_day_id: input.saleDayId,
-        barn_id: barnId,
-        pen_work_id: penWorkId,
-        party_id: input.partyId,
-        role: input.role,
-        description: s.description.trim(),
-        head: s.head,
-        frozen_vet_charge: s.perHead,
-        frozen_sol_charge: solCharge,
-        frozen_admin_rate: adminRate,
-        frozen_tax_rate: taxRate,
-        vet_total: round2(vetTotal),
-        admin_total: round2(adminTotal),
-        sol_total: round2(solTotal),
-        customer_charge: round2(lineCharge),
-      }
-    })
+    .filter((s) => s.head >= 1)
+    .map((s) => ({
+      sale_day_id: input.saleDayId,
+      barn_id: barnId,
+      pen_work_id: penWorkId,
+      party_id: input.partyId,
+      role: input.role,
+      description: s.description.trim() || null,
+      head: s.head,
+      ...buildSpecialChargeFields(s.perHead, s.head, barn),
+    }))
   if (rows.length > 0) {
     const { error } = await supabase.from('special_charge').insert(rows)
     if (error) return { ok: false, error: `Special charge — ${error.message}` }

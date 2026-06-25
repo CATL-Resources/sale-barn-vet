@@ -2,7 +2,7 @@
 
 import { colors } from '@/components/ui/tokens'
 import { useEffect, useRef, useState, useTransition, type ReactNode } from 'react'
-import { computePenWorkCharges, formatUsd } from '@/lib/work-orders/pricing'
+import { buildSpecialChargeFields, computePenWorkCharges, formatUsd } from '@/lib/work-orders/pricing'
 import { PrintPenCardButton } from '@/components/pen-card/print-pen-card-button'
 import type { AnimalType, Barn, PenWorkFull, SpecialChargeFull, WorkType } from '@/lib/work-orders/types'
 import {
@@ -26,6 +26,8 @@ const input: React.CSSProperties = {
   width: '100%', height: 44, padding: '0 12px', border: `1px solid ${colors.border}`, borderRadius: 9,
   background: '#fff', fontSize: 15, fontWeight: 600, color: colors.textPrimary, fontFamily: 'inherit', outline: 'none',
 }
+
+const pct = (r: number) => `${(r * 100).toFixed(2)}%`
 
 function Section({ label, hint, right, children }: { label: string; hint?: string; right?: ReactNode; children: ReactNode }) {
   return (
@@ -135,13 +137,16 @@ export function WorkOrderForm({
   const wt = workTypes.find((w) => w.id === workTypeId) ?? null
   const head = parseInt(headExpected, 10) || 0
   const charges = wt ? computePenWorkCharges(wt.vet_charge, wt.sol_charge, head, barn.sales_tax_rate, barn.admin_fee_rate) : null
-  const stagedTotal = staged.reduce((a, s) => a + (s.perHead * s.head || 0), 0)
+  // One special's priced fields, from the SAME helper the save uses — so this
+  // preview equals exactly what gets saved and frozen.
+  const specialFields = (s: StagedSpecial) => buildSpecialChargeFields(s.perHead, s.head, barn)
+  const stagedTotal = staged.reduce((a, s) => a + specialFields(s).customer_charge, 0)
   const existingTotal = existingSpecials.reduce((a, s) => a + Number(s.customer_charge || 0), 0)
   const specialsTotal = stagedTotal + existingTotal
   const estimate = (charges?.lineCharge ?? 0) + specialsTotal
 
   function addSpecial() {
-    setStaged((s) => [...s, { key: `s${Date.now()}${Math.random()}`, description: '', head: head || 1, perHead: 0, bucket: 'vet' }])
+    setStaged((s) => [...s, { key: `s${Date.now()}${Math.random()}`, description: '', head: head || 1, perHead: 0 }])
   }
   function patchSpecial(key: string, p: Partial<StagedSpecial>) {
     setStaged((s) => s.map((x) => (x.key === key ? { ...x, ...p } : x)))
@@ -194,7 +199,7 @@ export function WorkOrderForm({
         headExpected: headExpected === '' ? null : head,
         penText: penText.trim() || null,
         notes,
-        newSpecials: staged.map(({ description, head, perHead, bucket }) => ({ description, head, perHead, bucket })),
+        newSpecials: staged.map(({ description, head, perHead }) => ({ description, head, perHead })),
       })
       if (res.ok) onSaved(editing ? 'Work order updated' : 'Work order created')
       else setError(res.error)
@@ -362,33 +367,46 @@ export function WorkOrderForm({
           <Section label="Special Charges" hint="one-offs on this work order" right={<span style={{ fontSize: 13, fontWeight: 800, color: colors.navy }}>{formatUsd(specialsTotal)}</span>}>
             <div style={{ border: '1px solid #E4E4DE', borderRadius: 10, overflow: 'hidden' }}>
               {existingSpecials.map((sp) => (
-                <div key={sp.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderBottom: `1px solid ${colors.rowDivider}` }}>
+                <div key={sp.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', borderBottom: `1px solid ${colors.rowDivider}` }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 700, color: colors.textPrimary }}>{sp.description ?? 'Charge'}</div>
-                    <div style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted }}>{sp.head} head</div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: colors.textMuted }}>
+                      {sp.head} head{sp.frozen_vet_charge != null ? ` · ${formatUsd(Number(sp.frozen_vet_charge))}/head vet` : ''}
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginTop: 2 }}>
+                      Vet {formatUsd(Number(sp.vet_total || 0))} · Admin {formatUsd(Number(sp.admin_total || 0))} · SOL {formatUsd(Number(sp.sol_total || 0))}
+                    </div>
                   </div>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: colors.navy }}>{formatUsd(Number(sp.customer_charge || 0))}</span>
+                  <span style={{ flexShrink: 0, fontSize: 14, fontWeight: 700, color: colors.navy }}>{formatUsd(Number(sp.customer_charge || 0))}</span>
                 </div>
               ))}
-              {staged.map((s) => (
-                <div key={s.key} style={{ padding: '10px 12px', borderBottom: `1px solid ${colors.rowDivider}`, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input value={s.description} onChange={(e) => patchSpecial(s.key, { description: e.target.value })} placeholder="Description (e.g. Retag)" style={{ ...input, height: 38, fontWeight: 600, fontSize: 14 }} />
-                    <button type="button" onClick={() => removeSpecial(s.key)} aria-label="Remove charge" style={{ width: 38, height: 38, flexShrink: 0, borderRadius: 8, border: `1px solid ${colors.border}`, background: '#fff', color: colors.textMuted, cursor: 'pointer', fontSize: 16 }}>✕</button>
+              {staged.map((s) => {
+                const f = specialFields(s)
+                return (
+                  <div key={s.key} style={{ padding: '10px 12px', borderBottom: `1px solid ${colors.rowDivider}`, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <input value={s.description} onChange={(e) => patchSpecial(s.key, { description: e.target.value })} placeholder="Description (optional, e.g. Retag)" style={{ ...input, height: 38, fontWeight: 600, fontSize: 14 }} />
+                      <button type="button" onClick={() => removeSpecial(s.key)} aria-label="Remove charge" style={{ width: 38, height: 38, flexShrink: 0, borderRadius: 8, border: `1px solid ${colors.border}`, background: '#fff', color: colors.textMuted, cursor: 'pointer', fontSize: 16 }}>✕</button>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted }}>head</span>
+                      <input value={s.head ? String(s.head) : ''} onChange={(e) => patchSpecial(s.key, { head: parseInt(e.target.value.replace(/[^0-9]/g, ''), 10) || 0 })} inputMode="numeric" placeholder="0" style={{ ...input, width: 64, height: 38, textAlign: 'right' }} />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted }}>vet $/head</span>
+                      <input value={s.perHead ? String(s.perHead) : ''} onChange={(e) => patchSpecial(s.key, { perHead: Number(e.target.value.replace(/[^0-9.]/g, '')) || 0 })} inputMode="decimal" placeholder="0.00" style={{ ...input, width: 88, height: 38, textAlign: 'right' }} />
+                    </div>
+                    {/* Live breakdown — from the same helper the save uses, so this equals what gets saved + frozen. */}
+                    <div style={{ border: '1px solid #E4E4DE', borderRadius: 8, overflow: 'hidden' }}>
+                      <BillRow label={`Vet (${formatUsd(s.perHead || 0)} × ${s.head || 0} + ${pct(barn.sales_tax_rate)} tax)`} value={formatUsd(f.vet_total)} />
+                      <BillRow label={`Admin fee (${pct(barn.admin_fee_rate)})`} value={formatUsd(f.admin_total)} />
+                      <BillRow label={`SOL (${formatUsd(barn.special_sol_charge ?? 0)} × ${s.head || 0})`} value={formatUsd(f.sol_total)} />
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '9px 12px', background: '#FAFBFC' }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: colors.navy }}>Customer charge</span>
+                        <span style={{ fontSize: 14, fontWeight: 800, color: colors.navy }}>{formatUsd(f.customer_charge)}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted }}>head</span>
-                    <input value={s.head ? String(s.head) : ''} onChange={(e) => patchSpecial(s.key, { head: parseInt(e.target.value.replace(/[^0-9]/g, ''), 10) || 0 })} inputMode="numeric" placeholder="0" style={{ ...input, width: 64, height: 38, textAlign: 'right' }} />
-                    <span style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted }}>$/head</span>
-                    <input value={s.perHead ? String(s.perHead) : ''} onChange={(e) => patchSpecial(s.key, { perHead: Number(e.target.value.replace(/[^0-9.]/g, '')) || 0 })} inputMode="decimal" placeholder="0.00" style={{ ...input, width: 84, height: 38, textAlign: 'right' }} />
-                    <div style={{ flex: 1 }} />
-                    {(['vet', 'admin', 'sol'] as const).map((b) => (
-                      <button key={b} type="button" onClick={() => patchSpecial(s.key, { bucket: b })}
-                        style={{ height: 30, padding: '0 9px', borderRadius: 7, border: `1px solid ${s.bucket === b ? colors.navy : colors.border}`, background: s.bucket === b ? colors.navy : '#fff', color: s.bucket === b ? '#fff' : colors.textMuted, fontSize: 11, fontWeight: 700, cursor: 'pointer', textTransform: 'uppercase' }}>{b}</button>
-                    ))}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
               <button type="button" onClick={addSpecial} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '11px 12px', background: '#fff', border: 'none', fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left' }}>
                 <span style={{ fontSize: 16, fontWeight: 800, color: colors.teal }}>+</span><span style={{ fontSize: 13, fontWeight: 700, color: colors.teal }}>Add charge</span>
               </button>
