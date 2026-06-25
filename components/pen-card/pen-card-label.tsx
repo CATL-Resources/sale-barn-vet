@@ -1,9 +1,13 @@
-// The printable pen card. Rendered at TRUE physical size for a DYMO 30256 label
-// (2-5/16" x 4", landscape = 4in x 2.3125in). Reusable: hand it the fields and
-// it picks the seller or buyer layout automatically.
+// The printable pen card, sized as a 4in x 6in shipping label (portrait: 4in
+// wide, 6in tall). Rendered at TRUE physical size; the @page size in the print
+// route MUST match this, or the print comes out scaled wrong. Reusable: hand it
+// the fields and it picks the seller or buyer layout automatically.
 //
-// Black fills (work-type pill, buyer-number pill, divider) carry
-// print-color-adjust: exact so a DYMO prints them solid.
+// The card uses border-box sizing and a ~0.18in inner margin so content never
+// runs to the very edge (printers can't print edge-to-edge). The consignor name
+// and the notes WRAP to as many lines as needed and are never truncated — they
+// are required content. Black fills (work-type pill, buyer-number pill, divider)
+// carry print-color-adjust: exact so the printer prints them solid.
 
 export type PenCardData = {
   pen: string
@@ -17,13 +21,18 @@ export type PenCardData = {
 
 const BLACK = '#000'
 
-// Big PEN value: shrink as the pen label gets longer so it never clips.
+// Big PEN value: shrink as the pen label gets longer so it never clips the 4in
+// width. The label is 4in wide either way, so this step-down is about width; the
+// taller card just lets the short, common pens print huge.
 function penFontSize(pen: string): number {
   const n = pen.trim().length
-  if (n <= 2) return 116
-  if (n <= 4) return 78
-  if (n <= 6) return 52
-  return 38
+  if (n <= 2) return 150
+  if (n <= 3) return 118
+  if (n <= 4) return 96
+  if (n <= 6) return 64
+  if (n <= 9) return 46
+  if (n <= 12) return 34
+  return 26
 }
 
 const solidBlack: React.CSSProperties = {
@@ -33,71 +42,79 @@ const solidBlack: React.CSSProperties = {
   printColorAdjust: 'exact',
 }
 
+const fieldLabel: React.CSSProperties = { fontSize: 11, fontWeight: 800, letterSpacing: '0.12em' }
+
 export function PenCardLabel({ data }: { data: PenCardData }) {
   return (
     <div
       className="pen-card"
       style={{
+        boxSizing: 'border-box',
         width: '4in',
-        height: '2.3125in',
+        height: '6in',
         background: '#fff',
         color: BLACK,
         border: `2px solid ${BLACK}`,
-        borderRadius: 6,
-        padding: '14px 16px',
+        borderRadius: 8,
+        padding: '0.18in',
         display: 'flex',
         flexDirection: 'column',
+        gap: 14,
         overflow: 'hidden',
         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
         WebkitPrintColorAdjust: 'exact',
         printColorAdjust: 'exact',
       }}
     >
-      {/* TOP ROW — PEN + HEAD */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em' }}>PEN</div>
-          <div style={{ fontSize: penFontSize(data.pen), fontWeight: 800, lineHeight: 0.84, letterSpacing: '-0.02em', marginTop: 1, whiteSpace: 'nowrap' }}>
-            {data.pen}
-          </div>
-        </div>
-        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em' }}>HEAD</div>
-          <div className="tnum" style={{ fontSize: 41, fontWeight: 800, lineHeight: 0.9, letterSpacing: '-0.02em', marginTop: 3, whiteSpace: 'nowrap' }}>
-            {data.head}
-            <span style={{ fontSize: 22, fontWeight: 700 }}> hd</span>
-          </div>
+      {/* PEN — the hero, top of the card */}
+      <div style={{ minWidth: 0 }}>
+        <div style={fieldLabel}>PEN</div>
+        <div style={{ fontSize: penFontSize(data.pen), fontWeight: 800, lineHeight: 0.86, letterSpacing: '-0.02em', marginTop: 2, whiteSpace: 'nowrap' }}>
+          {data.pen}
         </div>
       </div>
 
-      {/* NOTES */}
-      {data.notes ? (
-        <div style={{ marginTop: 7, fontSize: 13, fontWeight: 500, lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-          {data.notes}
-        </div>
-      ) : null}
+      <div style={{ height: 4, background: BLACK, borderRadius: 2, ...solidBlack }} />
 
-      {/* BOTTOM — party + work type */}
-      <div style={{ marginTop: 'auto' }}>
-        <div style={{ height: 4, background: BLACK, borderRadius: 2, WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }} />
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 9 }}>
-          {data.isBuyer ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-              <span style={{ ...solidBlack, flexShrink: 0, fontSize: 16, fontWeight: 800, padding: '2px 7px', borderRadius: 4, letterSpacing: '-0.01em' }}>
-                #{data.buyerNumber ?? '—'}
-              </span>
-              <span style={{ fontSize: 23, fontWeight: 700, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {data.partyName}
-              </span>
-            </div>
-          ) : (
-            <div style={{ fontSize: 23, fontWeight: 700, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+      {/* NAME — consignor, or buyer number + name. Wraps fully, never truncated. */}
+      <div style={{ minWidth: 0 }}>
+        <div style={fieldLabel}>{data.isBuyer ? 'BUYER' : 'CONSIGNOR'}</div>
+        {data.isBuyer ? (
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginTop: 4 }}>
+            <span style={{ ...solidBlack, flexShrink: 0, fontSize: 22, fontWeight: 800, padding: '2px 9px', borderRadius: 5, letterSpacing: '-0.01em' }}>
+              #{data.buyerNumber ?? '—'}
+            </span>
+            <span style={{ flex: 1, minWidth: 0, fontSize: 30, fontWeight: 700, lineHeight: 1.12, letterSpacing: '-0.01em', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
               {data.partyName}
-            </div>
-          )}
-          <div style={{ ...solidBlack, flexShrink: 0, fontSize: 15, fontWeight: 700, padding: '5px 9px', borderRadius: 5, whiteSpace: 'nowrap' }}>
-            {data.workType || '—'}
+            </span>
           </div>
+        ) : (
+          <div style={{ marginTop: 2, fontSize: 32, fontWeight: 700, lineHeight: 1.12, letterSpacing: '-0.01em', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
+            {data.partyName}
+          </div>
+        )}
+      </div>
+
+      {/* HEAD + WORK TYPE */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={fieldLabel}>HEAD</div>
+          <div className="tnum" style={{ fontSize: 46, fontWeight: 800, lineHeight: 0.9, letterSpacing: '-0.02em', marginTop: 2, whiteSpace: 'nowrap' }}>
+            {data.head}
+            <span style={{ fontSize: 24, fontWeight: 700 }}> hd</span>
+          </div>
+        </div>
+        <span style={{ ...solidBlack, flexShrink: 0, fontSize: 18, fontWeight: 700, padding: '7px 12px', borderRadius: 6, whiteSpace: 'nowrap' }}>
+          {data.workType || '—'}
+        </span>
+      </div>
+
+      {/* NOTES — required content, wraps to as many lines as needed, never cut.
+          Takes the remaining vertical room on the tall label. */}
+      <div style={{ flex: 1, minHeight: 0, marginTop: 2 }}>
+        <div style={fieldLabel}>NOTES</div>
+        <div style={{ marginTop: 4, fontSize: 17, fontWeight: 500, lineHeight: 1.3, whiteSpace: 'pre-wrap', overflowWrap: 'break-word', wordBreak: 'break-word' }}>
+          {data.notes?.trim() ? data.notes : '—'}
         </div>
       </div>
     </div>

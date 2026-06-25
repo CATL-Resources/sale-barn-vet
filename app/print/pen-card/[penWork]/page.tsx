@@ -16,9 +16,10 @@ type Row = {
   buyer: { name: string } | null
 }
 
-// True size for a DYMO 30256: 4in x 2.3125in (2-5/16"), landscape.
+// True size for a 4in x 6in shipping label, portrait. MUST match the
+// PenCardLabel component's width/height, or the print comes out scaled wrong.
 const PRINT_CSS = `
-  @page { size: 4in 2.3125in; margin: 0; }
+  @page { size: 4in 6in; margin: 0; }
   html, body { margin: 0; padding: 0; background: #E4E4DF; }
   .pen-card-stage { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
   @media print {
