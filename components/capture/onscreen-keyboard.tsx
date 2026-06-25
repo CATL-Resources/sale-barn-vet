@@ -19,17 +19,22 @@ type Props = {
 
 type ShiftState = 'off' | 'once' | 'lock'
 
-// Letters layer. The tag separators "/" and "-" also sit on the bottom row so a
-// mixed tag (e.g. 46MA-12/3) needs no layer flip.
+// The number row sits at the top of the keyboard and is ALWAYS shown — letters
+// and numbers live on one screen, so a tag number can be typed without flipping
+// to a separate number layer. The crew sees numbers first, every time.
+const NUMBER_ROW: string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']
+
+// Letters layer (below the number row). The tag separators "/" and "-" also sit
+// on the bottom row so a mixed tag (e.g. 46MA-12/3) needs no layer flip at all.
 const LETTER_ROWS: string[][] = [
   ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
   ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
   ['shift', 'z', 'x', 'c', 'v', 'b', 'n', 'm', 'backspace'],
   ['layer', '/', '-', 'space', 'done'],
 ]
-// Numbers / symbols layer.
+// Punctuation layer (below the number row). Digits aren't repeated here — they're
+// always available on the number row above.
 const SYMBOL_ROWS: string[][] = [
-  ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
   ['/', '-', ':', ';', '(', ')', '&', '@'],
   ['.', ',', '?', '!', "'", '"', '#', 'backspace'],
   ['layer', '*', '+', 'space', 'done'],
@@ -55,6 +60,9 @@ export function OnScreenKeyboard({ onInsert, onBackspace, onDone }: Props) {
   }
 
   function onTap(token: string) {
+    // Digits insert as-is and never disturb the Shift state (they're the same
+    // upper or lower, and shouldn't eat a one-shot Shift meant for a letter).
+    if (/^[0-9]$/.test(token)) return onInsert(token)
     switch (token) {
       case 'shift':
         return tapShift()
@@ -88,7 +96,7 @@ export function OnScreenKeyboard({ onInsert, onBackspace, onDone }: Props) {
       case 'done':
         return 'Done'
       case 'layer':
-        return symbols ? 'ABC' : '123'
+        return symbols ? 'ABC' : '#+='
       default:
         return upper ? token.toUpperCase() : token
     }
@@ -134,7 +142,7 @@ export function OnScreenKeyboard({ onInsert, onBackspace, onDone }: Props) {
         boxShadow: '0 -8px 20px rgba(8,18,40,0.28)',
       }}
     >
-      {rows.map((row, i) => (
+      {[NUMBER_ROW, ...rows].map((row, i) => (
         <div key={i} style={{ display: 'flex', gap: 5, justifyContent: 'center' }}>
           {row.map((token) => (
             <button
