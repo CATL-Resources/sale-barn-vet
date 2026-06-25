@@ -3,8 +3,8 @@
 // Full-record edit pop-up (and "add missed animal", with an empty form). Renders
 // the five identifier fields plus the shared attribute fields, all driven by the
 // same effective barn_field_config as Capture, and saves through the same shared
-// path. EID is the only hard block (missing required EID, or a duplicate already
-// in this pen_work). Observational required fields stay soft. Never writes any
+// path. Hard blocks: a missing/duplicate required EID, and any other shown
+// required field left blank (same rule as the chute). Never writes any
 // frozen_*/_total column; keeps head_worked in step with the live count while the
 // order is open.
 
@@ -12,6 +12,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import type { CaptureApi } from '@/lib/capture/use-capture'
 import { emptyDraft, type AnimalDraft } from '@/lib/capture/types'
+import { missingRequiredLabels } from '@/lib/capture/fields'
 import {
   findDuplicateEid,
   saveAnimalRecord,
@@ -129,6 +130,12 @@ export function AnimalEditSheet({
           patch({ eid: '' })
           return
         }
+      }
+      // HARD: every shown required field must be filled (same rule as the chute).
+      const missing = missingRequiredLabels(resolved, draft)
+      if (missing.length) {
+        setErr(missing.length === 1 ? `${missing[0]} is required` : `Required: ${missing.join(', ')}`)
+        return
       }
 
       const identifiers: IdentifierInput[] = []

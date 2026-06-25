@@ -12,7 +12,7 @@ import {
   type CaptureBootstrap,
   type SortPen,
 } from './types'
-import { applyPenDefaults, draftWithDefaults, fieldRequired, fieldShows, resolveFields, type PenFieldDefaults } from './fields'
+import { applyPenDefaults, draftWithDefaults, fieldRequired, fieldShows, missingRequiredLabels, resolveFields, type PenFieldDefaults } from './fields'
 import { isEid, isBackTag } from './scan-format'
 import {
   findDuplicateEid,
@@ -361,9 +361,9 @@ export function useCapture(
     [],
   )
 
-  // Observational required fields (age, breed, color, preg…) are soft: a blank
-  // one shows the REQUIRED chip on the field but never blocks the save, so
-  // "Not checked" is still a complete record. Only the official EID hard-blocks.
+  // Required means required: any shown field marked required must be filled
+  // before a record saves (see missingRequiredLabels). The official EID has its
+  // own stricter rule — it must also be a full 15-digit tag.
 
   // Is this EID already on another non-deleted animal in THIS pen_work? Returns
   // the worked-already detail for the flag banner, or null. (A match under a
@@ -465,10 +465,9 @@ export function useCapture(
   )
 
   /**
-   * Deliberate Save & next. Hard-block on a missing or duplicate official EID;
-   * then save and open a fresh record. Observational required fields are soft —
-   * the REQUIRED chip flags them but they never block the save, so "Not checked"
-   * is still a complete record.
+   * Deliberate Save & next. Hard-block on a missing or duplicate official EID,
+   * then on any other shown required field left blank; then save and open a
+   * fresh record.
    */
   const saveNext = useCallback(
     async (eidOverride?: string): Promise<boolean> => {
@@ -502,6 +501,14 @@ export function useCapture(
         // an all-clear; note it after the save so the operator knows to spot-check.
         checkFailed = res.failed
       }
+      // HARD: every shown field marked "required" must be filled before the
+      // record saves — not just the EID. A blank required field stops the save
+      // and names the first one missing.
+      const missing = missingRequiredLabels(resolved, draft)
+      if (missing.length) {
+        flash('error', missing.length === 1 ? `${missing[0]} is required before saving` : `Required before saving: ${missing.join(', ')}`)
+        return false
+      }
       const ok = await buildAndInsert(ev)
       if (ok) {
         setFlag(null)
@@ -515,7 +522,7 @@ export function useCapture(
       }
       return ok
     },
-    [batch, draft.eid, eidRequired, localDuplicate, checkDuplicate, buildAndInsert, patchDraft, resolved, initialPenWorkId, penDefaults],
+    [batch, draft, eidRequired, localDuplicate, checkDuplicate, buildAndInsert, patchDraft, resolved, flash, initialPenWorkId, penDefaults],
   )
 
   // Manual EID entry (typed into the EID box, not scanned). Fill and wait, same

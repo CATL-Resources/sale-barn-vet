@@ -106,6 +106,46 @@ const DEFAULT_TARGETS: Partial<Record<string, keyof AnimalDraft>> = {
   notes: 'notes',
 }
 
+// Plain-language names for the required-blocking message, when a field has no
+// custom display label of its own.
+const REQUIRED_LABELS: Record<string, string> = {
+  back_tag: 'Back Tag',
+  visual_tag: 'Tag #',
+  metal_tag: 'Metal Tag',
+  hide_color: 'Color',
+  breed: 'Breed',
+  age: 'Age',
+  preg_stage: 'Stage',
+  preg_timing: 'Month Bred',
+  fetal_sex: 'Fetal Sex',
+  quick_notes: 'Quick Notes',
+  notes: 'Notes',
+}
+
+// Is a single field's value present in the draft? quick_notes counts as filled
+// when at least one note is picked; every other field is a plain string.
+function requiredFieldFilled(key: string, draft: AnimalDraft): boolean {
+  if (key === 'quick_notes') return draft.quickNotes.length > 0
+  const target = DEFAULT_TARGETS[key]
+  if (!target) return true // a field we don't know how to read — never block on it
+  const v = draft[target]
+  return typeof v === 'string' ? v.trim() !== '' : v != null
+}
+
+// The fields that are SHOWN and marked required but still empty, in field order,
+// as their display labels. EID is left out on purpose — it has its own hard
+// 15-digit rule at save time. Used to hard-block the save so a "required" field
+// actually stops the record until it's filled (not just shows a star).
+// preg_timing only counts when it's actually on screen (a bred stage is picked).
+export function missingRequiredLabels(resolved: ResolvedFields, draft: AnimalDraft): string[] {
+  return Array.from(resolved.entries())
+    .filter(([key, f]) => f.is_displayed && f.is_required && key !== 'eid' && key !== 'secondary_eid')
+    .sort((a, b) => a[1].sort_order - b[1].sort_order)
+    .filter(([key]) => fieldShows(key, { resolved, pregStatus: draft.pregStatus }))
+    .filter(([key]) => !requiredFieldFilled(key, draft))
+    .map(([key, f]) => f.display_label || REQUIRED_LABELS[key] || key)
+}
+
 // A fresh blank draft with each displayed field's default_value laid in. Only
 // displayed fields are seeded (a hidden field's default never reaches the form
 // or the save). Used for the new animal at the chute and after each save.
