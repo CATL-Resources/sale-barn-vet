@@ -3,7 +3,6 @@
 import { colors } from '@/components/ui/tokens'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useRouter } from 'next/navigation'
-import { SectionCard } from '@/components/ui/section-card'
 import { RequiredMark } from '@/components/ui/required-mark'
 import { saveSettings } from './actions'
 import type {
@@ -264,6 +263,141 @@ function AddButton({ onClick, children }: { onClick: () => void; children: React
   )
 }
 
+// A settings section that collapses to a single header row. Tap the header to
+// open/close — so the whole screen is a short stack of headers instead of one
+// long scroll. Replaces the always-open SectionCard on this screen.
+function CollapsibleSection({
+  title, summary, defaultOpen, children,
+}: {
+  title: string
+  summary?: string
+  defaultOpen?: boolean
+  children: ReactNode
+}) {
+  const [open, setOpen] = useState(!!defaultOpen)
+  return (
+    <section style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 14, overflow: 'hidden' }}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '14px 16px',
+          background: '#EEF1F6', border: 'none', borderBottom: open ? `1px solid ${colors.rowDivider}` : 'none',
+          cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left',
+        }}
+      >
+        <span style={{ width: 4, height: 18, borderRadius: 2, background: colors.gold, flexShrink: 0 }} />
+        <span style={{ flex: '1 1 0%', fontSize: 15, fontWeight: 800, color: colors.navy, letterSpacing: '-0.01em' }}>{title}</span>
+        {summary ? <span style={{ fontSize: 12, fontWeight: 700, color: colors.textMuted }}>{summary}</span> : null}
+        <span style={{ color: colors.textMuted, fontSize: 13, fontWeight: 800, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }}>▾</span>
+      </button>
+      {open ? <div style={{ padding: '12px 16px 16px' }}>{children}</div> : null}
+    </section>
+  )
+}
+
+// One work type inside the Work Types section. Collapsed it's a single row;
+// open it to edit THAT work type's own field list (which fields show, the order,
+// and required) plus its rates. This is the per-work-type field list that used
+// to be invisible. A work type with no list of its own follows the default until
+// you Customize it.
+function WorkTypeRow({
+  wt, fields, patchWt, onFieldPatch, onReorder, onCustomize, onReset,
+}: {
+  wt: WorkType
+  fields: FieldConfig[]
+  patchWt: (p: Partial<WorkType>) => void
+  onFieldPatch: (fieldId: string, p: Partial<FieldConfig>) => void
+  onReorder: (ids: string[]) => void
+  onCustomize: () => void
+  onReset: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const sorted = [...fields].sort(byOrder)
+  const dnd = useDragReorder(sorted.map((f) => f.id), onReorder)
+  const hasOwn = fields.length > 0
+  const shown = fields.filter((f) => f.is_displayed).length
+  const summary = [hasOwn ? `${shown} field${shown === 1 ? '' : 's'}` : 'Follows default', wt.includes_preg_check ? 'Preg' : '', wt.active ? '' : 'Off']
+    .filter(Boolean)
+    .join(' · ')
+  return (
+    <div style={{ borderTop: `1px solid ${colors.rowDivider}` }}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 2px', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', opacity: wt.active ? 1 : 0.55 }}
+      >
+        <span style={{ flex: '1 1 0%', fontSize: 14, fontWeight: 700, color: colors.navy }}>{wt.name}</span>
+        <span style={{ fontSize: 12, fontWeight: 700, color: colors.textMuted }}>{summary}</span>
+        <span style={{ color: colors.textMuted, fontSize: 12, fontWeight: 800, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 150ms' }}>▾</span>
+      </button>
+      {open ? (
+        <div style={{ padding: '2px 0 14px' }}>
+          {hasOwn ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, margin: '4px 0 6px' }}>
+                <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: colors.textMuted }}>Fields for this work type</span>
+                <button type="button" onClick={onReset} style={{ fontSize: 12, fontWeight: 700, color: colors.teal, background: colors.tealPillBg, border: `1px solid ${colors.teal}`, borderRadius: 999, padding: '5px 11px', cursor: 'pointer' }}>Reset to default</button>
+              </div>
+              {sorted.map((f, i) => (
+                <div key={f.id} ref={dnd.setRow(f.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderTop: i === 0 ? 'none' : `1px solid ${colors.rowDivider}` }}>
+                  <DragHandle active={dnd.dragId === f.id} handleProps={dnd.handleProps(f.id)} />
+                  <span style={{ flex: '1 1 0%', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 14, fontWeight: 600, color: f.is_displayed ? colors.textPrimary : '#9A9AA6' }}>
+                    {f.display_label || FIELD_LABELS[f.field_key] || f.field_key}
+                    {f.is_required && <RequiredMark />}
+                  </span>
+                  <TogglePill on={f.is_required} onToggle={() => onFieldPatch(f.id, { is_required: !f.is_required })}>Required</TogglePill>
+                  <Switch on={f.is_displayed} onToggle={() => onFieldPatch(f.id, { is_displayed: !f.is_displayed })} label={`Show ${f.field_key}`} />
+                </div>
+              ))}
+            </>
+          ) : (
+            <div style={{ padding: '2px 0 4px' }}>
+              <Caption>This work type follows the Default Capture Fields list. Customize to give it its own set of fields.</Caption>
+              <AddButton onClick={onCustomize}>+ Customize fields for this work type</AddButton>
+            </div>
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${colors.rowDivider}`, flexWrap: 'wrap' }}>
+            <TogglePill on={wt.includes_preg_check} onToggle={() => patchWt({ includes_preg_check: !wt.includes_preg_check })}>Preg</TogglePill>
+            <Switch on={wt.active} onToggle={() => patchWt({ active: !wt.active })} label={`${wt.name} active`} />
+            <span style={{ fontSize: 11, fontWeight: 600, color: '#9A9AA6' }}>Prices live in the Charges section.</span>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+// All work-type prices in one place, side by side — every work type on its own
+// row with its Vet and SOL charge, so you can scan and compare them at a glance
+// instead of digging into each work type. Edits save the same way as before.
+function ChargesTable({ workTypes, patchWt }: { workTypes: WorkType[]; patchWt: (id: string, p: Partial<WorkType>) => void }) {
+  const cell: React.CSSProperties = { width: 96, display: 'flex', justifyContent: 'flex-end', flexShrink: 0 }
+  return (
+    <div>
+      <Caption>Per-head charges for every work type, side by side. Vet and SOL set what each job bills.</Caption>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 0 6px' }}>
+        <span style={{ flex: '1 1 0%', fontSize: 11, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: colors.textMuted }}>Work Type</span>
+        <span style={{ ...cell, fontSize: 11, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: colors.textMuted, paddingRight: 6 }}>Vet</span>
+        <span style={{ ...cell, fontSize: 11, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: colors.textMuted, paddingRight: 6 }}>SOL</span>
+      </div>
+      {workTypes.map((w, i) => (
+        <div key={w.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderTop: i === 0 ? `1px solid ${colors.rowDivider}` : `1px solid ${colors.rowDivider}`, opacity: w.active ? 1 : 0.55 }}>
+          <span style={{ flex: '1 1 0%', fontSize: 14, fontWeight: 700, color: colors.navy }}>{w.name}{w.active ? '' : ' · Off'}</span>
+          <span style={cell}>
+            <NumField ariaLabel={`${w.name} vet charge`} prefix="$" step={0.5} width={56} value={w.vet_charge} onChange={(v) => patchWt(w.id, { vet_charge: v == null ? 0 : round(v, 2) })} />
+          </span>
+          <span style={cell}>
+            <NumField ariaLabel={`${w.name} SOL charge`} prefix="$" step={0.5} width={56} value={w.sol_charge} onChange={(v) => patchWt(w.id, { sol_charge: v == null ? 0 : round(v, 2) })} />
+          </span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // =====================================================================
 
 export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarnAdmin: boolean }) {
@@ -272,6 +406,8 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
   const [barn, setBarn] = useState<BarnSettings>(() => clone(data.barn))
   const [fields, setFields] = useState<FieldConfig[]>(() => clone(data.fields))
   const [workTypes, setWorkTypes] = useState<WorkType[]>(() => clone(data.workTypes))
+  // Each work type's own field list, keyed by work_type_id.
+  const [wtFields, setWtFields] = useState<Record<string, FieldConfig[]>>(() => clone(data.workTypeFields))
   const [options, setOptions] = useState<FieldOption[]>(() => clone(data.options))
   const [pregStages, setPregStages] = useState<PregStage[]>(() => clone(data.pregStages))
   const [ages, setAges] = useState<AgeDesignation[]>(() => clone(data.ageDesignations))
@@ -291,6 +427,7 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
     setBarn(clone(data.barn))
     setFields(clone(data.fields))
     setWorkTypes(clone(data.workTypes))
+    setWtFields(clone(data.workTypeFields))
     setOptions(clone(data.options))
     setPregStages(clone(data.pregStages))
     setAges(clone(data.ageDesignations))
@@ -315,13 +452,27 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
       return Object.keys(p).length ? ({ id: barn.id, ...p } as SavePayload['barn']) : undefined
     })()
 
+    const fieldChanged = (o: FieldConfig | undefined, f: FieldConfig) =>
+      !!o && (o.is_displayed !== f.is_displayed || o.is_required !== f.is_required || o.sort_order !== f.sort_order || o.default_value !== f.default_value)
+    const slimField = ({ id, is_displayed, is_required, sort_order, default_value }: FieldConfig) =>
+      ({ id, is_displayed, is_required, sort_order, default_value })
+
     const initFields = new Map(initial.fields.map((f) => [f.id, f]))
-    const changedFields = fields
-      .filter((f) => {
-        const o = initFields.get(f.id)
-        return o && (o.is_displayed !== f.is_displayed || o.is_required !== f.is_required || o.sort_order !== f.sort_order || o.default_value !== f.default_value)
-      })
-      .map(({ id, is_displayed, is_required, sort_order, default_value }) => ({ id, is_displayed, is_required, sort_order, default_value }))
+    const changedDefaultFields = fields.filter((f) => fieldChanged(initFields.get(f.id), f)).map(slimField)
+
+    // Per-work-type field rows. Edits to existing rows ride in `fields` (same
+    // table, matched by id); brand-new rows (customizing a work type that had
+    // none) go to newFields for insert.
+    const initWtFields = new Map<string, FieldConfig>()
+    for (const list of Object.values(initial.workTypeFields)) for (const f of list) initWtFields.set(f.id, f)
+    const allWtFields = Object.values(wtFields).flat()
+    const changedWtFields = allWtFields.filter((f) => !isNew(f.id) && fieldChanged(initWtFields.get(f.id), f)).map(slimField)
+    const newFields = Object.entries(wtFields).flatMap(([workTypeId, list]) =>
+      list
+        .filter((f) => isNew(f.id))
+        .map((f) => ({ work_type_id: workTypeId, field_key: f.field_key, is_displayed: f.is_displayed, is_required: f.is_required, sort_order: f.sort_order, default_value: f.default_value })),
+    )
+    const changedFields = [...changedDefaultFields, ...changedWtFields]
 
     const initWt = new Map(initial.workTypes.map((w) => [w.id, w]))
     const changedWt = workTypes
@@ -386,8 +537,9 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
       newAgeDesignations: newAges,
       quickNotes: changedNotes,
       newQuickNotes: newNotes,
+      newFields,
     }
-  }, [barn, fields, workTypes, options, pregStages, ages, quickNotes, initial])
+  }, [barn, fields, workTypes, wtFields, options, pregStages, ages, quickNotes, initial])
 
   const dirty =
     !!payload.barn ||
@@ -399,7 +551,8 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
     payload.ageDesignations.length > 0 ||
     payload.newAgeDesignations.length > 0 ||
     payload.quickNotes.length > 0 ||
-    payload.newQuickNotes.length > 0
+    payload.newQuickNotes.length > 0 ||
+    payload.newFields.length > 0
 
   async function onSave() {
     setSaving(true)
@@ -419,6 +572,7 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
     setBarn(clone(initial.barn))
     setFields(clone(initial.fields))
     setWorkTypes(clone(initial.workTypes))
+    setWtFields(clone(initial.workTypeFields))
     setOptions(clone(initial.options))
     setPregStages(clone(initial.pregStages))
     setAges(clone(initial.ageDesignations))
@@ -431,6 +585,39 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
   // ---- per-row mutators ----
   const patchField = (id: string, p: Partial<FieldConfig>) => setFields((xs) => xs.map((x) => (x.id === id ? { ...x, ...p } : x)))
   const patchWt = (id: string, p: Partial<WorkType>) => setWorkTypes((xs) => xs.map((x) => (x.id === id ? { ...x, ...p } : x)))
+
+  // ---- per-work-type field mutators ----
+  const patchWtField = (wtId: string, fieldId: string, p: Partial<FieldConfig>) =>
+    setWtFields((m) => ({ ...m, [wtId]: (m[wtId] ?? []).map((f) => (f.id === fieldId ? { ...f, ...p } : f)) }))
+  const reorderWtFields = (wtId: string, ids: string[]) =>
+    setWtFields((m) => ({ ...m, [wtId]: reindexBy(m[wtId] ?? [], ids, 'sort_order') }))
+  // Give a work type its own list by copying the current default set into it as
+  // brand-new rows (saved as inserts).
+  const customizeWtFields = (wtId: string) =>
+    setWtFields((m) => ({
+      ...m,
+      [wtId]: [...fields].sort(byOrder).map((d) => ({
+        id: `new:wtf:${wtId}:${d.field_key}`,
+        field_key: d.field_key,
+        display_label: null,
+        is_displayed: d.is_displayed,
+        is_required: d.is_required,
+        sort_order: d.sort_order,
+        default_value: null,
+      })),
+    }))
+  // Snap a work type's fields back to match the default (which fields show, the
+  // order, required) — matched by field_key, keeping the rows so it saves as edits.
+  const resetWtFields = (wtId: string) => {
+    const byKey = new Map(fields.map((d) => [d.field_key, d]))
+    setWtFields((m) => ({
+      ...m,
+      [wtId]: (m[wtId] ?? []).map((f) => {
+        const d = byKey.get(f.field_key)
+        return d ? { ...f, is_displayed: d.is_displayed, is_required: d.is_required, sort_order: d.sort_order } : f
+      }),
+    }))
+  }
   const patchStage = (id: string, p: Partial<PregStage>) => setPregStages((xs) => xs.map((x) => (x.id === id ? { ...x, ...p } : x)))
   const patchAge = (id: string, p: Partial<AgeDesignation>) => setAges((xs) => xs.map((x) => (x.id === id ? { ...x, ...p } : x)))
   const patchOpt = (id: string, p: Partial<FieldOption>) => setOptions((xs) => xs.map((x) => (x.id === id ? { ...x, ...p } : x)))
@@ -492,7 +679,7 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
       </div>
 
       {/* ---- Barn ---- */}
-      <SectionCard title="Barn">
+      <CollapsibleSection title="Barn" summary="Name · fees · tax">
         {!isBarnAdmin ? (
           <Caption>Only a barn admin can change these. You can view them, but Save will skip the barn-level fields.</Caption>
         ) : null}
@@ -522,11 +709,11 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
           <span style={labelCell}>Special SOL (per head)</span>
           <NumField ariaLabel="Special SOL charge per head" step={0.25} prefix="$" value={round(barn.special_sol_charge, 2)} onChange={(v) => setBarn((b) => ({ ...b, special_sol_charge: v == null ? 0 : round(v, 2) }))} />
         </RowShell>
-      </SectionCard>
+      </CollapsibleSection>
 
-      {/* ---- Capture fields ---- */}
-      <SectionCard title={`Capture Fields · ${shownCount} on`}>
-        <Caption>Switch a field on or off, mark it required, set its order, and give it a default. The chute screen follows this list.</Caption>
+      {/* ---- Default capture fields ---- */}
+      <CollapsibleSection title="Default Capture Fields" summary={`${shownCount} on`}>
+        <Caption>The starting field set. A work type uses this list unless you give it its own (under Work Types below). Switch a field on or off, mark it required, drag to set the order, and give it a default.</Caption>
         <div>
           {sortedFields.map((f, i) => (
             <div key={f.id} ref={fieldsDnd.setRow(f.id)} style={{ padding: '10px 0', borderTop: i === 0 ? 'none' : `1px solid ${colors.rowDivider}` }}>
@@ -550,10 +737,10 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
           ))}
           {fields.length === 0 ? <Caption>No capture fields set up.</Caption> : null}
         </div>
-      </SectionCard>
+      </CollapsibleSection>
 
       {/* ---- Age ---- */}
-      <SectionCard title="Age — Tag Color → Age">
+      <CollapsibleSection title="Age — Tag Color → Age" summary={`${sortedAges.length} colors`}>
         <RowShell first>
           <span style={{ flex: '1 1 0%', fontSize: 13, fontWeight: 600, color: colors.textMuted }}>Allow a numeric age too</span>
           <Switch on={barn.age_numeric_enabled} onToggle={() => setBarn((b) => ({ ...b, age_numeric_enabled: !b.age_numeric_enabled }))} label="Numeric age" />
@@ -579,10 +766,10 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
           ))}
         </div>
         <AddButton onClick={addAge}>+ Add Age Color</AddButton>
-      </SectionCard>
+      </CollapsibleSection>
 
       {/* ---- Pregnancy ---- */}
-      <SectionCard title="Pregnancy">
+      <CollapsibleSection title="Pregnancy" summary="Months · stages">
         <Caption>Breeding window — months a “when bred” answer can fall in.</Caption>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {MONTHS_FULL.map((m) => {
@@ -607,36 +794,38 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
             ))}
           </div>
         </div>
-      </SectionCard>
+      </CollapsibleSection>
 
       {/* ---- Breed + Body color option lists ---- */}
       <OptionList title="Breed Choices" caption="A fixed pick list — never free text. Pin the ones that show up front; turn a choice off to retire it." list={breeds} fieldKey="breed" patchOpt={patchOpt} onReorder={reorderOptions} add={addOption} />
       <OptionList title="Body Color Choices" caption="Off at St. Onge, but the list is here for any barn that turns it on. Strict pick list — never free text." list={bodyColors} fieldKey="hide_color" patchOpt={patchOpt} onReorder={reorderOptions} add={addOption} />
 
       {/* ---- Work types & rates ---- */}
-      <SectionCard title="Work Types & Rates">
-        <Caption>Per-head charges. A preg tag means the preg fields show for that work. Turn a work type off to retire it.</Caption>
+      <CollapsibleSection title="Work Type Fields" summary={`${workTypes.length} types`}>
+        <Caption>Each work type has its own field list. Tap one to open it — its field list is exactly what shows at the chute for that job. “Reset to default” snaps it back to the Default Capture Fields list. (Prices are in the Charges section below.)</Caption>
         <div>
-          {workTypes.map((w, i) => (
-            <div key={w.id} style={{ padding: '10px 0', borderTop: i === 0 ? 'none' : `1px solid ${colors.rowDivider}`, opacity: w.active ? 1 : 0.55 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ flex: '1 1 0%', fontSize: 14, fontWeight: 700, color: colors.textPrimary }}>{w.name}</span>
-                <TogglePill on={w.includes_preg_check} onToggle={() => patchWt(w.id, { includes_preg_check: !w.includes_preg_check })}>Preg</TogglePill>
-                <Switch on={w.active} onToggle={() => patchWt(w.id, { active: !w.active })} label={`${w.name} active`} />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 8 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted }}>Vet</span>
-                <NumField ariaLabel={`${w.name} vet charge`} prefix="$" step={0.5} value={w.vet_charge} onChange={(v) => patchWt(w.id, { vet_charge: v == null ? 0 : round(v, 2) })} />
-                <span style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted }}>SOL</span>
-                <NumField ariaLabel={`${w.name} SOL charge`} prefix="$" step={0.5} value={w.sol_charge} onChange={(v) => patchWt(w.id, { sol_charge: v == null ? 0 : round(v, 2) })} />
-              </div>
-            </div>
+          {workTypes.map((w) => (
+            <WorkTypeRow
+              key={w.id}
+              wt={w}
+              fields={wtFields[w.id] ?? []}
+              patchWt={(p) => patchWt(w.id, p)}
+              onFieldPatch={(fid, p) => patchWtField(w.id, fid, p)}
+              onReorder={(ids) => reorderWtFields(w.id, ids)}
+              onCustomize={() => customizeWtFields(w.id)}
+              onReset={() => resetWtFields(w.id)}
+            />
           ))}
         </div>
-      </SectionCard>
+      </CollapsibleSection>
+
+      {/* ---- Charges: every work type's price, side by side ---- */}
+      <CollapsibleSection title="Charges" summary={`${workTypes.length} types`}>
+        <ChargesTable workTypes={workTypes} patchWt={patchWt} />
+      </CollapsibleSection>
 
       {/* ---- Quick notes ---- */}
-      <SectionCard title={`Quick Notes · ${activeNoteCount} on`}>
+      <CollapsibleSection title="Quick Notes" summary={`${activeNoteCount} on`}>
         <Caption>The tap labels at the chute. Turn one off to hide it without losing it, reorder to pin the important ones to the top, or add a new one. Order here matches the chute.</Caption>
         <div>
           {sortedNotes.map((n, i) => (
@@ -667,7 +856,7 @@ export function SettingsForm({ data, isBarnAdmin }: { data: SettingsData; isBarn
             Add
           </button>
         </div>
-      </SectionCard>
+      </CollapsibleSection>
 
       {/* ---- sticky Save bar ---- */}
       {dirty || saving || saved || error ? (
@@ -705,7 +894,7 @@ function OptionList({
 }) {
   const dnd = useDragReorder(list.map((o) => o.id), (ids) => onReorder(fieldKey, ids))
   return (
-    <SectionCard title={title}>
+    <CollapsibleSection title={title} summary={`${list.length} choices`}>
       <Caption>{caption}</Caption>
       <div>
         {list.map((o, i) => (
@@ -719,6 +908,6 @@ function OptionList({
         {list.length === 0 ? <span style={{ fontSize: 13, color: '#9A9AA6' }}>None yet.</span> : null}
       </div>
       <AddButton onClick={() => add(fieldKey)}>+ Add Choice</AddButton>
-    </SectionCard>
+    </CollapsibleSection>
   )
 }

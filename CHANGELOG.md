@@ -4,7 +4,8 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **settings:** drag to reorder the lists instead of up/down arrows _(2026-06-25, `4c28035`)_
+- **settings:** one Charges section with every work type's price side by side _(2026-06-25, `b43384e`)_
+- **settings:** collapsible sections + edit each work type's own field list _(2026-06-25, `adedc08`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -45,6 +46,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Docs
 
+- regenerate changelog _(2026-06-25, `e3b538e`)_
 - log the chute flow + sale day fixes and the test-data wipe _(2026-06-20, `6816a18`)_
 - update CHANGELOG for the Work Orders panel + row fixes _(2026-06-20, `e2359d9`)_
 - update CHANGELOG for the Work Orders fixes _(2026-06-20, `561afdb`)_
@@ -59,6 +61,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Barn Settings: drag to reorder lists instead of up/down arrows _(2026-06-25, `3927fa9`)_
 - Capture keyboard: numbers and letters on one keyboard _(2026-06-25, `1e43be6`)_
 - Capture screen: smaller Animals and Close out buttons, spread apart _(2026-06-25, `d2085a5`)_
 - Pen List: add photos and notes from the job popup; card shows icons only _(2026-06-25, `5a32f54`)_
