@@ -1,13 +1,13 @@
 'use client'
 
 import { colors } from '@/components/ui/tokens'
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { STATUS_LABEL, type WorkStatus } from '@/lib/work-orders/status'
 import type { Barn, PenWorkFull, SaleDay } from '@/lib/work-orders/types'
 import { startCapture } from '@/lib/work-orders/start-capture'
-import { setPenUp, setPenDefaults } from '@/app/(office)/work-list/actions'
+import { setPenUp, setPenDefaults, setPenWorkNote } from '@/app/(office)/work-list/actions'
 import { AnimalListModal } from '@/components/work-orders/board/animal-list-modal'
 import { AnimalAttributes } from '@/components/capture/animal-attributes'
 import { resolveFields, applyPenDefaults, extractPenDefaults, type PenFieldDefaults } from '@/lib/capture/fields'
@@ -41,35 +41,18 @@ function buyerNo(pw: PenWorkFull): string | null {
   return pw.buyer_number_text?.trim() || pw.buyerNumber?.number?.trim() || null
 }
 
-// Notes show as a small teal flag (no "Note" word). Tapping it opens the note —
-// same as tapping the card. Shown only when the job has a note.
-function NoteFlag({ onOpen }: { onOpen: () => void }) {
+// Small read-only marks on a card: a camera when the job has any photo, a flag
+// when it has a note. They're indicators only — there's no add/view control on
+// the card. Tapping anywhere on the card (these included) opens the job popup,
+// which is the one place photos and notes are added and viewed.
+function IndicatorTag({ kind }: { kind: 'photo' | 'note' }) {
   return (
     <span
-      role="button"
-      tabIndex={0}
-      aria-label="Show the note"
-      onClick={(e) => { e.stopPropagation(); onOpen() }}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onOpen() } }}
-      style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: colors.tealPillBg, border: `1px solid ${colors.teal}`, color: colors.teal, cursor: 'pointer' }}
+      aria-label={kind === 'photo' ? 'Has a photo' : 'Has a note'}
+      title={kind === 'photo' ? 'Has a photo' : 'Has a note'}
+      style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 8, background: colors.tealPillBg, border: `1px solid ${colors.teal}`, color: colors.teal }}
     >
-      <FlagIcon size={14} strokeWidth={2.4} style={{ color: colors.teal }} />
-    </span>
-  )
-}
-
-// Marker shown on a card when the job has saved photos. Tapping opens the viewer.
-function PhotoMarker({ onOpen }: { onOpen: () => void }) {
-  return (
-    <span
-      role="button"
-      tabIndex={0}
-      aria-label="View photos"
-      onClick={(e) => { e.stopPropagation(); onOpen() }}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onOpen() } }}
-      style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: colors.tealPillBg, border: `1px solid ${colors.teal}`, color: colors.teal, cursor: 'pointer' }}
-    >
-      <CameraIcon size={15} />
+      {kind === 'photo' ? <CameraIcon size={14} /> : <FlagIcon size={13} strokeWidth={2.4} style={{ color: colors.teal }} />}
     </span>
   )
 }
@@ -198,54 +181,6 @@ function SetDefaultChip({ hasDefaults, onOpen }: { hasDefaults: boolean; onOpen:
   )
 }
 
-// Attach a photo to this job. Opens the device camera / file picker and uploads
-// the image to Supabase Storage keyed by this pen_work. The hidden file input
-// lives inside this span (the card is a div, so nesting an input is fine), and
-// every tap stops the card's own open-detail tap.
-function PhotoButton({ busy, onPick }: { busy: boolean; onPick: (file: File) => void }) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  return (
-    <>
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        style={{ display: 'none' }}
-        onClick={(e) => e.stopPropagation()}
-        onChange={(e) => {
-          const f = e.target.files?.[0]
-          if (f) onPick(f)
-          e.target.value = '' // let the same file be picked again
-        }}
-      />
-      <span
-        role="button"
-        tabIndex={0}
-        aria-label="Attach a photo"
-        onClick={(e) => { e.stopPropagation(); if (!busy) inputRef.current?.click() }}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); if (!busy) inputRef.current?.click() } }}
-        style={{
-          flexShrink: 0,
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: 40,
-          height: 40,
-          borderRadius: 10,
-          cursor: busy ? 'default' : 'pointer',
-          opacity: busy ? 0.6 : 1,
-          background: '#fff',
-          border: `1px solid ${colors.border}`,
-          color: colors.textMuted,
-        }}
-      >
-        <CameraIcon size={18} />
-      </span>
-    </>
-  )
-}
-
 export function WorkListScreen({
   saleDay, barn, penWorks, workedById, productsById, upByPenId, bootstrap, defaultsByPenId,
 }: {
@@ -276,16 +211,16 @@ export function WorkListScreen({
   const [editing, setEditing] = useState<{ penId: string; penLabel: string; workTypeId: string | null; workTypeName: string } | null>(null)
   const [defBusy, setDefBusy] = useState(false)
 
-  // Photo attach: per-job uploading state + a brief result note.
   const supabase = useMemo(() => createClient(), [])
-  const [photoBusy, setPhotoBusy] = useState<Record<string, boolean>>({})
-  const [photoMsg, setPhotoMsg] = useState<{ id: string; ok: boolean; text: string } | null>(null)
-  // Which jobs have at least one saved photo (so the card can show a marker).
-  // Read once on mount by listing the barn's folder in the pen-photos bucket —
-  // each pen_work that has photos shows up as a sub-folder there.
+  // Which jobs have at least one saved photo, and which have a note — so the card
+  // can show its small indicator icons. Photos are read once on mount by listing
+  // the barn's folder in the pen-photos bucket (each pen_work with photos shows up
+  // as a sub-folder). Notes seed from the loaded rows. Both update in place when a
+  // photo or note is added from the popup, so the card's icons appear right away.
   const [photoPens, setPhotoPens] = useState<Record<string, boolean>>({})
-  // The job whose photos the viewer is showing.
-  const [viewing, setViewing] = useState<PenWorkFull | null>(null)
+  const [noteByPwId, setNoteByPwId] = useState<Record<string, string | null>>(
+    () => Object.fromEntries(penWorks.map((pw) => [pw.id, pw.notes])),
+  )
 
   useEffect(() => {
     let alive = true
@@ -303,28 +238,6 @@ export function WorkListScreen({
   }, [supabase, barn.id])
 
   const penUp = (penId: string | null | undefined) => !!(penId && upState[penId])
-
-  // Attach a photo to a job: upload it to the pen-photos bucket, keyed by barn +
-  // pen_work id so it's linked to this job. Client-side upload via the browser
-  // Supabase client (bucket RLS scopes it to the barn). Never blocks the screen;
-  // shows a short result note under the card.
-  async function uploadPhoto(penWorkId: string, file: File) {
-    setPhotoBusy((m) => ({ ...m, [penWorkId]: true }))
-    setPhotoMsg(null)
-    try {
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
-      const path = `${barn.id}/${penWorkId}/${Date.now()}.${ext}`
-      const { error } = await supabase.storage.from('pen-photos').upload(path, file, { contentType: file.type || undefined, upsert: false })
-      if (error) throw error
-      setPhotoMsg({ id: penWorkId, ok: true, text: 'Photo saved' })
-      setPhotoPens((m) => ({ ...m, [penWorkId]: true })) // marker shows right away
-    } catch {
-      setPhotoMsg({ id: penWorkId, ok: false, text: 'Couldn’t upload — try again' })
-    } finally {
-      setPhotoBusy((m) => ({ ...m, [penWorkId]: false }))
-      window.setTimeout(() => setPhotoMsg((cur) => (cur && cur.id === penWorkId ? null : cur)), 3200)
-    }
-  }
 
   function toggleUp(penId: string) {
     const next = !upState[penId]
@@ -459,8 +372,8 @@ export function WorkListScreen({
               <span style={{ fontSize: 14, fontWeight: 700, color: colors.teal, minWidth: 0 }}>{r.name}</span>
               {r.isBuyer ? <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: colors.navy, background: colors.gold, borderRadius: 999, padding: '2px 8px' }}>Buyer #{buyerNo(r.pw) ?? '—'}</span> : null}
               <div style={{ flex: 1 }} />
-              {photoPens[r.pw.id] ? <PhotoMarker onOpen={() => setViewing(r.pw)} /> : null}
-              {r.pw.notes ? <NoteFlag onOpen={() => setSelected(r.pw)} /> : null}
+              {photoPens[r.pw.id] ? <IndicatorTag kind="photo" /> : null}
+              {noteByPwId[r.pw.id] ? <IndicatorTag kind="note" /> : null}
               <StatusPill status={r.status} />
             </div>
 
@@ -479,7 +392,6 @@ export function WorkListScreen({
               {r.pw.pen?.id && bootstrap ? (
                 <SetDefaultChip hasDefaults={!!defaultsState[r.pw.pen.id]} onOpen={() => openDefaults(r.pw)} />
               ) : null}
-              <PhotoButton busy={!!photoBusy[r.pw.id]} onPick={(f) => uploadPhoto(r.pw.id, f)} />
               <div style={{ flex: 1 }} />
               <span
                 role="button"
@@ -492,22 +404,22 @@ export function WorkListScreen({
                 {r.status === 'in_progress' ? 'Resume' : 'Open'} ›
               </span>
             </div>
-
-            {photoBusy[r.pw.id] ? (
-              <div style={{ fontSize: 12, fontWeight: 700, color: colors.textMuted }}>Uploading photo…</div>
-            ) : photoMsg && photoMsg.id === r.pw.id ? (
-              <div style={{ fontSize: 12, fontWeight: 700, color: photoMsg.ok ? colors.teal : colors.danger }}>{photoMsg.text}</div>
-            ) : null}
           </div>
         ))
       )}
 
-      {/* READ-ONLY DETAIL */}
+      {/* JOB POPUP — the work-order summary plus the one place to add and view a
+          job's photos and note. */}
       {selected ? (
         <Detail
           pw={selected}
           worked={workedById[selected.id] ?? 0}
           products={productsById[selected.id] ?? []}
+          supabase={supabase}
+          barnId={barn.id}
+          note={noteByPwId[selected.id] ?? null}
+          onNoteSaved={(v) => setNoteByPwId((m) => ({ ...m, [selected.id]: v }))}
+          onPhotoAdded={() => setPhotoPens((m) => ({ ...m, [selected.id]: true }))}
           onBack={() => setSelected(null)}
           onStart={() => go(selected)}
           going={going}
@@ -520,17 +432,6 @@ export function WorkListScreen({
           penWorkId={animalsFor.id}
           title={`${penLabel(animalsFor)} · ${(animalsFor.buyer_party_id ? animalsFor.buyer : animalsFor.seller)?.name ?? '—'}`}
           onClose={() => setAnimalsFor(null)}
-        />
-      ) : null}
-
-      {/* PHOTOS — tapping the photo marker opens this job's saved photos full size */}
-      {viewing ? (
-        <PhotoViewer
-          supabase={supabase}
-          barnId={barn.id}
-          penWorkId={viewing.id}
-          title={`${penLabel(viewing)} · ${(viewing.buyer_party_id ? viewing.buyer : viewing.seller)?.name ?? '—'}`}
-          onClose={() => setViewing(null)}
         />
       ) : null}
 
@@ -631,12 +532,20 @@ function DetailRow({ label, value, last }: { label: string; value: string; last?
   )
 }
 
+// The job popup. Top half is the work-order summary (who, what, which pen, how
+// many head). Below it sit the two add controls and the saved photos + note —
+// this popup is the single place a job's photos and note are added and viewed.
 function Detail({
-  pw, worked, products, onBack, onStart, going,
+  pw, worked, products, supabase, barnId, note, onNoteSaved, onPhotoAdded, onBack, onStart, going,
 }: {
   pw: PenWorkFull
   worked: number
   products: string[]
+  supabase: ReturnType<typeof createClient>
+  barnId: string
+  note: string | null
+  onNoteSaved: (note: string | null) => void
+  onPhotoAdded: () => void
   onBack: () => void
   onStart: () => void
   going: boolean
@@ -646,7 +555,92 @@ function Detail({
   const status: ListStatus = worked > 0 ? 'in_progress' : 'not_started'
   const name = p?.name ?? '—'
   const expected = pw.head_expected ?? pw.head_started ?? 0
+  const headValue = status === 'in_progress' ? `${worked} of ${expected} head` : `${expected} head`
+  const ownerNo = isBuyer ? buyerNo(pw) : null
   const hasProducts = products.length > 0
+
+  // Don't update state after the popup closes (it unmounts on close).
+  const mounted = useRef(true)
+  useEffect(() => () => { mounted.current = false }, [])
+
+  // Photos for this job, signed for display (the bucket is private). Loaded on
+  // open and again right after an upload so a new picture shows without a reload.
+  const [photoUrls, setPhotoUrls] = useState<string[]>([])
+  const [photoLoading, setPhotoLoading] = useState(true)
+  const [photoFailed, setPhotoFailed] = useState(false)
+  const [photoIdx, setPhotoIdx] = useState(0)
+  const [uploading, setUploading] = useState(false)
+  const [uploadFailed, setUploadFailed] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  const loadPhotos = useCallback(async () => {
+    setPhotoFailed(false)
+    const { data, error } = await supabase.storage
+      .from('pen-photos')
+      .list(`${barnId}/${pw.id}`, { limit: 100, sortBy: { column: 'name', order: 'asc' } })
+    if (!mounted.current) return
+    if (error || !data) { setPhotoFailed(true); setPhotoUrls([]); setPhotoLoading(false); return }
+    const files = data.filter((e) => e.id !== null) // real files, not nested folders
+    if (!files.length) { setPhotoUrls([]); setPhotoLoading(false); return }
+    const paths = files.map((f) => `${barnId}/${pw.id}/${f.name}`)
+    const { data: signed } = await supabase.storage.from('pen-photos').createSignedUrls(paths, 3600)
+    if (!mounted.current) return
+    setPhotoUrls((signed ?? []).map((s) => s.signedUrl).filter((u): u is string => !!u))
+    setPhotoLoading(false)
+  }, [supabase, barnId, pw.id])
+
+  useEffect(() => { loadPhotos() }, [loadPhotos])
+
+  // Upload a picked image to this job's folder, then reload and jump to it.
+  async function addPhoto(file: File) {
+    setUploading(true); setUploadFailed(false)
+    try {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+      const path = `${barnId}/${pw.id}/${Date.now()}.${ext}`
+      const { error } = await supabase.storage.from('pen-photos').upload(path, file, { contentType: file.type || undefined, upsert: false })
+      if (error) throw error
+      onPhotoAdded() // light up the card's photo icon right away
+      await loadPhotos()
+      if (mounted.current) setPhotoIdx(Number.MAX_SAFE_INTEGER) // show the newest (clamped on render)
+    } catch {
+      if (mounted.current) setUploadFailed(true)
+    } finally {
+      if (mounted.current) setUploading(false)
+    }
+  }
+
+  // The note, kept locally so it shows the moment it's saved. The editor opens
+  // pre-filled with whatever's there now.
+  const [localNote, setLocalNote] = useState<string | null>(note)
+  const [noteEditing, setNoteEditing] = useState(false)
+  const [noteDraft, setNoteDraft] = useState('')
+  const [noteSaving, setNoteSaving] = useState(false)
+  const [noteFailed, setNoteFailed] = useState(false)
+
+  function openNote() {
+    setNoteDraft(localNote ?? '')
+    setNoteFailed(false)
+    setNoteEditing(true)
+  }
+
+  async function saveNote() {
+    setNoteSaving(true); setNoteFailed(false)
+    const res = await setPenWorkNote(pw.id, barnId, noteDraft)
+    if (!mounted.current) return
+    if (res.ok) {
+      setLocalNote(res.note)
+      onNoteSaved(res.note)
+      setNoteEditing(false)
+    } else {
+      setNoteFailed(true)
+    }
+    setNoteSaving(false)
+  }
+
+  const count = photoUrls.length
+  const cur = count ? Math.min(photoIdx, count - 1) : 0
+  const addBtnStyle = { flex: 1, height: 48, gap: 8, borderRadius: 12, fontSize: 15, fontWeight: 800 } as const
+
   return (
     <Modal
       size="md"
@@ -661,22 +655,95 @@ function Detail({
             <button type="button" onClick={onBack} aria-label="Back" style={{ width: 34, height: 34, flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', color: '#fff', fontSize: 22 }}>‹</button>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: '-0.01em' }}>{penLabel(pw)} · {name}</div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#55BAAA', marginTop: 1 }}>{pw.workType?.name ?? 'Work'} · {expected} head expected</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#55BAAA', marginTop: 1 }}>{pw.workType?.name ?? 'Work'} · {headValue}</div>
             </div>
           </div>
         </div>
 
-        <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 11, flex: 1 }}>
+        <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 11, flex: 1, overflowY: 'auto' }}>
           <SectionCard title="Work Order">
-            <DetailRow label="Consignor" value={`${name} · ${isBuyer ? 'Buyer' : 'Seller'}`} />
+            <DetailRow label={isBuyer ? 'Buyer' : 'Consignor'} value={ownerNo ? `${name} · #${ownerNo}` : name} />
             <DetailRow label="Work Type" value={pw.workType?.name ?? '—'} />
-            <DetailRow label="Animal Type" value={pw.animalType?.name ?? '—'} last={!hasProducts} />
+            <DetailRow label="Pen" value={penLabel(pw)} />
+            <DetailRow label="Head" value={headValue} last={!pw.animalType && !hasProducts} />
+            {pw.animalType ? <DetailRow label="Animal Type" value={pw.animalType.name} last={!hasProducts} /> : null}
             {hasProducts ? <DetailRow label="Products" value={products.join(' · ')} last /> : null}
           </SectionCard>
 
-          {pw.notes ? (
-            <SectionCard title="Notes">
-              <div style={{ fontSize: 13, fontWeight: 500, color: colors.textPrimary, lineHeight: 1.45 }}>{pw.notes}</div>
+          {/* The two add controls — the one place photos and notes go on a job. */}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            style={{ display: 'none' }}
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              if (f) addPhoto(f)
+              e.target.value = '' // let the same file be picked again
+            }}
+          />
+          <div style={{ display: 'flex', gap: 10 }}>
+            <Button variant="outline" type="button" onClick={() => { if (!uploading) fileRef.current?.click() }} disabled={uploading} style={addBtnStyle}>
+              <CameraIcon size={18} /> {uploading ? 'Adding…' : 'Add a picture'}
+            </Button>
+            <Button variant="outline" type="button" onClick={openNote} style={addBtnStyle}>
+              <FlagIcon size={15} strokeWidth={2.4} /> {localNote ? 'Edit note' : 'Add a note'}
+            </Button>
+          </div>
+          {uploadFailed ? (
+            <div style={{ fontSize: 12, fontWeight: 700, color: colors.danger }}>Couldn’t add the picture — try again.</div>
+          ) : null}
+
+          {/* Saved photos, with paging when there's more than one. */}
+          {photoLoading || count > 0 ? (
+            <SectionCard title="Photos">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 180, maxHeight: '42vh', borderRadius: 10, background: '#0A1B33', overflow: 'hidden' }}>
+                  {photoLoading ? (
+                    <span style={{ color: '#8FA8CC', fontSize: 14, fontWeight: 600 }}>Loading…</span>
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={photoUrls[cur]} alt={`Photo ${cur + 1}`} style={{ maxWidth: '100%', maxHeight: '42vh', objectFit: 'contain' }} />
+                  )}
+                </div>
+                {count > 1 ? (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                    <Button variant="outline" type="button" onClick={() => setPhotoIdx((i) => (Math.min(i, count - 1) - 1 + count) % count)} style={{ height: 38, padding: '0 14px', borderRadius: 9, fontSize: 14, fontWeight: 700 }}>‹ Prev</Button>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: colors.textMuted, fontVariantNumeric: 'tabular-nums' }}>Photo {cur + 1} of {count}</span>
+                    <Button variant="outline" type="button" onClick={() => setPhotoIdx((i) => (Math.min(i, count - 1) + 1) % count)} style={{ height: 38, padding: '0 14px', borderRadius: 9, fontSize: 14, fontWeight: 700 }}>Next ›</Button>
+                  </div>
+                ) : null}
+              </div>
+            </SectionCard>
+          ) : photoFailed ? (
+            <div style={{ fontSize: 12, fontWeight: 700, color: colors.danger }}>Couldn’t load photos — try again.</div>
+          ) : null}
+
+          {/* The note: an editor while editing, otherwise the saved text (if any). */}
+          {noteEditing ? (
+            <SectionCard title="Note">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <textarea
+                  autoFocus
+                  value={noteDraft}
+                  onChange={(e) => setNoteDraft(e.target.value)}
+                  placeholder="Type a note for this job…"
+                  rows={4}
+                  style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', borderRadius: 10, border: `1px solid ${colors.border}`, padding: '10px 12px', fontFamily: 'inherit', fontSize: 14, color: colors.textPrimary, background: '#fff' }}
+                />
+                {noteFailed ? <div style={{ fontSize: 12, fontWeight: 700, color: colors.danger }}>Couldn’t save the note — try again.</div> : null}
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <Button variant="outline" type="button" onClick={() => setNoteEditing(false)} disabled={noteSaving} style={{ flexShrink: 0, height: 44, padding: '0 16px', borderRadius: 11, fontSize: 14, fontWeight: 700 }}>Cancel</Button>
+                  <Button variant="primary" type="button" onClick={saveNote} disabled={noteSaving} fullWidth style={{ flex: 1, height: 44, borderRadius: 11, fontSize: 15, fontWeight: 800 }}>
+                    {noteSaving ? 'Saving…' : 'Save note'}
+                  </Button>
+                </div>
+              </div>
+            </SectionCard>
+          ) : localNote ? (
+            <SectionCard title="Note">
+              <div style={{ fontSize: 14, fontWeight: 500, color: colors.textPrimary, lineHeight: 1.45, whiteSpace: 'pre-wrap' }}>{localNote}</div>
             </SectionCard>
           ) : null}
         </div>
@@ -693,82 +760,6 @@ function Detail({
             {going ? 'Opening…' : status === 'in_progress' ? 'Resume' : 'Start Working'} ›
           </Button>
         </div>
-    </Modal>
-  )
-}
-
-// Full-size viewer for a job's saved photos. Reads straight from the same place
-// the upload writes — the pen-photos bucket under <barn>/<pen_work> — and signs
-// each object (the bucket is private). Pages through when there's more than one.
-function PhotoViewer({
-  supabase, barnId, penWorkId, title, onClose,
-}: {
-  supabase: ReturnType<typeof createClient>
-  barnId: string
-  penWorkId: string
-  title: string
-  onClose: () => void
-}) {
-  const [urls, setUrls] = useState<string[]>([])
-  const [loading, setLoading] = useState(true)
-  const [failed, setFailed] = useState(false)
-  const [idx, setIdx] = useState(0)
-
-  useEffect(() => {
-    let alive = true
-    ;(async () => {
-      const { data, error } = await supabase.storage
-        .from('pen-photos')
-        .list(`${barnId}/${penWorkId}`, { limit: 100, sortBy: { column: 'name', order: 'asc' } })
-      if (!alive) return
-      if (error || !data) { setFailed(true); setLoading(false); return }
-      const files = data.filter((e) => e.id !== null) // real files, not nested folders
-      if (!files.length) { setLoading(false); return }
-      const paths = files.map((f) => `${barnId}/${penWorkId}/${f.name}`)
-      const { data: signed } = await supabase.storage.from('pen-photos').createSignedUrls(paths, 3600)
-      if (!alive) return
-      setUrls((signed ?? []).map((s) => s.signedUrl).filter((u): u is string => !!u))
-      setLoading(false)
-    })()
-    return () => { alive = false }
-  }, [supabase, barnId, penWorkId])
-
-  const count = urls.length
-  const cur = count ? Math.min(idx, count - 1) : 0
-  const navBtnStyle = { height: 40, padding: '0 16px', borderRadius: 9, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)', color: '#fff', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' } as const
-
-  return (
-    <Modal size="lg" zIndex={80} onClose={onClose} panelStyle={{ background: colors.navy }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
-        <div style={{ flex: 1, minWidth: 0, color: '#fff' }}>
-          <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#55BAAA', marginTop: 1 }}>
-            {loading ? 'Loading photos…' : count ? `Photo ${cur + 1} of ${count}` : 'Photos'}
-          </div>
-        </div>
-        <button type="button" onClick={onClose} aria-label="Close" style={{ width: 36, height: 36, flexShrink: 0, background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: 9, cursor: 'pointer', color: '#fff', fontSize: 18 }}>✕</button>
-      </div>
-
-      <div style={{ minHeight: 320, maxHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12, background: '#0A1B33' }}>
-        {loading ? (
-          <span style={{ color: '#8FA8CC', fontSize: 14, fontWeight: 600 }}>Loading…</span>
-        ) : failed ? (
-          <span style={{ color: '#F3B0B0', fontSize: 14, fontWeight: 600 }}>Couldn’t load photos — try again.</span>
-        ) : count === 0 ? (
-          <span style={{ color: '#8FA8CC', fontSize: 14, fontWeight: 600 }}>No photos yet.</span>
-        ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={urls[cur]} alt={`Photo ${cur + 1}`} style={{ maxWidth: '100%', maxHeight: '66vh', objectFit: 'contain', borderRadius: 8 }} />
-        )}
-      </div>
-
-      {count > 1 ? (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 14px', borderTop: '1px solid rgba(255,255,255,0.12)' }}>
-          <button type="button" onClick={() => setIdx((i) => (i - 1 + count) % count)} style={navBtnStyle}>‹ Prev</button>
-          <span style={{ color: '#fff', fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{cur + 1} / {count}</span>
-          <button type="button" onClick={() => setIdx((i) => (i + 1) % count)} style={navBtnStyle}>Next ›</button>
-        </div>
-      ) : null}
     </Modal>
   )
 }
