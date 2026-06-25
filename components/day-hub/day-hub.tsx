@@ -12,8 +12,8 @@ function fullDate(iso: string) {
   return new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
 }
 
-// Diagonal-gradient stat cards (starting stops — fine-tuned later). Orange is
-// always the Billed · Office card; the lead "to work" metric is the highlight.
+// Diagonal-gradient stat cards (starting stops — fine-tuned later). The lead
+// "HD worked" metric is the highlight; orders gets its own indigo gradient.
 const STAT_GRADIENTS = {
   default: 'linear-gradient(135deg, #0E2646 0%, #2B7A70 100%)',
   highlight: 'linear-gradient(135deg, #1B6B63 0%, #55BAAA 55%, #CBD24F 100%)',
@@ -57,16 +57,9 @@ export function DayHub({ saleDay, barn, metrics }: { saleDay: SaleDay; barn: Bar
   const label = saleDay.notes?.trim()
   const statusLine = `${label ? `${label} · ` : ''}${barn.name} · ${open ? 'Open' : 'Closed'}`
 
-  // Capture button: total head for the day, minus what's worked, is what's left.
-  const totalHead = metrics.headExpected
-  const remaining = Math.max(0, totalHead - metrics.headWorked)
-
   const stats: { value: React.ReactNode; label: string; variant: StatVariant }[] = [
-    { value: String(metrics.toWork), label: 'Animals To Work', variant: 'highlight' },
-    { value: String(metrics.headWorked), label: 'Head Worked', variant: 'default' },
-    { value: String(metrics.pensInUse), label: 'Pens In Use', variant: 'default' },
+    { value: `${metrics.headWorked} / ${metrics.headExpected}`, label: 'HD Worked', variant: 'highlight' },
     { value: String(metrics.orders), label: `Work Orders · ${metrics.openOrders} Open`, variant: 'orders' },
-    { value: <span style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.9)' }}>Placeholder</span>, label: 'Billed · Office', variant: 'billed' },
   ]
 
   return (
@@ -85,10 +78,7 @@ export function DayHub({ saleDay, barn, metrics }: { saleDay: SaleDay; barn: Bar
         {/* CAPTURE — gold primary. Lands on the Pen List so the operator picks a
             pen and goes straight into capture bound to that work order. */}
         <GoldButton href={`/work-list/${saleDay.id}`}>
-          <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, lineHeight: 1.15 }}>
-            <span style={{ fontSize: 18, fontWeight: 800 }}>Continue Working Cows!</span>
-            <span style={{ fontSize: 12.5, fontWeight: 700, opacity: 0.9 }}>{remaining} Head of {totalHead} Head Remaining</span>
-          </span>
+          <span style={{ fontSize: 18, fontWeight: 800 }}>Continue Working Cows!</span>
         </GoldButton>
 
         {/* WORKING SCREENS */}
