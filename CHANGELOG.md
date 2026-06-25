@@ -4,7 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **capture:** give the Animals and Close out buttons two colors, edge-aligned _(2026-06-25, `3dd0865`)_
+- **pen-card:** resize the label to a Dymo 30323, landscape (4in x 2.125in) _(2026-06-25, `fff524f`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -59,6 +59,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Capture header: Animals (teal) and Close out (gold), edge-aligned _(2026-06-25, `01145bc`)_
 - Barn Settings: collapsible sections, per-work-type fields, and one Charges table _(2026-06-25, `b3f7920`)_
 - Barn Settings: drag to reorder lists instead of up/down arrows _(2026-06-25, `3927fa9`)_
 - Capture keyboard: numbers and letters on one keyboard _(2026-06-25, `1e43be6`)_
