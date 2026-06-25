@@ -5,7 +5,6 @@ import {
   fetchPageData,
   fetchPenWorks,
   fetchPens,
-  fetchSaleDays,
   fetchSpecialCharges,
 } from '@/lib/work-orders/queries'
 import type { SpecialChargeFull } from '@/lib/work-orders/types'
@@ -29,10 +28,9 @@ export default async function WorkOrdersPage({ params }: { params: { saleDay: st
   const pageData = await fetchPageData(supabase, params.saleDay)
   if (!pageData) notFound()
 
-  const [penWorks, specials, saleDays, pens] = await Promise.all([
+  const [penWorks, specials, pens] = await Promise.all([
     fetchPenWorks(supabase, params.saleDay),
     fetchSpecialCharges(supabase, params.saleDay),
-    fetchSaleDays(supabase),
     fetchPens(supabase, params.saleDay),
   ])
 
@@ -45,7 +43,6 @@ export default async function WorkOrdersPage({ params }: { params: { saleDay: st
   return (
     <WorkOrdersBoard
       saleDay={pageData.saleDay}
-      saleDays={saleDays}
       barn={pageData.barn}
       workTypes={pageData.workTypes}
       animalTypes={pageData.animalTypes}
