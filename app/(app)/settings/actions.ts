@@ -41,6 +41,12 @@ export async function saveSettings(payload: SavePayload): Promise<SaveResult> {
       const { error } = await supabase.from('barn_field_config').update(patch).eq('id', id)
       if (error) throw new Error(`Capture field — ${error.message}`)
     }
+    if (payload.newFields.length > 0) {
+      // New per-work-type field rows (customizing a work type that had none).
+      const rows = payload.newFields.map((f) => ({ ...f, barn_id: barnId }))
+      const { error } = await supabase.from('barn_field_config').insert(rows)
+      if (error) throw new Error(`Work-type field — ${error.message}`)
+    }
 
     for (const { id, ...patch } of payload.workTypes) {
       const { error } = await supabase.from('work_type').update(patch).eq('id', id)

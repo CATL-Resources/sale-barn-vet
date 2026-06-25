@@ -74,8 +74,11 @@ export type QuickNote = {
 // Everything the page hands to the form.
 export type SettingsData = {
   barn: BarnSettings
-  fields: FieldConfig[]
+  fields: FieldConfig[] // the barn-default field list (work_type_id is null)
   workTypes: WorkType[]
+  // Each work type's own field list (its barn_field_config override rows),
+  // keyed by work_type_id. A work type missing here simply follows the default.
+  workTypeFields: Record<string, FieldConfig[]>
   options: FieldOption[]
   pregStages: PregStage[]
   ageDesignations: AgeDesignation[]
@@ -106,4 +109,16 @@ export type SavePayload = {
   // Existing quick notes whose active / order changed, then brand-new notes to add.
   quickNotes: Array<Pick<QuickNote, 'id' | 'active' | 'sort_priority'>>
   newQuickNotes: Array<{ label: string; sort_priority: number }>
+  // Brand-new per-work-type field rows — only created when a work type that had
+  // no list of its own gets "Customize" (we copy the default set into it).
+  // Changes to a work type's EXISTING field rows ride along in `fields` (same
+  // table, matched by id), so they need no separate bucket here.
+  newFields: Array<{
+    work_type_id: string
+    field_key: string
+    is_displayed: boolean
+    is_required: boolean
+    sort_order: number
+    default_value: string | null
+  }>
 }

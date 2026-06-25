@@ -30,8 +30,7 @@ export default async function SettingsPage() {
   const [fieldsRes, optionsRes, ageRes, stagesRes, workTypesRes, notesRes, memberRes] = await Promise.all([
     supabase
       .from('barn_field_config')
-      .select('id, field_key, display_label, is_displayed, is_required, sort_order, default_value')
-      .is('work_type_id', null)
+      .select('id, field_key, display_label, is_displayed, is_required, sort_order, default_value, work_type_id')
       .order('sort_order'),
     supabase
       .from('field_value_option')
@@ -66,6 +65,27 @@ export default async function SettingsPage() {
 
   const isBarnAdmin = (memberRes.data ?? []).some((m) => m.role === 'admin')
 
+  // The field rows come back together: work_type_id null = the barn default
+  // list; a set work_type_id = that work type's own list.
+  const toField = (f: {
+    id: string; field_key: string; display_label: string | null
+    is_displayed: boolean; is_required: boolean; sort_order: number; default_value: string | null
+  }) => ({
+    id: f.id,
+    field_key: f.field_key,
+    display_label: f.display_label,
+    is_displayed: f.is_displayed,
+    is_required: f.is_required,
+    sort_order: f.sort_order,
+    default_value: f.default_value,
+  })
+  const allFieldRows = fieldsRes.data ?? []
+  const workTypeFields: SettingsData['workTypeFields'] = {}
+  for (const f of allFieldRows) {
+    if (f.work_type_id == null) continue
+    ;(workTypeFields[f.work_type_id] ??= []).push(toField(f))
+  }
+
   const data: SettingsData = {
     barn: {
       id: barn.id,
@@ -78,15 +98,8 @@ export default async function SettingsPage() {
       sales_tax_rate: num(barn.sales_tax_rate),
       special_sol_charge: num(barn.special_sol_charge),
     },
-    fields: (fieldsRes.data ?? []).map((f) => ({
-      id: f.id,
-      field_key: f.field_key,
-      display_label: f.display_label,
-      is_displayed: f.is_displayed,
-      is_required: f.is_required,
-      sort_order: f.sort_order,
-      default_value: f.default_value,
-    })),
+    fields: allFieldRows.filter((f) => f.work_type_id == null).map(toField),
+    workTypeFields,
     workTypes: (workTypesRes.data ?? []).map((w) => ({
       id: w.id,
       name: w.name,
