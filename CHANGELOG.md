@@ -4,7 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **capture:** show numbers and letters on one keyboard, numbers always on top _(2026-06-25, `5b967c5`)_
+- **settings:** drag to reorder the lists instead of up/down arrows _(2026-06-25, `4c28035`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -59,6 +59,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Capture keyboard: numbers and letters on one keyboard _(2026-06-25, `1e43be6`)_
 - Capture screen: smaller Animals and Close out buttons, spread apart _(2026-06-25, `d2085a5`)_
 - Pen List: add photos and notes from the job popup; card shows icons only _(2026-06-25, `5a32f54`)_
 - Work Orders board cleanup: drop day switcher, one-line toolbar, no Work action, phone cards _(2026-06-25, `a0643fe`)_
