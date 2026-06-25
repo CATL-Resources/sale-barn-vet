@@ -16,13 +16,16 @@ type Row = {
   buyer: { name: string } | null
 }
 
-// True size for a Dymo 30323 shipping label, landscape (4in wide x 2.125in tall).
-// MUST match the PenCardLabel component's width/height, or the print comes out
-// scaled wrong.
+// The label is the landscape 4in x 2.125in design (see PenCardLabel). The Dymo
+// won't reliably rotate to landscape, so we feed the 30323 in its NATIVE PORTRAIT
+// orientation (2.125in wide x 4in tall) and rotate the label 90° to fill the
+// page. The @page MUST be the portrait feed, and the .pen-card-page box plus the
+// rotation below must match the label's size, or the print comes out wrong.
 const PRINT_CSS = `
-  @page { size: 4in 2.125in; margin: 0; }
+  @page { size: 2.125in 4in; margin: 0; }
   html, body { margin: 0; padding: 0; background: #E4E4DF; }
   .pen-card-stage { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .pen-card-page { position: relative; width: 2.125in; height: 4in; overflow: hidden; }
   @media print {
     html, body { background: #fff; }
     .pen-card-stage { min-height: 0; padding: 0; }
@@ -75,7 +78,15 @@ export default async function PenCardPrintPage({ params }: { params: { penWork: 
       <style dangerouslySetInnerHTML={{ __html: PRINT_CSS }} />
       <PrintOnLoad />
       <div className="pen-card-stage">
-        <PenCardLabel data={data} />
+        {/* Portrait page (the label's native feed). The label keeps its own 4in x
+            2.125in size; the wrapper pins it to the top-left and rotates it 90°,
+            which lands the landscape label exactly inside the portrait page. The
+            rotation lives here, not in PenCardLabel, so that component is unchanged. */}
+        <div className="pen-card-page">
+          <div style={{ position: 'absolute', top: 0, left: 0, transformOrigin: 'top left', transform: 'translate(2.125in, 0) rotate(90deg)' }}>
+            <PenCardLabel data={data} />
+          </div>
+        </div>
       </div>
     </>
   )
