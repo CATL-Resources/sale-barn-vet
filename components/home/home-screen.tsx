@@ -155,8 +155,7 @@ export function HomeScreen({
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {[
-                  { value: String(currentMetrics.headWorked), label: 'Head Worked', variant: 'highlight' as StatVariant },
-                  { value: String(currentMetrics.toWork), label: 'To Work', variant: 'default' as StatVariant },
+                  { value: `${currentMetrics.headWorked} / ${currentMetrics.headExpected}`, label: 'HD Worked', variant: 'highlight' as StatVariant },
                   { value: String(currentMetrics.pensInUse), label: 'Pens', variant: 'default' as StatVariant },
                   { value: `${currentMetrics.orders}`, label: `Orders · ${currentMetrics.openOrders} Open`, variant: 'orders' as StatVariant },
                 ].map((s) => (
@@ -166,9 +165,9 @@ export function HomeScreen({
                 ))}
               </div>
 
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {chip(`/work-orders/${current.id}`, 'Work Orders')}
-                {chip(`/work-list/${current.id}`, 'Pen List')}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>{chip(`/work-orders/${current.id}`, 'Work Orders')}</div>
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>{chip(`/work-list/${current.id}`, 'Pen List')}</div>
               </div>
             </div>
           </section>

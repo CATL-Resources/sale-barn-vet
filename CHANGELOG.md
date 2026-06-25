@@ -4,7 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **pen-card:** resize the label to 4x6 with wrapping so nothing gets cut off _(2026-06-25, `14382f3`)_
+- **dashboard:** tidy the stat cards on Home and the Sale Day screen _(2026-06-25, `24deb92`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -59,6 +59,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Pen card: resize to a 4x6 shipping label with wrapping _(2026-06-25, `d6374b9`)_
 - Specials in the live work-order form: compute + freeze _(2026-06-25, `edb56ba`)_
 - Quick Notes manager (add / on-off / reorder) _(2026-06-24, `b6d205f`)_
 - Specials as a flexible work type: per-head entry + compute + freeze _(2026-06-24, `bc599ed`)_
