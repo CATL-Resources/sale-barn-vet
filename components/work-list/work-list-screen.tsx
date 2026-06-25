@@ -1,7 +1,7 @@
 'use client'
 
 import { colors } from '@/components/ui/tokens'
-import { useMemo, useRef, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { STATUS_LABEL, type WorkStatus } from '@/lib/work-orders/status'
@@ -54,6 +54,22 @@ function NoteFlag({ onOpen }: { onOpen: () => void }) {
       style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: colors.tealPillBg, border: `1px solid ${colors.teal}`, color: colors.teal, cursor: 'pointer' }}
     >
       <FlagIcon size={14} strokeWidth={2.4} style={{ color: colors.teal }} />
+    </span>
+  )
+}
+
+// Marker shown on a card when the job has saved photos. Tapping opens the viewer.
+function PhotoMarker({ onOpen }: { onOpen: () => void }) {
+  return (
+    <span
+      role="button"
+      tabIndex={0}
+      aria-label="View photos"
+      onClick={(e) => { e.stopPropagation(); onOpen() }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onOpen() } }}
+      style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: colors.tealPillBg, border: `1px solid ${colors.teal}`, color: colors.teal, cursor: 'pointer' }}
+    >
+      <CameraIcon size={15} />
     </span>
   )
 }
@@ -264,6 +280,27 @@ export function WorkListScreen({
   const supabase = useMemo(() => createClient(), [])
   const [photoBusy, setPhotoBusy] = useState<Record<string, boolean>>({})
   const [photoMsg, setPhotoMsg] = useState<{ id: string; ok: boolean; text: string } | null>(null)
+  // Which jobs have at least one saved photo (so the card can show a marker).
+  // Read once on mount by listing the barn's folder in the pen-photos bucket —
+  // each pen_work that has photos shows up as a sub-folder there.
+  const [photoPens, setPhotoPens] = useState<Record<string, boolean>>({})
+  // The job whose photos the viewer is showing.
+  const [viewing, setViewing] = useState<PenWorkFull | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    supabase.storage
+      .from('pen-photos')
+      .list(barn.id, { limit: 1000 })
+      .then(({ data }) => {
+        if (!alive || !data) return
+        // Folder entries (one per pen_work that has photos) come back with a null id.
+        const next: Record<string, boolean> = {}
+        for (const entry of data) if (entry.id === null) next[entry.name] = true
+        setPhotoPens(next)
+      })
+    return () => { alive = false }
+  }, [supabase, barn.id])
 
   const penUp = (penId: string | null | undefined) => !!(penId && upState[penId])
 
@@ -280,6 +317,7 @@ export function WorkListScreen({
       const { error } = await supabase.storage.from('pen-photos').upload(path, file, { contentType: file.type || undefined, upsert: false })
       if (error) throw error
       setPhotoMsg({ id: penWorkId, ok: true, text: 'Photo saved' })
+      setPhotoPens((m) => ({ ...m, [penWorkId]: true })) // marker shows right away
     } catch {
       setPhotoMsg({ id: penWorkId, ok: false, text: 'Couldn’t upload — try again' })
     } finally {
@@ -421,6 +459,7 @@ export function WorkListScreen({
               <span style={{ fontSize: 14, fontWeight: 700, color: colors.teal, minWidth: 0 }}>{r.name}</span>
               {r.isBuyer ? <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: colors.navy, background: colors.gold, borderRadius: 999, padding: '2px 8px' }}>Buyer #{buyerNo(r.pw) ?? '—'}</span> : null}
               <div style={{ flex: 1 }} />
+              {photoPens[r.pw.id] ? <PhotoMarker onOpen={() => setViewing(r.pw)} /> : null}
               {r.pw.notes ? <NoteFlag onOpen={() => setSelected(r.pw)} /> : null}
               <StatusPill status={r.status} />
             </div>
@@ -481,6 +520,17 @@ export function WorkListScreen({
           penWorkId={animalsFor.id}
           title={`${penLabel(animalsFor)} · ${(animalsFor.buyer_party_id ? animalsFor.buyer : animalsFor.seller)?.name ?? '—'}`}
           onClose={() => setAnimalsFor(null)}
+        />
+      ) : null}
+
+      {/* PHOTOS — tapping the photo marker opens this job's saved photos full size */}
+      {viewing ? (
+        <PhotoViewer
+          supabase={supabase}
+          barnId={barn.id}
+          penWorkId={viewing.id}
+          title={`${penLabel(viewing)} · ${(viewing.buyer_party_id ? viewing.buyer : viewing.seller)?.name ?? '—'}`}
+          onClose={() => setViewing(null)}
         />
       ) : null}
 
@@ -643,6 +693,82 @@ function Detail({
             {going ? 'Opening…' : status === 'in_progress' ? 'Resume' : 'Start Working'} ›
           </Button>
         </div>
+    </Modal>
+  )
+}
+
+// Full-size viewer for a job's saved photos. Reads straight from the same place
+// the upload writes — the pen-photos bucket under <barn>/<pen_work> — and signs
+// each object (the bucket is private). Pages through when there's more than one.
+function PhotoViewer({
+  supabase, barnId, penWorkId, title, onClose,
+}: {
+  supabase: ReturnType<typeof createClient>
+  barnId: string
+  penWorkId: string
+  title: string
+  onClose: () => void
+}) {
+  const [urls, setUrls] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+  const [failed, setFailed] = useState(false)
+  const [idx, setIdx] = useState(0)
+
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      const { data, error } = await supabase.storage
+        .from('pen-photos')
+        .list(`${barnId}/${penWorkId}`, { limit: 100, sortBy: { column: 'name', order: 'asc' } })
+      if (!alive) return
+      if (error || !data) { setFailed(true); setLoading(false); return }
+      const files = data.filter((e) => e.id !== null) // real files, not nested folders
+      if (!files.length) { setLoading(false); return }
+      const paths = files.map((f) => `${barnId}/${penWorkId}/${f.name}`)
+      const { data: signed } = await supabase.storage.from('pen-photos').createSignedUrls(paths, 3600)
+      if (!alive) return
+      setUrls((signed ?? []).map((s) => s.signedUrl).filter((u): u is string => !!u))
+      setLoading(false)
+    })()
+    return () => { alive = false }
+  }, [supabase, barnId, penWorkId])
+
+  const count = urls.length
+  const cur = count ? Math.min(idx, count - 1) : 0
+  const navBtnStyle = { height: 40, padding: '0 16px', borderRadius: 9, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)', color: '#fff', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer' } as const
+
+  return (
+    <Modal size="lg" zIndex={80} onClose={onClose} panelStyle={{ background: colors.navy }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
+        <div style={{ flex: 1, minWidth: 0, color: '#fff' }}>
+          <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.01em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#55BAAA', marginTop: 1 }}>
+            {loading ? 'Loading photos…' : count ? `Photo ${cur + 1} of ${count}` : 'Photos'}
+          </div>
+        </div>
+        <button type="button" onClick={onClose} aria-label="Close" style={{ width: 36, height: 36, flexShrink: 0, background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: 9, cursor: 'pointer', color: '#fff', fontSize: 18 }}>✕</button>
+      </div>
+
+      <div style={{ minHeight: 320, maxHeight: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12, background: '#0A1B33' }}>
+        {loading ? (
+          <span style={{ color: '#8FA8CC', fontSize: 14, fontWeight: 600 }}>Loading…</span>
+        ) : failed ? (
+          <span style={{ color: '#F3B0B0', fontSize: 14, fontWeight: 600 }}>Couldn’t load photos — try again.</span>
+        ) : count === 0 ? (
+          <span style={{ color: '#8FA8CC', fontSize: 14, fontWeight: 600 }}>No photos yet.</span>
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={urls[cur]} alt={`Photo ${cur + 1}`} style={{ maxWidth: '100%', maxHeight: '66vh', objectFit: 'contain', borderRadius: 8 }} />
+        )}
+      </div>
+
+      {count > 1 ? (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 14px', borderTop: '1px solid rgba(255,255,255,0.12)' }}>
+          <button type="button" onClick={() => setIdx((i) => (i - 1 + count) % count)} style={navBtnStyle}>‹ Prev</button>
+          <span style={{ color: '#fff', fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{cur + 1} / {count}</span>
+          <button type="button" onClick={() => setIdx((i) => (i + 1) % count)} style={navBtnStyle}>Next ›</button>
+        </div>
+      ) : null}
     </Modal>
   )
 }
