@@ -4,7 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **pen-list:** view saved photos on a job (follow-up to the photo upload) _(2026-06-25, `55888d4`)_
+- **work-orders:** board cleanup — drop day switcher, one-line toolbar, no Work, phone cards _(2026-06-25, `f7bf0de`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -59,6 +59,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Pen List: view saved photos — follow-up completing the photo feature _(2026-06-25, `df7f236`)_
 - pen_session.field_overrides (per-pen field config) _(2026-06-25, `24cb856`)_
 - Pen List: mobile two-row card, teal, note flag, photo upload _(2026-06-25, `60c4c8c`)_
 - custom-price work type (is_custom_price + special_label) + seed Special _(2026-06-25, `73e6862`)_
