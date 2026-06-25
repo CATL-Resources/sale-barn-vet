@@ -4,7 +4,8 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **db:** custom-price work type — is_custom_price + special_label + seed Special _(2026-06-25, `bc5ea1b`)_
+- **pen-list:** pen-photos storage bucket + barn-scoped RLS for the photo button _(2026-06-25, `0e3c81a`)_
+- **pen-list:** mobile-first two-row card, teal not purple, note flag, photo button _(2026-06-25, `e426ff0`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -59,6 +60,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- custom-price work type (is_custom_price + special_label) + seed Special _(2026-06-25, `73e6862`)_
 - Tidy stat cards: Home current-sale + Sale Day top _(2026-06-25, `2f719cd`)_
 - Pen card: resize to a 4x6 shipping label with wrapping _(2026-06-25, `d6374b9`)_
 - Specials in the live work-order form: compute + freeze _(2026-06-25, `edb56ba`)_
