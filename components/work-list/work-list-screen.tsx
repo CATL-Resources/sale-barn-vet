@@ -1,8 +1,9 @@
 'use client'
 
 import { colors } from '@/components/ui/tokens'
-import { useMemo, useState, useTransition } from 'react'
+import { useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { STATUS_LABEL, type WorkStatus } from '@/lib/work-orders/status'
 import type { Barn, PenWorkFull, SaleDay } from '@/lib/work-orders/types'
 import { startCapture } from '@/lib/work-orders/start-capture'
@@ -15,7 +16,7 @@ import { ScreenHeader } from '@/components/ui/screen-header'
 import { HeaderBack } from '@/components/ui/header-back'
 import { SectionCard } from '@/components/ui/section-card'
 import { Button, buttonClass } from '@/components/ui/button'
-import { CheckIcon } from '@/components/ui/icons'
+import { CheckIcon, FlagIcon, CameraIcon } from '@/components/ui/icons'
 import { Modal } from '@/components/ui/modal'
 
 // Only two states show here — finished jobs are filtered out before this screen.
@@ -40,9 +41,22 @@ function buyerNo(pw: PenWorkFull): string | null {
   return pw.buyer_number_text?.trim() || pw.buyerNumber?.number?.trim() || null
 }
 
-const NotePill = () => (
-  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, height: 22, padding: '0 8px', borderRadius: 999, background: '#EAE2FA', border: '1px solid #C9B8F0', flexShrink: 0, fontSize: 11, fontWeight: 700, color: colors.purple }}>Note</span>
-)
+// Notes show as a small teal flag (no "Note" word). Tapping it opens the note —
+// same as tapping the card. Shown only when the job has a note.
+function NoteFlag({ onOpen }: { onOpen: () => void }) {
+  return (
+    <span
+      role="button"
+      tabIndex={0}
+      aria-label="Show the note"
+      onClick={(e) => { e.stopPropagation(); onOpen() }}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onOpen() } }}
+      style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: 8, background: colors.tealPillBg, border: `1px solid ${colors.teal}`, color: colors.teal, cursor: 'pointer' }}
+    >
+      <FlagIcon size={14} strokeWidth={2.4} style={{ color: colors.teal }} />
+    </span>
+  )
+}
 
 function StatusPill({ status }: { status: ListStatus }) {
   const s = STATUS_STYLE[status]
@@ -101,11 +115,10 @@ function GearIcon({ color, size = 16 }: { color: string; size?: number }) {
   )
 }
 
-// The yard-crew "Staged" marker — a small purple status notation (not a button),
-// kept visually apart from the gray/amber chute status so both sit on one card.
-// Its own tap zone inside the card button, so it's a role="button" span (a real
-// button can't nest inside the card's button). Tap toggles it; behavior, the
-// To Grab filter, and auto-clear are unchanged — only the wording and size.
+// The yard-crew "Staged" marker — a small TEAL control in the actions row (no
+// purple anywhere on this screen). It's a role="button" span with its own tap
+// zone. Tap toggles it; the behavior, the To Grab filter, and auto-clear are all
+// unchanged — only the color and size.
 function StagedChip({ up, busy, onToggle }: { up: boolean; busy: boolean; onToggle: () => void }) {
   return (
     <span
@@ -120,20 +133,20 @@ function StagedChip({ up, busy, onToggle }: { up: boolean; busy: boolean; onTogg
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 4,
-        height: 26,
-        padding: '0 10px',
+        gap: 5,
+        height: 40,
+        padding: '0 14px',
         borderRadius: 999,
         cursor: busy ? 'default' : 'pointer',
         opacity: busy ? 0.6 : 1,
-        background: up ? colors.purple : '#fff',
-        border: `1px solid ${up ? colors.purple : '#C9B8F0'}`,
-        color: up ? '#fff' : colors.purple,
-        fontSize: 12,
+        background: up ? colors.teal : colors.tealPillBg,
+        border: `1px solid ${colors.teal}`,
+        color: up ? '#fff' : colors.teal,
+        fontSize: 13,
         fontWeight: 700,
       }}
     >
-      {up ? <CheckIcon size={11} strokeWidth={3} style={{ color: '#fff' }} /> : <CaretUp color={colors.purple} />}
+      {up ? <CheckIcon size={12} strokeWidth={3} style={{ color: '#fff' }} /> : <CaretUp color={colors.teal} />}
       Staged
     </span>
   )
@@ -155,17 +168,65 @@ function SetDefaultChip({ hasDefaults, onOpen }: { hasDefaults: boolean; onOpen:
         display: 'inline-flex',
         alignItems: 'center',
         justifyContent: 'center',
-        width: 34,
-        height: 34,
-        borderRadius: 999,
+        width: 40,
+        height: 40,
+        borderRadius: 10,
         cursor: 'pointer',
         background: hasDefaults ? colors.tealPillBg : '#fff',
         border: `1px solid ${hasDefaults ? colors.teal : colors.border}`,
         color: tint,
       }}
     >
-      <GearIcon color={tint} size={16} />
+      <GearIcon color={tint} size={18} />
     </span>
+  )
+}
+
+// Attach a photo to this job. Opens the device camera / file picker and uploads
+// the image to Supabase Storage keyed by this pen_work. The hidden file input
+// lives inside this span (the card is a div, so nesting an input is fine), and
+// every tap stops the card's own open-detail tap.
+function PhotoButton({ busy, onPick }: { busy: boolean; onPick: (file: File) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  return (
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        style={{ display: 'none' }}
+        onClick={(e) => e.stopPropagation()}
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          if (f) onPick(f)
+          e.target.value = '' // let the same file be picked again
+        }}
+      />
+      <span
+        role="button"
+        tabIndex={0}
+        aria-label="Attach a photo"
+        onClick={(e) => { e.stopPropagation(); if (!busy) inputRef.current?.click() }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); if (!busy) inputRef.current?.click() } }}
+        style={{
+          flexShrink: 0,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 40,
+          height: 40,
+          borderRadius: 10,
+          cursor: busy ? 'default' : 'pointer',
+          opacity: busy ? 0.6 : 1,
+          background: '#fff',
+          border: `1px solid ${colors.border}`,
+          color: colors.textMuted,
+        }}
+      >
+        <CameraIcon size={18} />
+      </span>
+    </>
   )
 }
 
@@ -199,7 +260,33 @@ export function WorkListScreen({
   const [editing, setEditing] = useState<{ penId: string; penLabel: string; workTypeId: string | null; workTypeName: string } | null>(null)
   const [defBusy, setDefBusy] = useState(false)
 
+  // Photo attach: per-job uploading state + a brief result note.
+  const supabase = useMemo(() => createClient(), [])
+  const [photoBusy, setPhotoBusy] = useState<Record<string, boolean>>({})
+  const [photoMsg, setPhotoMsg] = useState<{ id: string; ok: boolean; text: string } | null>(null)
+
   const penUp = (penId: string | null | undefined) => !!(penId && upState[penId])
+
+  // Attach a photo to a job: upload it to the pen-photos bucket, keyed by barn +
+  // pen_work id so it's linked to this job. Client-side upload via the browser
+  // Supabase client (bucket RLS scopes it to the barn). Never blocks the screen;
+  // shows a short result note under the card.
+  async function uploadPhoto(penWorkId: string, file: File) {
+    setPhotoBusy((m) => ({ ...m, [penWorkId]: true }))
+    setPhotoMsg(null)
+    try {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+      const path = `${barn.id}/${penWorkId}/${Date.now()}.${ext}`
+      const { error } = await supabase.storage.from('pen-photos').upload(path, file, { contentType: file.type || undefined, upsert: false })
+      if (error) throw error
+      setPhotoMsg({ id: penWorkId, ok: true, text: 'Photo saved' })
+    } catch {
+      setPhotoMsg({ id: penWorkId, ok: false, text: 'Couldn’t upload — try again' })
+    } finally {
+      setPhotoBusy((m) => ({ ...m, [penWorkId]: false }))
+      window.setTimeout(() => setPhotoMsg((cur) => (cur && cur.id === penWorkId ? null : cur)), 3200)
+    }
+  }
 
   function toggleUp(penId: string) {
     const next = !upState[penId]
@@ -320,39 +407,59 @@ export function WorkListScreen({
         </div>
       ) : (
         visibleRows.map((r) => (
-          <button key={r.pw.id} type="button" className="wl-card" onClick={() => setSelected(r.pw)}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 20, fontWeight: 800, color: colors.navy, letterSpacing: '-0.01em' }}>{penLabel(r.pw)}</span>
-                <span style={{ fontSize: 15, fontWeight: 700, color: colors.teal }}>{r.name}</span>
-                {r.isBuyer ? <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: colors.navy, background: colors.gold, borderRadius: 999, padding: '2px 8px' }}>Buyer #{buyerNo(r.pw) ?? '—'}</span> : null}
-                {r.pw.notes ? <NotePill /> : null}
-              </div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted, marginTop: 3 }}>
-                {r.pw.workType?.name ?? 'Work'} · {r.worked > 0 ? (
-                  <span role="button" tabIndex={0} aria-label="Show the animals worked" onClick={(e) => { e.stopPropagation(); setAnimalsFor(r.pw) }} style={{ color: colors.teal, fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 2, cursor: 'pointer' }}>{headText(r)}</span>
-                ) : headText(r)}
-              </div>
+          <div
+            key={r.pw.id}
+            role="button"
+            tabIndex={0}
+            className="wl-card"
+            onClick={() => setSelected(r.pw)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(r.pw) } }}
+          >
+            {/* Row 1 — identity */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 19, fontWeight: 800, color: colors.navy, letterSpacing: '-0.01em' }}>{penLabel(r.pw)}</span>
+              <span style={{ fontSize: 14, fontWeight: 700, color: colors.teal, minWidth: 0 }}>{r.name}</span>
+              {r.isBuyer ? <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: colors.navy, background: colors.gold, borderRadius: 999, padding: '2px 8px' }}>Buyer #{buyerNo(r.pw) ?? '—'}</span> : null}
+              <div style={{ flex: 1 }} />
+              {r.pw.notes ? <NoteFlag onOpen={() => setSelected(r.pw)} /> : null}
+              <StatusPill status={r.status} />
             </div>
-            <StatusPill status={r.status} />
-            {r.pw.pen?.id ? (
-              <StagedChip up={penUp(r.pw.pen.id)} busy={!!upBusy[r.pw.pen.id]} onToggle={() => toggleUp(r.pw.pen!.id)} />
+
+            {/* meta — work type + the tap-to-see-animals head count */}
+            <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted }}>
+              {r.pw.workType?.name ?? 'Work'} · {r.worked > 0 ? (
+                <span role="button" tabIndex={0} aria-label="Show the animals worked" onClick={(e) => { e.stopPropagation(); setAnimalsFor(r.pw) }} style={{ color: colors.teal, fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 2, cursor: 'pointer' }}>{headText(r)}</span>
+              ) : headText(r)}
+            </div>
+
+            {/* Row 2 — actions */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {r.pw.pen?.id ? (
+                <StagedChip up={penUp(r.pw.pen.id)} busy={!!upBusy[r.pw.pen.id]} onToggle={() => toggleUp(r.pw.pen!.id)} />
+              ) : null}
+              {r.pw.pen?.id && bootstrap ? (
+                <SetDefaultChip hasDefaults={!!defaultsState[r.pw.pen.id]} onOpen={() => openDefaults(r.pw)} />
+              ) : null}
+              <PhotoButton busy={!!photoBusy[r.pw.id]} onPick={(f) => uploadPhoto(r.pw.id, f)} />
+              <div style={{ flex: 1 }} />
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label={r.status === 'in_progress' ? 'Resume' : 'Open'}
+                onClick={(e) => { e.stopPropagation(); go(r.pw) }}
+                className={buttonClass(r.status === 'in_progress' ? 'outline' : 'primary', false, 'wl-rowaction')}
+                style={{ flexShrink: 0, height: 40, gap: 7, padding: '0 18px', borderRadius: 9, fontSize: 14, cursor: going ? 'default' : 'pointer', opacity: going ? 0.6 : 1 }}
+              >
+                {r.status === 'in_progress' ? 'Resume' : 'Open'} ›
+              </span>
+            </div>
+
+            {photoBusy[r.pw.id] ? (
+              <div style={{ fontSize: 12, fontWeight: 700, color: colors.textMuted }}>Uploading photo…</div>
+            ) : photoMsg && photoMsg.id === r.pw.id ? (
+              <div style={{ fontSize: 12, fontWeight: 700, color: photoMsg.ok ? colors.teal : colors.danger }}>{photoMsg.text}</div>
             ) : null}
-            {r.pw.pen?.id && bootstrap ? (
-              <SetDefaultChip hasDefaults={!!defaultsState[r.pw.pen.id]} onOpen={() => openDefaults(r.pw)} />
-            ) : null}
-            <span
-              role="button"
-              tabIndex={0}
-              aria-label={r.status === 'in_progress' ? 'Resume' : 'Open'}
-              onClick={(e) => { e.stopPropagation(); go(r.pw) }}
-              className={buttonClass(r.status === 'in_progress' ? 'outline' : 'primary', false, 'wl-rowaction')}
-              style={{ flexShrink: 0, height: 40, gap: 7, padding: '0 18px', borderRadius: 9, fontSize: 14, cursor: going ? 'default' : 'pointer', opacity: going ? 0.6 : 1 }}
-            >
-              {r.status === 'in_progress' ? 'Resume' : 'Open'} ›
-            </span>
-            <span className="wl-chevron" aria-hidden style={{ flexShrink: 0, color: '#A8AEC0', fontSize: 18 }}>›</span>
-          </button>
+          </div>
         ))
       )}
 
