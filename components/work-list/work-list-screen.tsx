@@ -66,8 +66,9 @@ function StatusPill({ status }: { status: ListStatus }) {
   )
 }
 
-// A Pen List filter chip (All / To Grab). Phone-comfortable tap target.
-function FilterChip({ active, label, count, onClick }: { active: boolean; label: string; count: number; onClick: () => void }) {
+// A Pen List filter / group chip. Phone-comfortable tap target. The count is
+// optional — the group toggles (By Pen / By Work Type) don't carry one.
+function FilterChip({ active, label, count, onClick }: { active: boolean; label: string; count?: number; onClick: () => void }) {
   return (
     <button
       type="button"
@@ -90,7 +91,7 @@ function FilterChip({ active, label, count, onClick }: { active: boolean; label:
       }}
     >
       {label}
-      <span style={{ fontSize: 12, fontWeight: 800, color: active ? '#fff' : colors.textMuted, fontVariantNumeric: 'tabular-nums' }}>{count}</span>
+      {count != null ? <span style={{ fontSize: 12, fontWeight: 800, color: active ? '#fff' : colors.textMuted, fontVariantNumeric: 'tabular-nums' }}>{count}</span> : null}
     </button>
   )
 }
@@ -205,6 +206,10 @@ export function WorkListScreen({
   const [, startUp] = useTransition()
   // The "To Grab" view: only pens still needing work that aren't staged yet.
   const [toGrab, setToGrab] = useState(false)
+  // How the list is grouped (a flat pen-sorted list, or one section per work
+  // type) and whether fully-worked ("done") jobs are hidden.
+  const [groupBy, setGroupBy] = useState<'pen' | 'workType'>('pen')
+  const [hideDone, setHideDone] = useState(false)
   // Per-pen capture defaults, kept locally so the gear's "has defaults" tint and
   // the editor's pre-fill update instantly after a save. Keyed by pen.
   const [defaultsState, setDefaultsState] = useState<Record<string, PenFieldDefaults>>(defaultsByPenId)
@@ -358,15 +363,51 @@ export function WorkListScreen({
       })
   }, [penWorks, workedById])
 
+  type Row = (typeof rows)[number]
+
   const toWork = rows.length
   const headLeft = rows.reduce((a, r) => a + r.headLeft, 0)
 
-  // To Grab = still has work (every row here does — finished pens are dropped
-  // before this screen) AND not up. A pen that gets worked to complete leaves on
-  // its own because it's no longer in the list at all.
-  const toGrabRows = rows.filter((r) => !penUp(r.pw.pen?.id))
-  const toGrabCount = toGrabRows.length
-  const visibleRows = toGrab ? toGrabRows : rows
+  // "Done" = worked to the full head count but the office hasn't closed it out
+  // yet (truly finished jobs are already dropped before this screen). The
+  // Hide-done filter takes these out of the way.
+  const isDone = (r: Row) => r.headLeft === 0 && r.worked > 0
+  const doneCount = rows.filter(isDone).length
+
+  // To Grab = still has work (every row here does) AND not up. A pen worked to
+  // complete leaves on its own because it's no longer in the list at all.
+  const toGrabCount = rows.filter((r) => !penUp(r.pw.pen?.id)).length
+
+  // Apply the two filters (To Grab view + Hide done), then group: either one
+  // flat pen-sorted list, or a section per work type (each pen-sorted).
+  const filtered = rows.filter((r) => {
+    if (toGrab && penUp(r.pw.pen?.id)) return false
+    if (hideDone && isDone(r)) return false
+    return true
+  })
+
+  const byPen = (a: Row, b: Row) => {
+    const ap = a.pw.pen?.pen_number ?? ''
+    const bp = b.pw.pen?.pen_number ?? ''
+    if (!ap !== !bp) return ap ? -1 : 1 // jobs without a pen sink to the bottom
+    return ap.localeCompare(bp, undefined, { numeric: true, sensitivity: 'base' })
+  }
+
+  const sections: { key: string; label: string | null; rows: Row[] }[] =
+    groupBy === 'workType'
+      ? (() => {
+          const map = new Map<string, Row[]>()
+          for (const r of filtered) {
+            const key = r.pw.workType?.name ?? 'Other Work'
+            const list = map.get(key)
+            if (list) list.push(r)
+            else map.set(key, [r])
+          }
+          return [...map.entries()]
+            .sort((a, b) => a[0].localeCompare(b[0], undefined, { sensitivity: 'base' }))
+            .map(([label, rs]) => ({ key: label, label, rows: rs.sort(byPen) }))
+        })()
+      : [{ key: 'all', label: null, rows: [...filtered].sort(byPen) }]
 
   function go(pw: PenWorkFull) {
     startGo(async () => {
@@ -376,6 +417,56 @@ export function WorkListScreen({
 
   const headText = (r: { worked: number; expected: number; status: ListStatus }) =>
     r.status === 'in_progress' ? `${r.worked} of ${r.expected} head` : `${r.expected} head`
+
+  const renderCard = (r: Row) => (
+    <div
+      key={r.pw.id}
+      role="button"
+      tabIndex={0}
+      className="wl-card"
+      onClick={() => setSelected(r.pw)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(r.pw) } }}
+    >
+      {/* Row 1 — identity */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 19, fontWeight: 800, color: colors.navy, letterSpacing: '-0.01em' }}>{penLabel(r.pw)}</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: colors.teal, minWidth: 0 }}>{r.name}</span>
+        {r.isBuyer ? <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: colors.navy, background: colors.gold, borderRadius: 999, padding: '2px 8px' }}>Buyer #{buyerNo(r.pw) ?? '—'}</span> : null}
+        <div style={{ flex: 1 }} />
+        {photoPens[r.pw.id] ? <IndicatorTag kind="photo" /> : null}
+        {noteByPwId[r.pw.id] ? <IndicatorTag kind="note" /> : null}
+        <StatusPill status={r.status} />
+      </div>
+
+      {/* meta — work type + the tap-to-see-animals head count */}
+      <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted }}>
+        {r.pw.workType?.name ?? 'Work'} · {r.worked > 0 ? (
+          <span role="button" tabIndex={0} aria-label="Show the animals worked" onClick={(e) => { e.stopPropagation(); setAnimalsFor(r.pw) }} style={{ color: colors.teal, fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 2, cursor: 'pointer' }}>{headText(r)}</span>
+        ) : headText(r)}
+      </div>
+
+      {/* Row 2 — actions */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {r.pw.pen?.id ? (
+          <StagedChip up={penUp(r.pw.pen.id)} busy={!!upBusy[r.pw.pen.id]} onToggle={() => toggleUp(r.pw.pen!.id)} />
+        ) : null}
+        {r.pw.pen?.id && bootstrap ? (
+          <SetDefaultChip hasDefaults={!!defaultsState[r.pw.pen.id]} onOpen={() => openDefaults(r.pw)} />
+        ) : null}
+        <div style={{ flex: 1 }} />
+        <span
+          role="button"
+          tabIndex={0}
+          aria-label={r.status === 'in_progress' ? 'Resume' : 'Open'}
+          onClick={(e) => { e.stopPropagation(); go(r.pw) }}
+          className={buttonClass(r.status === 'in_progress' ? 'outline' : 'primary', false, 'wl-rowaction')}
+          style={{ flexShrink: 0, height: 40, gap: 7, padding: '0 18px', borderRadius: 9, fontSize: 14, cursor: going ? 'default' : 'pointer', opacity: going ? 0.6 : 1 }}
+        >
+          {r.status === 'in_progress' ? 'Resume' : 'Open'} ›
+        </span>
+      </div>
+    </div>
+  )
 
   return (
     <>
@@ -391,12 +482,22 @@ export function WorkListScreen({
       />
 
       <div className="wl-wrap">
-      {/* FILTERS — All vs the yard's To Grab view (pens still needing work that
-          aren't up yet). */}
+      {/* CONTROLS — the view filter (All / To Grab / Hide done) and how the list
+          is grouped (by pen or by work type). */}
       {rows.length > 0 ? (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <FilterChip active={!toGrab} label="All" count={toWork} onClick={() => setToGrab(false)} />
-          <FilterChip active={toGrab} label="To Grab" count={toGrabCount} onClick={() => setToGrab(true)} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <FilterChip active={!toGrab} label="All" count={toWork} onClick={() => setToGrab(false)} />
+            <FilterChip active={toGrab} label="To Grab" count={toGrabCount} onClick={() => setToGrab(true)} />
+            {doneCount > 0 || hideDone ? (
+              <FilterChip active={hideDone} label="Hide done" count={doneCount} onClick={() => setHideDone((v) => !v)} />
+            ) : null}
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: colors.textMuted, marginRight: 2 }}>Group</span>
+            <FilterChip active={groupBy === 'pen'} label="By Pen" onClick={() => setGroupBy('pen')} />
+            <FilterChip active={groupBy === 'workType'} label="By Work Type" onClick={() => setGroupBy('workType')} />
+          </div>
         </div>
       ) : null}
 
@@ -406,59 +507,27 @@ export function WorkListScreen({
           <div style={{ fontSize: 18, fontWeight: 700, color: colors.navy }}>Nothing Left to Work</div>
           <div style={{ fontSize: 14, color: colors.textMuted, marginTop: 6 }}>Every job for this sale day is complete.</div>
         </div>
-      ) : visibleRows.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 14, padding: '40px 20px', textAlign: 'center' }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: colors.navy }}>Every Pen Is Up</div>
-          <div style={{ fontSize: 14, color: colors.textMuted, marginTop: 6 }}>Nothing left to grab — every pen still needing work has been brought up.</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: colors.navy }}>{toGrab ? 'Every Pen Is Up' : hideDone ? 'All Done Here' : 'Nothing to Show'}</div>
+          <div style={{ fontSize: 14, color: colors.textMuted, marginTop: 6 }}>
+            {toGrab
+              ? 'Nothing left to grab — every pen still needing work has been brought up.'
+              : hideDone
+                ? 'Every remaining job is fully worked. Turn off “Hide done” to see them.'
+                : 'No pens match the current view.'}
+          </div>
         </div>
       ) : (
-        visibleRows.map((r) => (
-          <div
-            key={r.pw.id}
-            role="button"
-            tabIndex={0}
-            className="wl-card"
-            onClick={() => setSelected(r.pw)}
-            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(r.pw) } }}
-          >
-            {/* Row 1 — identity */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 19, fontWeight: 800, color: colors.navy, letterSpacing: '-0.01em' }}>{penLabel(r.pw)}</span>
-              <span style={{ fontSize: 14, fontWeight: 700, color: colors.teal, minWidth: 0 }}>{r.name}</span>
-              {r.isBuyer ? <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: colors.navy, background: colors.gold, borderRadius: 999, padding: '2px 8px' }}>Buyer #{buyerNo(r.pw) ?? '—'}</span> : null}
-              <div style={{ flex: 1 }} />
-              {photoPens[r.pw.id] ? <IndicatorTag kind="photo" /> : null}
-              {noteByPwId[r.pw.id] ? <IndicatorTag kind="note" /> : null}
-              <StatusPill status={r.status} />
-            </div>
-
-            {/* meta — work type + the tap-to-see-animals head count */}
-            <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted }}>
-              {r.pw.workType?.name ?? 'Work'} · {r.worked > 0 ? (
-                <span role="button" tabIndex={0} aria-label="Show the animals worked" onClick={(e) => { e.stopPropagation(); setAnimalsFor(r.pw) }} style={{ color: colors.teal, fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 2, cursor: 'pointer' }}>{headText(r)}</span>
-              ) : headText(r)}
-            </div>
-
-            {/* Row 2 — actions */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {r.pw.pen?.id ? (
-                <StagedChip up={penUp(r.pw.pen.id)} busy={!!upBusy[r.pw.pen.id]} onToggle={() => toggleUp(r.pw.pen!.id)} />
-              ) : null}
-              {r.pw.pen?.id && bootstrap ? (
-                <SetDefaultChip hasDefaults={!!defaultsState[r.pw.pen.id]} onOpen={() => openDefaults(r.pw)} />
-              ) : null}
-              <div style={{ flex: 1 }} />
-              <span
-                role="button"
-                tabIndex={0}
-                aria-label={r.status === 'in_progress' ? 'Resume' : 'Open'}
-                onClick={(e) => { e.stopPropagation(); go(r.pw) }}
-                className={buttonClass(r.status === 'in_progress' ? 'outline' : 'primary', false, 'wl-rowaction')}
-                style={{ flexShrink: 0, height: 40, gap: 7, padding: '0 18px', borderRadius: 9, fontSize: 14, cursor: going ? 'default' : 'pointer', opacity: going ? 0.6 : 1 }}
-              >
-                {r.status === 'in_progress' ? 'Resume' : 'Open'} ›
-              </span>
-            </div>
+        sections.map((section) => (
+          <div key={section.key} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {section.label ? (
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, paddingTop: 2 }}>
+                <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: '0.02em', color: colors.navy }}>{section.label}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: colors.textMuted, fontVariantNumeric: 'tabular-nums' }}>{section.rows.length} {section.rows.length === 1 ? 'pen' : 'pens'}</span>
+              </div>
+            ) : null}
+            {section.rows.map((r) => renderCard(r))}
           </div>
         ))
       )}
