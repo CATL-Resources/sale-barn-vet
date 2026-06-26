@@ -28,7 +28,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
-- pen card detail — clear the iPhone notch, brighten the staged pill _(2026-06-26, `545f568`)_
+- migration — allow deleting pen-photos (add the missing delete policy) _(2026-06-26, `11f9b96`)_
 - a required field that's blank now blocks the save (not just EID) _(2026-06-25, `4afa527`)_
 - pen labels clip on the office Work Orders board _(2026-06-24, `d96cb4d`)_
 - duplicate-EID check must not fail silently on a query error _(2026-06-24, `2440e84`)_
@@ -46,7 +46,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Docs
 
-- regenerate changelog _(2026-06-26, `33567fb`)_
 - log the chute flow + sale day fixes and the test-data wipe _(2026-06-20, `6816a18`)_
 - update CHANGELOG for the Work Orders panel + row fixes _(2026-06-20, `e2359d9`)_
 - update CHANGELOG for the Work Orders fixes _(2026-06-20, `561afdb`)_
@@ -61,6 +60,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Pen card detail: clear the iPhone notch, brighten the staged pill _(2026-06-26, `4de7b50`)_
 - Pen list: group by pen or work type, and hide done jobs _(2026-06-26, `a381011`)_
 - make the "Saved" confirmation bigger and bolder _(2026-06-26, `1c01155`)_
 - Sale Dashboard: reachable only from the menu; keep phones off it _(2026-06-26, `4840b78`)_
