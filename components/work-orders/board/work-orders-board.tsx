@@ -104,9 +104,9 @@ export function WorkOrdersBoard({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
-      {/* Slim screen sub-header with the one back chevron (to the Sale Dashboard);
-          the shared app header above carries the barn name + wordmark. */}
-      <ScreenHeader title="Work Orders" subtitle={longDate(saleDay.sale_date)} back={<HeaderBack href={`/day/${saleDay.id}`} label="Back to Sale Dashboard" />} />
+      {/* Slim screen sub-header with the one back chevron (to Home); the shared
+          app header above carries the barn name + wordmark. */}
+      <ScreenHeader title="Work Orders" subtitle={longDate(saleDay.sale_date)} back={<HeaderBack href="/" label="Home" />} />
 
       <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 'var(--content-max)', width: '100%', margin: '0 auto' }}>
         {/* TOOLBAR — one line: search + a compact "+" to add a work order. The

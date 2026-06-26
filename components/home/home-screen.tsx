@@ -133,17 +133,8 @@ export function HomeScreen({
           <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <SectionLabel>Current Sale</SectionLabel>
             <div
-              role="button"
-              tabIndex={0}
-              onClick={() => router.push(`/day/${current.id}`)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  router.push(`/day/${current.id}`)
-                }
-              }}
-              className="sbv-navy-surface press-card"
-              style={{ borderRadius: 16, padding: 18, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 14 }}
+              className="sbv-navy-surface"
+              style={{ borderRadius: 16, padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}
             >
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                 <div style={{ minWidth: 0 }}>
@@ -211,7 +202,7 @@ export function HomeScreen({
                 return (
                   <Link
                     key={d.id}
-                    href={`/day/${d.id}`}
+                    href={`/work-orders/${d.id}`}
                     className="press-card"
                     style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 14, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, textDecoration: 'none', boxShadow: '0 1px 2px rgba(14,38,70,0.04)' }}
                   >
