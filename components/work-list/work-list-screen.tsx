@@ -384,7 +384,7 @@ export function WorkListScreen({
       <ScreenHeader
         title="Work List"
         subtitle={shortDate(saleDay.sale_date)}
-        back={<HeaderBack href={`/day/${saleDay.id}`} label="Back to Sale Dashboard" />}
+        back={<HeaderBack href="/" label="Home" />}
         right={
           <span style={{ fontSize: 13, fontWeight: 700, color: colors.gold, whiteSpace: 'nowrap', textAlign: 'right' }}>{toWork} {toWork === 1 ? 'pen' : 'pens'} · {headLeft} head left</span>
         }
