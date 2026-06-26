@@ -105,7 +105,13 @@ export default async function CapturePage({
   }
 
   return (
+    // Key the capture screen to the pen it's bound to, so opening a different pen
+    // fully re-mounts the capture state (and re-seeds with THAT pen's office
+    // defaults) instead of keeping the previous pen's stale batch and defaults. A
+    // chute-started batch (no bound pen) uses a stable key so it survives its own
+    // in-session work.
     <CaptureScreen
+      key={initialBatch ? `pw-${initialBatch.batch.penWorkId}` : 'new-batch'}
       bootstrap={bootstrap}
       userId={user?.id ?? null}
       initialBatch={initialBatch}
