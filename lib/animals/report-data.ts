@@ -14,16 +14,20 @@ const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '')
 // when it was never sorted), so every animal has an effective pen.
 export async function fetchAnimalRows(
   supabase: Client,
-  saleDayId: string,
+  // One sale day (the standalone Animals page) or several (the Reports hub scope
+  // — a single day, a date range, or all days). An empty list yields no rows.
+  saleDayId: string | string[],
   workTypes: Named[],
   animalTypes: Named[],
 ): Promise<{ rows: AnimalRow[]; hasSecondaryEid: boolean }> {
+  const saleDayIds = Array.isArray(saleDayId) ? saleDayId : [saleDayId]
+  if (saleDayIds.length === 0) return { rows: [], hasSecondaryEid: false }
   const { data: animals } = await supabase
     .from('animal')
     .select(
       'id, pen_work_id, animal_type_id, breed, color, age_value, age_designation, preg_status, preg_timing, fetal_sex, quick_notes, notes, pen, current_pen_id, created_at',
     )
-    .eq('sale_day_id', saleDayId)
+    .in('sale_day_id', saleDayIds)
     .is('deleted_at', null)
     .order('created_at', { ascending: true })
 

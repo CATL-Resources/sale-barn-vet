@@ -12,7 +12,7 @@ const FILE_TYPE = 'Animal Export'
 export type ExportMeta = {
   appVersion: string
   barnName: string
-  saleDay: string // YYYY-MM-DD
+  scope: string // the sale-day scope this file covers (one day, a range, or all)
   filtersSummary: string
   sortSummary: string
   groupingSummary: string
@@ -62,7 +62,7 @@ export async function exportXlsx(rows: AnimalRow[], columns: ColumnDef[], meta: 
     ['File type', FILE_TYPE],
     ['Created', created.toLocaleString()],
     ['Barn', meta.barnName],
-    ['Sale day', meta.saleDay],
+    ['Scope', meta.scope],
     ['Filters', meta.filtersSummary],
     ['Sort', meta.sortSummary],
     ['Grouping', meta.groupingSummary],

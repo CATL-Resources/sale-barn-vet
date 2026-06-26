@@ -99,8 +99,6 @@ export function OfficeShell({
   // only — drives the header status dot's color, no data of its own).
   const dayOpen = /open/i.test(saleLabel)
 
-  const groupLabel: React.CSSProperties = { fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.45)', padding: '0 16px', margin: '14px 0 4px' }
-
   return (
     <div className="office-shell">
       <aside className="office-sidebar" style={{ background: 'var(--surface-sidebar)', color: '#fff' }}>
@@ -117,11 +115,10 @@ export function OfficeShell({
           <NavItem href={day} icon="dashboard" label="Sale Dashboard" active={on('/day')} />
           <NavItem href={wo} icon="orders" label="Work Orders" active={on('/work-orders')} badge={openOrders} />
           <NavItem href={pl} icon="pens" label="Pen List" active={on('/work-list')} />
+          {/* One Reports item opens the hub (Billing, Animal Sale Summary,
+              Customer Report, Animals, Customers all live inside it) — no separate
+              Customers or Animals nav items. */}
           <NavItem href="/reports" icon="reports" label="Reports" active={on('/reports')} />
-
-          <div style={groupLabel}>RECORDS</div>
-          <NavItem href="/customers" icon="customers" label="Customers" active={on('/customers')} />
-          <NavItem href={`/animals/${currentSaleId}`} icon="animals" label="Animals" active={on('/animals')} />
         </nav>
 
         {/* push settings + user to the bottom on the tall fixed rail */}

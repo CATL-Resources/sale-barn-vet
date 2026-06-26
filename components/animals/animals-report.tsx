@@ -28,12 +28,24 @@ export function AnimalsReport({
   barnName,
   rows,
   hasSecondaryEid,
+  embedded = false,
+  search: externalSearch,
+  onSearch,
+  scopeText,
 }: {
   saleDayId: string
   saleDate: string
   barnName: string
   rows: AnimalRow[]
   hasSecondaryEid: boolean
+  // When embedded in the Reports hub, the hub owns the page header and the one
+  // shared search box, and supplies the sale-day scope (which can span days). In
+  // standalone mode (the /animals page) these are omitted and the report renders
+  // its own header and search box.
+  embedded?: boolean
+  search?: string
+  onSearch?: (v: string) => void
+  scopeText?: string
 }) {
   // Drop the Secondary EID column unless some animal actually has one.
   const columns = useMemo(
@@ -44,7 +56,10 @@ export function AnimalsReport({
 
   const [catFilters, setCatFilters] = useState<Record<string, string[]>>({})
   const [textFilters, setTextFilters] = useState<Record<string, string>>({})
-  const [search, setSearch] = useState('')
+  // The hub drives search when embedded; otherwise the report owns it.
+  const [internalSearch, setInternalSearch] = useState('')
+  const search = embedded ? externalSearch ?? '' : internalSearch
+  const setSearch = embedded ? onSearch ?? (() => {}) : setInternalSearch
   const [sort, setSort] = useState<{ key: ColKey; dir: 'asc' | 'desc' } | null>(null)
   const [groupBy, setGroupBy] = useState<ColKey[]>([])
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
@@ -182,13 +197,13 @@ export function AnimalsReport({
         {
           appVersion: APP_VERSION,
           barnName,
-          saleDay: saleDate,
+          scope: exportScope,
           filtersSummary: describeFilters(),
           sortSummary,
           groupingSummary,
           rowCount: exportRows.length,
         },
-        `animals-${slug(barnName)}-${saleDate}.xlsx`,
+        `animals-${slug(barnName)}-${slug(exportScope)}.xlsx`,
       )
       note(`Exported ${exportRows.length} row${exportRows.length === 1 ? '' : 's'}`)
     } catch {
@@ -234,31 +249,30 @@ export function AnimalsReport({
 
   const colCount = columns.length + 1 // + the checkbox column
 
-  return (
-    <>
-      <ScreenHeader
-        title="Animals"
-        subtitle={longDate(saleDate)}
-        back={<HeaderBack href={`/day/${saleDayId}`} label="Back to Sale Dashboard" />}
-        right={
-          <span style={{ fontSize: 13, fontWeight: 700, color: colors.gold, whiteSpace: 'nowrap' }}>
-            {headCount} {headCount === 1 ? 'animal' : 'animals'} · {headCount} head
-          </span>
-        }
-      />
+  // The export's scope label + filename: the hub's scope text when embedded, else
+  // the single sale day.
+  const exportScope = embedded ? scopeText ?? 'Scope' : saleDate
 
-      <div style={{ width: '100%', maxWidth: 'var(--content-max)', margin: '0 auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+  const content = (
+    <>
+      <div style={{ width: '100%', maxWidth: 'var(--content-max)', margin: '0 auto', padding: embedded ? 0 : 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
         {/* Toolbar */}
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
-          <div style={{ flex: '1 1 240px', maxWidth: 360, display: 'flex', alignItems: 'center', gap: 8, height: 40, background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 9, padding: '0 12px' }}>
-            <span aria-hidden style={{ color: colors.textPlaceholder, fontSize: 14 }}>⌕</span>
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search all columns"
-              style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 14, color: colors.textPrimary }}
-            />
-          </div>
+          {embedded ? (
+            <span style={{ fontSize: 14, fontWeight: 800, color: colors.navy, whiteSpace: 'nowrap' }}>
+              {headCount} {headCount === 1 ? 'animal' : 'animals'} · {headCount} head
+            </span>
+          ) : (
+            <div style={{ flex: '1 1 240px', maxWidth: 360, display: 'flex', alignItems: 'center', gap: 8, height: 40, background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 9, padding: '0 12px' }}>
+              <span aria-hidden style={{ color: colors.textPlaceholder, fontSize: 14 }}>⌕</span>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search all columns"
+                style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 14, color: colors.textPrimary }}
+              />
+            </div>
+          )}
 
           {/* Group by */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -367,6 +381,25 @@ export function AnimalsReport({
           </div>
         )}
       </div>
+    </>
+  )
+
+  // Embedded: the hub renders the page header and the shared search; just hand
+  // back the report body. Standalone: render the report's own screen header too.
+  if (embedded) return content
+  return (
+    <>
+      <ScreenHeader
+        title="Animals"
+        subtitle={longDate(saleDate)}
+        back={<HeaderBack href={`/day/${saleDayId}`} label="Back to Sale Dashboard" />}
+        right={
+          <span style={{ fontSize: 13, fontWeight: 700, color: colors.gold, whiteSpace: 'nowrap' }}>
+            {headCount} {headCount === 1 ? 'animal' : 'animals'} · {headCount} head
+          </span>
+        }
+      />
+      {content}
     </>
   )
 }
