@@ -268,8 +268,19 @@ export function PenWorkRow({
         ? [expander, ownerCell, workTypeCell, animalTypeCell, headCell, chargeCell, statusCell]
         : [expander, ownerCell, penCell, workTypeCell, headCell, chargeCell, statusCell]
 
+  // Narrow-screen card header: a solid navy band with a thin gold accent line on
+  // top of each pen-work card so the cards stand apart (see .wo-card / .wo-band in
+  // globals.css). Hidden on wide screens, where the desktop table is unchanged.
+  const penNumber = pw.pen?.pen_number?.trim()
+  const bandPen = penNumber ? `Pen ${penNumber}` : 'No pen'
+  const bandSub = pw.buyer?.name ?? pw.seller?.name ?? null
+
   return (
-    <>
+    <div className="wo-card">
+      <div className="wo-band" aria-hidden>
+        <span className="wo-band-pen">{bandPen}</span>
+        {bandSub && <span className="wo-band-sub">{bandSub}</span>}
+      </div>
       <div
         style={{
           display: 'grid',
@@ -294,6 +305,6 @@ export function PenWorkRow({
           onCommitCount={(field, value) => api.saveCountDetail(pw.id, field, value)}
         />
       )}
-    </>
+    </div>
   )
 }

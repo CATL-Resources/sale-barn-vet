@@ -732,3 +732,45 @@ button {
     display: inline-flex;
   }
 }
+
+/* ---- Work-orders board — per-pen-work card band (narrow screens) ----
+   On a narrow screen the pen-work rows read flat and don't stand apart. Give
+   each card a solid navy header band (#0E2646, the home-hero navy) with a thin
+   gold accent line (#F3D12A) directly beneath it, full width, so the cards
+   separate at a glance and match the rest of the office look. The band carries
+   the pen number (and the party name when there's room); the row below the line
+   is unchanged. Hidden on wide screens, where the desktop table stays exactly as
+   it was. */
+.wo-band {
+  display: none;
+}
+@media (max-width: 719px) {
+  .wo-card {
+    margin-top: 10px;
+    background: var(--white);
+  }
+  .wo-band {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    background: var(--navy);
+    border-bottom: 3px solid var(--gold);
+    padding: 9px 12px;
+  }
+  .wo-band-pen {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--white);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .wo-band-sub {
+    min-width: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--navy-sub);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
