@@ -45,12 +45,18 @@ export async function fetchPageData(
   return { saleDay, barn, workTypes: workTypes ?? [], animalTypes: animalTypes ?? [] }
 }
 
-/** Load all pen_works for a sale day with full joins. */
-export async function fetchPenWorks(supabase: Client, saleDayId: string): Promise<PenWorkFull[]> {
+/**
+ * Load pen_works with full joins for one sale day (the Work Orders board) or
+ * several (the Reports hub scope — a single day, a range, or all days). An empty
+ * list yields no rows.
+ */
+export async function fetchPenWorks(supabase: Client, saleDayId: string | string[]): Promise<PenWorkFull[]> {
+  const ids = Array.isArray(saleDayId) ? saleDayId : [saleDayId]
+  if (ids.length === 0) return []
   const { data, error } = await supabase
     .from('pen_work')
     .select(PEN_WORK_SELECT)
-    .eq('sale_day_id', saleDayId)
+    .in('sale_day_id', ids)
     .is('deleted_at', null)
     .order('created_at', { ascending: true })
     .returns<PenWorkFull[]>()

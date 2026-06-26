@@ -12,13 +12,15 @@ import { createClient } from '@/lib/supabase/client'
 import { fetchAnimalRows } from '@/lib/animals/report-data'
 import type { AnimalRow } from '@/lib/animals/types'
 import { AnimalsReport } from '@/components/animals/animals-report'
+import { fetchPenWorks } from '@/lib/work-orders/queries'
+import type { Barn, PenWorkFull } from '@/lib/work-orders/types'
 import { ScopeSelector } from './scope-selector'
+import { BillingView } from './billing-view'
 import {
   VIEW_ORDER,
   defaultScope,
   scopeDayIds,
   scopeLabel,
-  type BarnLite,
   type ReportScope,
   type ReportView,
   type SaleDayLite,
@@ -32,7 +34,7 @@ export function ReportsHub({
   workTypes,
   animalTypes,
 }: {
-  barn: BarnLite
+  barn: Barn
   saleDays: SaleDayLite[]
   workTypes: Named[]
   animalTypes: Named[]
@@ -48,23 +50,27 @@ export function ReportsHub({
 
   const [rows, setRows] = useState<AnimalRow[]>([])
   const [hasSecondaryEid, setHasSecondaryEid] = useState(false)
+  const [penWorks, setPenWorks] = useState<PenWorkFull[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Pull the animals for the current scope. Read-only; re-runs whenever the scope
-  // (the set of sale days) changes. An empty scope simply yields no rows.
+  // Pull the data for the current scope — animals (the Animals view) and the
+  // work-order lines (the money views). Read-only; re-runs whenever the scope
+  // (the set of sale days) changes. An empty scope simply yields nothing.
   useEffect(() => {
     let alive = true
     setLoading(true)
-    fetchAnimalRows(supabase, dayIds, workTypes, animalTypes)
-      .then((res) => {
+    Promise.all([fetchAnimalRows(supabase, dayIds, workTypes, animalTypes), fetchPenWorks(supabase, dayIds)])
+      .then(([animals, pws]) => {
         if (!alive) return
-        setRows(res.rows)
-        setHasSecondaryEid(res.hasSecondaryEid)
+        setRows(animals.rows)
+        setHasSecondaryEid(animals.hasSecondaryEid)
+        setPenWorks(pws)
       })
       .catch(() => {
         if (alive) {
           setRows([])
           setHasSecondaryEid(false)
+          setPenWorks([])
         }
       })
       .finally(() => {
@@ -142,6 +148,8 @@ export function ReportsHub({
             onSearch={setSearch}
             scopeText={label}
           />
+        ) : view === 'billing' ? (
+          <BillingView penWorks={penWorks} barn={barn} barnName={barn.name} search={search} scopeText={label} />
         ) : (
           <StubView label={VIEW_ORDER.find((v) => v.key === view)?.label ?? ''} />
         )}
