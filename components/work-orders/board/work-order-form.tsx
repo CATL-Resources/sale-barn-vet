@@ -241,7 +241,7 @@ export function WorkOrderForm({
                 <span style={{ width: 8, height: 8, borderRadius: 999, background: role === 'buyer' ? colors.navy : '#fff' }} />{role === 'buyer' ? 'Buyer' : 'Seller'}
               </button>
               {role === 'buyer' ? (
-                <input value={buyerNo} onChange={(e) => setBuyerNo(e.target.value.replace(/[^0-9]/g, ''))} inputMode="numeric" placeholder="Buyer #"
+                <input value={buyerNo} onChange={(e) => setBuyerNo(e.target.value)} inputMode="text" placeholder="Buyer #"
                   style={{ ...input, width: 124, fontWeight: 700, color: colors.navy }} />
               ) : null}
               <span style={{ fontSize: 12, fontWeight: 500, color: colors.textPlaceholder }}>Tap to switch seller / buyer</span>
