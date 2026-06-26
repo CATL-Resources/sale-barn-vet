@@ -4,7 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **reports:** Billing view — vet, sales tax, admin, SOL as separate buckets _(2026-06-26, `37de867`)_
+- **reports:** Customer Report + Animal Sale Summary, with per-customer drill-down _(2026-06-26, `b3142b4`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -60,6 +60,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Reports hub: Billing view — vet, sales tax, admin, SOL as separate buckets _(2026-06-26, `9a99842`)_
 - Reports hub: shell + scope/search/switcher + Animals view _(2026-06-26, `1d824e4`)_
 - Stronger save confirmation at the chute — big visual, beep, buzz _(2026-06-26, `0d055e5`)_
 - Buyer number field accepts letters and numbers (front-end only) _(2026-06-26, `66dc71a`)_

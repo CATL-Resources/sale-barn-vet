@@ -15,30 +15,12 @@
 
 import { useMemo, useState } from 'react'
 import { colors } from '@/components/ui/tokens'
-import { penWorkCharges, sumRollup, formatUsd } from '@/lib/work-orders/pricing'
+import { sumRollup, formatUsd } from '@/lib/work-orders/pricing'
 import type { Barn, PenWorkFull } from '@/lib/work-orders/types'
+import { lineBuckets, type LineBuckets } from '@/lib/reports/billing'
 import { copyTsv, exportXlsx, type ExportColumn, type ExportRow } from '@/lib/reports/export'
 
 const slug = (s: string) => s.replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'barn'
-
-// One pen_work's billing buckets, derived from the canonical charge function.
-function lineBuckets(pw: PenWorkFull, barn: Barn) {
-  const c = penWorkCharges(pw, barn) // { vetTotal, adminTotal, solTotal, lineCharge, headWorked }
-  const taxRate = pw.frozen_tax_rate ?? barn.sales_tax_rate
-  const preTaxVet = taxRate ? c.vetTotal / (1 + taxRate) : c.vetTotal
-  const salesTax = c.vetTotal - preTaxVet
-  return {
-    head: c.headWorked,
-    vet: preTaxVet,
-    tax: salesTax,
-    admin: c.adminTotal,
-    sol: c.solTotal,
-    subtotal: preTaxVet + c.adminTotal + c.solTotal,
-    total: c.lineCharge,
-    // The charge object for sumRollup (totals reconcile exactly with the lines).
-    charge: c,
-  }
-}
 
 const BUCKET_COLS: ExportColumn[] = [
   { key: 'customer', label: 'Customer / Work', kind: 'text' },
@@ -86,7 +68,7 @@ export function BillingView({
   const { customers, byWorkType, totals } = useMemo(() => {
     const byCustomer = new Map<string, CustomerRow>()
     const wt = new Map<string, { workType: string; charges: number; head: number; billed: number }>()
-    const charges: ReturnType<typeof penWorkCharges>[] = []
+    const charges: LineBuckets['charge'][] = []
 
     for (const pw of penWorks) {
       const b = lineBuckets(pw, barn)
