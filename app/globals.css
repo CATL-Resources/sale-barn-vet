@@ -15,6 +15,17 @@
   --navy-sub: #8fa8cc;
   --drawer-selected: #f3f6fb;
   --navy-gradient: linear-gradient(150deg, #1d4a7c 0%, #12325c 45%, #0e2646 100%);
+  /* Sale Dashboard (desktop office shell) surface + stat-card gradients. Defined
+     once here because they're 3-stop / radial and shouldn't be pasted inline.
+     Source of truth: docs/design/Sale_Barn_Vet_Office_Desktop.html. */
+  --surface-sidebar: linear-gradient(180deg, #143056 0%, #0e2646 65%);
+  --surface-header: linear-gradient(90deg, #122b50 0%, #0e2646 60%);
+  --surface-feature: linear-gradient(150deg, #1d4a7c 0%, #12325c 48%, #0e2646 100%);
+  --stat-worked: linear-gradient(145deg, #0a1739, #0e7c86);
+  --stat-towork: linear-gradient(145deg, #0e2646 0%, #0e7c86 55%, #f3d12a 100%);
+  --stat-pens: radial-gradient(120% 120% at 50% 40%, #19b6ae 0%, #0e7c86 40%, #112a45 100%);
+  --stat-orders: linear-gradient(145deg, #1a347e, #0e1f4d);
+  --stat-billed: linear-gradient(145deg, #e0922e, #c06814);
   --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
   /* One content max width for the app shell (the shared container uses it in step 1b). */
   --content-max: 1200px;
@@ -789,9 +800,8 @@ button {
   gap: 14px;
   min-height: 56px;
   padding: 0 22px;
-  border-bottom: 1px solid var(--border);
-  background: rgba(245, 245, 240, 0.92);
-  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface-header);
 }
 .office-content {
   flex: 1;

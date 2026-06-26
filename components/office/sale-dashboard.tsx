@@ -35,28 +35,40 @@ const card: React.CSSProperties = {
   borderRadius: 14,
   boxShadow: '0 1px 2px rgba(14,38,70,0.04)',
 }
+// The dark, glossy feature surface used for the hero band and the Jump In cards.
+const featureCard: React.CSSProperties = {
+  background: 'var(--surface-feature)',
+  borderRadius: 18,
+  padding: 20,
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.07), 0 12px 30px rgba(0,0,0,0.18)',
+}
 const cardTitle: React.CSSProperties = { fontSize: 14, fontWeight: 800, color: colors.navy, letterSpacing: '-0.01em' }
 const microLabel: React.CSSProperties = { fontSize: 11, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: colors.textMuted }
 
-function Tile({ label, value, sub }: { label: string; value: string; sub?: string }) {
+// One stat in the hero band: a gradient card with a white number. The label and
+// sub colors are passed per card (they're tuned to each gradient). The "To work"
+// card is the dominant one — it spans two columns and prints a bigger number.
+function StatCard({ grad, label, value, sub, labelColor, subColor, dominant }: { grad: string; label: string; value: string; sub?: string; labelColor: string; subColor: string; dominant?: boolean }) {
   return (
-    <div style={{ ...card, padding: '14px 16px' }}>
-      <div style={microLabel}>{label}</div>
-      <div style={{ fontSize: 26, fontWeight: 800, color: colors.navy, letterSpacing: '-0.02em', marginTop: 4, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
-      {sub ? <div style={{ fontSize: 12, fontWeight: 600, color: colors.textMuted, marginTop: 2 }}>{sub}</div> : null}
+    <div style={{ background: grad, borderRadius: 14, padding: dominant ? '16px 18px' : '14px 16px', border: '1px solid rgba(255,255,255,0.08)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10)', display: 'flex', flexDirection: 'column', gap: 4, minWidth: 0, gridColumn: dominant ? 'span 2' : undefined }}>
+      <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: labelColor }}>{label}</div>
+      <div style={{ fontSize: dominant ? 40 : 26, fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.02em', marginTop: 2, lineHeight: 1, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
+      {sub ? <div style={{ fontSize: 12, fontWeight: 700, color: subColor, marginTop: 2 }}>{sub}</div> : null}
     </div>
   )
 }
 
 function JumpCard({ href, title, summary, count }: { href: string; title: string; summary: string; count: string }) {
   return (
-    <Link href={href} style={{ ...card, padding: '16px', textDecoration: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
+    <Link href={href} style={{ ...featureCard, padding: 18, textDecoration: 'none', display: 'flex', flexDirection: 'column', gap: 7, color: '#fff' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-        <span style={cardTitle}>{title}</span>
-        <span style={{ color: colors.gold, fontWeight: 800, fontSize: 16 }}>›</span>
+        <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', letterSpacing: '-0.01em' }}>{title}</span>
+        <span style={{ color: colors.gold, fontWeight: 800, fontSize: 18 }}>›</span>
       </div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted, lineHeight: 1.35 }}>{summary}</div>
-      <div style={{ fontSize: 13, fontWeight: 800, color: colors.teal, marginTop: 2 }}>{count}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: '#C7D4EA', lineHeight: 1.35 }}>{summary}</div>
+      <div>
+        <span style={{ display: 'inline-flex', alignItems: 'center', marginTop: 2, fontSize: 12, fontWeight: 800, color: colors.teal, background: 'rgba(85,186,170,0.16)', border: '1px solid rgba(85,186,170,0.42)', borderRadius: 999, padding: '3px 10px' }}>{count}</span>
+      </div>
     </Link>
   )
 }
@@ -115,13 +127,16 @@ export function SaleDashboard({
         </div>
       </div>
 
-      {/* Tile strip */}
-      <div className="office-tiles">
-        <Tile label="Head Worked" value={`${metrics.headWorked} / ${metrics.headExpected}`} sub="worked of expected" />
-        <Tile label="To Work" value={String(metrics.toWork)} sub="head left" />
-        <Tile label="Pens In Use" value={String(metrics.pensInUse)} />
-        <Tile label="Work Orders" value={String(metrics.orders)} sub={`${metrics.openOrders} open`} />
-        <Tile label="Billed · office so far" value={formatUsd(billed)} sub="live preview" />
+      {/* Hero band — the five live stats in one feature card, "To work" dominant.
+          The values are unchanged; only the presentation is. */}
+      <div style={featureCard}>
+        <div className="office-tiles">
+          <StatCard grad="var(--stat-worked)" label="Head Worked" value={`${metrics.headWorked} / ${metrics.headExpected}`} sub="worked of expected" labelColor="#9FB4D4" subColor="#7FD3C6" />
+          <StatCard grad="var(--stat-towork)" label="To Work" value={String(metrics.toWork)} sub="head left" labelColor="#C7D4EA" subColor="#7FD3C6" dominant />
+          <StatCard grad="var(--stat-pens)" label="Pens In Use" value={String(metrics.pensInUse)} labelColor="#BDE7E0" subColor="#7FD3C6" />
+          <StatCard grad="var(--stat-orders)" label="Work Orders" value={String(metrics.orders)} sub={`${metrics.openOrders} open`} labelColor="#9FB4D4" subColor="#7FD3C6" />
+          <StatCard grad="var(--stat-billed)" label="Billed · office so far" value={formatUsd(billed)} sub="live preview" labelColor="#FBE7C8" subColor="#FFF1DC" />
+        </div>
       </div>
 
       {/* Jump In */}
@@ -177,20 +192,20 @@ export function SaleDashboard({
         </div>
       </div>
 
-      {/* Consignments — placeholder, no data model yet */}
-      <div style={{ ...card, padding: 16, borderStyle: 'dashed', background: '#FBFBFA' }}>
+      {/* Consignments strip — the white panel + gold action match the design.
+          There's no consignment data model yet, so the action stays disabled and
+          there are no cards to list. */}
+      <div style={{ ...card, padding: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={cardTitle}>Consignments</span>
-              <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: colors.textMuted, background: colors.cardHeader, border: `1px solid ${colors.cardHeaderBorder}`, borderRadius: 999, padding: '2px 9px' }}>Coming soon</span>
-            </div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted, marginTop: 4 }}>Track consignments per sale. Not built yet — nothing to show.</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={cardTitle}>Consignments</span>
+            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: colors.textMuted, background: colors.cardHeader, border: `1px solid ${colors.cardHeaderBorder}`, borderRadius: 999, padding: '2px 9px' }}>Coming soon</span>
           </div>
-          <button type="button" disabled aria-disabled="true" title="Coming soon" style={{ height: 38, padding: '0 16px', borderRadius: 9, border: `1px solid ${colors.border}`, background: '#F1F1ED', color: colors.textPlaceholder, fontSize: 13, fontWeight: 800, cursor: 'not-allowed' }}>
+          <button type="button" disabled aria-disabled="true" title="Coming soon — needs a consignment record first" style={{ height: 38, padding: '0 16px', borderRadius: 9, border: 'none', background: colors.gold, color: colors.navy, fontSize: 13, fontWeight: 800, cursor: 'not-allowed', opacity: 0.55 }}>
             + Add Consignment
           </button>
         </div>
+        <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted, marginTop: 10 }}>Track consignments per sale. Not built yet — nothing to show.</div>
       </div>
     </div>
   )
