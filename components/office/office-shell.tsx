@@ -115,7 +115,7 @@ export function OfficeShell({
 
           <div style={groupLabel}>RECORDS</div>
           <NavItem href="/customers" icon="customers" label="Customers" active={on('/customers')} />
-          <NavItem href="/find" icon="animals" label="Animals" active={on('/find')} />
+          <NavItem href={`/animals/${currentSaleId}`} icon="animals" label="Animals" active={on('/animals')} />
         </nav>
 
         {/* push settings + user to the bottom on the tall fixed rail */}
