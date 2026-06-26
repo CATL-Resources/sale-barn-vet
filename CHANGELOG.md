@@ -4,7 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- reach the Sale Dashboard only from the menu, keep phones off it _(2026-06-26, `4eb8d66`)_
+- pen list — group by pen or work type, and hide done jobs _(2026-06-26, `d7ecf61`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -60,6 +60,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Sale Dashboard: reachable only from the menu; keep phones off it _(2026-06-26, `4840b78`)_
 - Pen list: sync staged, notes, photos & defaults across devices _(2026-06-26, `a4bfa4c`)_
 - Pen photos: shrink before upload (fix iPhone), add delete _(2026-06-26, `c434c7e`)_
 - Pen card: drop the border box, shift off the clipped edges, bigger HEAD number _(2026-06-26, `68814dd`)_
