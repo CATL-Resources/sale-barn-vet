@@ -23,10 +23,12 @@ import {
   type IdentifierInput,
   type IdType,
 } from '@/lib/capture/save-animal'
+import { useOnScreenKeyboard } from '@/lib/capture/use-onscreen-keyboard'
 import { AnimalAttributes } from './animal-attributes'
+import { OnScreenKeyboard } from './onscreen-keyboard'
 import { FlagBanner, FLAG_RED, FLAG_RED_BG, FieldFlagLabel } from './flag'
 import { BottomSheet, SheetHeader } from './sheets'
-import { AlertIcon } from './icons'
+import { AlertIcon, KeyboardIcon } from './icons'
 import { RequiredMark } from '@/components/ui/required-mark'
 
 export type EditTarget = { mode: 'add' } | { mode: 'edit'; animal: CapturedAnimal }
@@ -82,6 +84,12 @@ export function AnimalEditSheet({
   const [confirmRemove, setConfirmRemove] = useState(false)
 
   const patch = (p: Partial<AnimalDraft>) => setDraft((d) => ({ ...d, ...p }))
+
+  // The app's own on-screen keyboard — same one the chute capture loop uses. A
+  // paired EID wand is a Bluetooth keyboard, so iOS hides its soft keyboard;
+  // without this there's no way to type a note or tag in the edit sheet. It types
+  // into whichever field below has focus (the EID/tag inputs and the note).
+  const kbd = useOnScreenKeyboard()
 
   useEffect(() => {
     if (!batch) return
@@ -219,6 +227,7 @@ export function AnimalEditSheet({
     value: string,
     onChange: (v: string) => void,
     placeholder: string,
+    bindKey: string,
     opts?: { flagged?: boolean },
   ) => (
     <div
@@ -239,6 +248,7 @@ export function AnimalEditSheet({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
+        {...kbd.bind(bindKey, value, onChange)}
         style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, color: opts?.flagged ? FLAG_RED : '#1A1A1A', fontVariantNumeric: 'tabular-nums' }}
       />
       {opts?.flagged && <FieldFlagLabel text="DUPLICATE" />}
@@ -311,44 +321,59 @@ export function AnimalEditSheet({
           {shows('eid') && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {labelCol('EID', eidRequired && !isEid15)}
-              {idInput(draft.eid, (v) => { setFlag(null); patch({ eid: v }); void guardEid(v) }, 'Scan or type EID', { flagged: !!flag })}
+              {idInput(draft.eid, (v) => { setFlag(null); patch({ eid: v }); void guardEid(v) }, 'Scan or type EID', 'eid', { flagged: !!flag })}
             </div>
           )}
           {shows('eid') && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {labelCol('2nd EID')}
-              {idInput(draft.eid2, (v) => patch({ eid2: v }), 'Optional · 900-series')}
+              {idInput(draft.eid2, (v) => patch({ eid2: v }), 'Optional · 900-series', 'eid2')}
             </div>
           )}
           {TAG_FIELDS.filter((t) => shows(t.fieldKey)).map((t) => (
             <div key={t.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {labelCol(t.label, required(t.fieldKey) && !draft[t.key].trim())}
-              {idInput(draft[t.key], (v) => patch({ [t.key]: v } as Partial<AnimalDraft>), `Type the ${t.label.toLowerCase()}`)}
+              {idInput(draft[t.key], (v) => patch({ [t.key]: v } as Partial<AnimalDraft>), `Type the ${t.label.toLowerCase()}`, t.key)}
             </div>
           ))}
         </div>
 
-        {/* shared attribute fields (config-driven) */}
+        {/* shared attribute fields (config-driven) — the note binds to the same
+            app keyboard so it can be typed with a wand paired. */}
         <AnimalAttributes
           bootstrap={bootstrap}
           resolved={resolved}
           draft={draft}
           patch={patch}
+          bindKeyboard={kbd.bind}
         />
 
         {err && <div style={{ fontSize: 13, fontWeight: 700, color: FLAG_RED }}>{err}</div>}
       </div>
 
-      <div style={{ flexShrink: 0, background: '#FFFFFF', borderTop: '1px solid #E4E4DE', padding: '12px 16px 20px' }}>
+      <div style={{ flexShrink: 0, background: '#FFFFFF', borderTop: '1px solid #E4E4DE', padding: kbd.open ? '12px 16px' : '12px 16px 20px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <button
+          type="button"
+          onClick={kbd.toggle}
+          aria-label={kbd.open ? 'Hide on-screen keyboard' : 'Show on-screen keyboard'}
+          aria-pressed={kbd.open}
+          style={{ flexShrink: 0, width: 54, height: 54, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 13, background: kbd.open ? '#0E2646' : '#F5F5F0', border: `1px solid ${kbd.open ? '#0E2646' : '#D4D4D0'}`, cursor: 'pointer' }}
+        >
+          <KeyboardIcon size={24} color={kbd.open ? '#FFFFFF' : '#0E2646'} sw={1.9} />
+        </button>
         <button
           type="button"
           disabled={saving}
           onClick={() => void save()}
-          style={{ width: '100%', height: 54, borderRadius: 13, background: '#F3D12A', color: '#0E2646', border: 'none', fontFamily: 'inherit', fontSize: 17, fontWeight: 800, letterSpacing: '-0.01em', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1 }}
+          style={{ flex: 1, height: 54, borderRadius: 13, background: '#F3D12A', color: '#0E2646', border: 'none', fontFamily: 'inherit', fontSize: 17, fontWeight: 800, letterSpacing: '-0.01em', cursor: saving ? 'default' : 'pointer', opacity: saving ? 0.7 : 1 }}
         >
           {saving ? 'Saving…' : 'Save'}
         </button>
       </div>
+
+      {kbd.open && (
+        <OnScreenKeyboard onInsert={kbd.insert} onBackspace={kbd.backspace} onDone={kbd.dismiss} />
+      )}
     </BottomSheet>
   )
 }
