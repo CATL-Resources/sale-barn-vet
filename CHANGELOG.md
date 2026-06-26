@@ -4,7 +4,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- pen list — group by pen or work type, and hide done jobs _(2026-06-26, `d7ecf61`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -29,6 +28,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
+- pen card detail — clear the iPhone notch, brighten the staged pill _(2026-06-26, `545f568`)_
 - a required field that's blank now blocks the save (not just EID) _(2026-06-25, `4afa527`)_
 - pen labels clip on the office Work Orders board _(2026-06-24, `d96cb4d`)_
 - duplicate-EID check must not fail silently on a query error _(2026-06-24, `2440e84`)_
@@ -46,7 +46,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Docs
 
-- regenerate changelog _(2026-06-26, `863af22`)_
+- regenerate changelog _(2026-06-26, `33567fb`)_
 - log the chute flow + sale day fixes and the test-data wipe _(2026-06-20, `6816a18`)_
 - update CHANGELOG for the Work Orders panel + row fixes _(2026-06-20, `e2359d9`)_
 - update CHANGELOG for the Work Orders fixes _(2026-06-20, `561afdb`)_
@@ -61,6 +61,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Pen list: group by pen or work type, and hide done jobs _(2026-06-26, `a381011`)_
 - make the "Saved" confirmation bigger and bolder _(2026-06-26, `1c01155`)_
 - Sale Dashboard: reachable only from the menu; keep phones off it _(2026-06-26, `4840b78`)_
 - Pen list: sync staged, notes, photos & defaults across devices _(2026-06-26, `a4bfa4c`)_
