@@ -28,7 +28,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
-- pen capture defaults never carry to another pen _(2026-06-26, `f522176`)_
+- add the app on-screen keyboard to the animal edit sheet _(2026-06-26, `e3baa1c`)_
 - a required field that's blank now blocks the save (not just EID) _(2026-06-25, `4afa527`)_
 - pen labels clip on the office Work Orders board _(2026-06-24, `d96cb4d`)_
 - duplicate-EID check must not fail silently on a query error _(2026-06-24, `2440e84`)_
@@ -46,6 +46,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Docs
 
+- regenerate changelog _(2026-06-26, `126512e`)_
 - log the chute flow + sale day fixes and the test-data wipe _(2026-06-20, `6816a18`)_
 - update CHANGELOG for the Work Orders panel + row fixes _(2026-06-20, `e2359d9`)_
 - update CHANGELOG for the Work Orders fixes _(2026-06-20, `561afdb`)_
@@ -60,6 +61,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Capture defaults must never carry to another pen _(2026-06-26, `d92834e`)_
 - Pen card detail: clear the iPhone notch, brighten the staged pill _(2026-06-26, `4de7b50`)_
 - Pen list: group by pen or work type, and hide done jobs _(2026-06-26, `a381011`)_
 - make the "Saved" confirmation bigger and bolder _(2026-06-26, `1c01155`)_
