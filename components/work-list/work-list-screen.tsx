@@ -213,15 +213,25 @@ export function WorkListScreen({
 
   const supabase = useMemo(() => createClient(), [])
   // Which jobs have at least one saved photo, and which have a note — so the card
-  // can show its small indicator icons. Photos are read once on mount by listing
-  // the barn's folder in the pen-photos bucket (each pen_work with photos shows up
-  // as a sub-folder). Notes seed from the loaded rows. Both update in place when a
-  // photo or note is added from the popup, so the card's icons appear right away.
+  // can show its small indicator icons. The photo set is read by listing the
+  // barn's folder in the pen-photos bucket (each pen_work with photos shows up as
+  // a sub-folder); notes seed from the loaded rows. Both update in place when a
+  // photo or note is added from the popup so the icons appear right away, and both
+  // re-sync on every server refresh (below) so a change made on another device
+  // shows up here without a manual reload.
   const [photoPens, setPhotoPens] = useState<Record<string, boolean>>({})
   const [noteByPwId, setNoteByPwId] = useState<Record<string, string | null>>(
     () => Object.fromEntries(penWorks.map((pw) => [pw.id, pw.notes])),
   )
 
+  // The latest in-flight "Staged" pens, held in a ref so the reconcile effect can
+  // read it without re-running each time a save starts or finishes.
+  const upBusyRef = useRef(upBusy)
+  upBusyRef.current = upBusy
+
+  // List the barn's photo folders so the camera icons are right. Re-runs whenever
+  // the server data refreshes (penWorks gets a fresh reference), so a photo added
+  // on another device lights up the icon here too.
   useEffect(() => {
     let alive = true
     supabase.storage
@@ -235,7 +245,52 @@ export function WorkListScreen({
         setPhotoPens(next)
       })
     return () => { alive = false }
-  }, [supabase, barn.id])
+  }, [supabase, barn.id, penWorks])
+
+  // Pull fresh server data on a timer and whenever the tab/app comes back to the
+  // foreground, so staged markers, notes, defaults and photo icons changed on other
+  // devices appear without anyone logging out and back in. router.refresh() re-runs
+  // the page's server fetch and hands this component new props; the effects below
+  // fold those props into the local optimistic state.
+  useEffect(() => {
+    const refresh = () => router.refresh()
+    const onVisible = () => { if (document.visibilityState === 'visible') refresh() }
+    const id = window.setInterval(() => {
+      if (document.visibilityState === 'visible') refresh()
+    }, 20000)
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      window.clearInterval(id)
+      window.removeEventListener('focus', refresh)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
+  }, [router])
+
+  // Re-seed the "Staged" markers from the server whenever fresh data arrives.
+  // upByPenId only lists staged pens, so rebuilding from it also clears a pen that
+  // was un-staged on another device. We keep the local value for any pen whose own
+  // save is still in flight, so a refresh never reverts a tap mid-save.
+  useEffect(() => {
+    setUpState((prev) => {
+      const busy = upBusyRef.current
+      const next: Record<string, boolean> = { ...upByPenId }
+      for (const penId of Object.keys(busy)) {
+        if (busy[penId]) next[penId] = !!prev[penId]
+      }
+      return next
+    })
+  }, [upByPenId])
+
+  // Re-seed notes and per-pen defaults from the server on every refresh, so edits
+  // made on another device show here too.
+  useEffect(() => {
+    setNoteByPwId(Object.fromEntries(penWorks.map((pw) => [pw.id, pw.notes])))
+  }, [penWorks])
+
+  useEffect(() => {
+    setDefaultsState(defaultsByPenId)
+  }, [defaultsByPenId])
 
   const penUp = (penId: string | null | undefined) => !!(penId && upState[penId])
 

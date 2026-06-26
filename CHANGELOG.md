@@ -4,7 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- pen photos — shrink before upload, add delete _(2026-06-26, `fb85bca`)_
+- pen list — sync staged, notes, photos and defaults across devices _(2026-06-26, `17a2d14`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -60,6 +60,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Pen photos: shrink before upload (fix iPhone), add delete _(2026-06-26, `c434c7e`)_
 - Pen card: drop the border box, shift off the clipped edges, bigger HEAD number _(2026-06-26, `68814dd`)_
 - Office desktop shell + Sale Dashboard screen _(2026-06-25, `ca34cb0`)_
 - Pen card: print on the 30323 portrait feed, rotate the label to landscape _(2026-06-25, `c0c125d`)_
