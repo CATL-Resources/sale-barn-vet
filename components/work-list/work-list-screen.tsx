@@ -41,18 +41,32 @@ function buyerNo(pw: PenWorkFull): string | null {
   return pw.buyer_number_text?.trim() || pw.buyerNumber?.number?.trim() || null
 }
 
-// Small read-only marks on a card: a camera when the job has any photo, a flag
-// when it has a note. They're indicators only — there's no add/view control on
-// the card. Tapping anywhere on the card (these included) opens the job popup,
-// which is the one place photos and notes are added and viewed.
-function IndicatorTag({ kind }: { kind: 'photo' | 'note' }) {
+// A little printer outline for the "label printed" mark.
+function PrinterIcon({ color, size = 14 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden style={{ flexShrink: 0 }}>
+      <path d="M6 9V3h12v6" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+      <rect x="3" y="9" width="18" height="8" rx="2" stroke={color} strokeWidth={2} />
+      <path d="M7 15h10v6H7z" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// Small read-only marks on a card: a teal camera when the job has any photo, a
+// teal flag when it has a note, and a muted printer once its pen card label has
+// been printed (so the cards WITHOUT it are the new, unprinted ones). They're
+// indicators only — tapping anywhere on the card opens the job popup.
+const INDICATOR_LABEL = { photo: 'Has a photo', note: 'Has a note', printed: 'Label printed' } as const
+function IndicatorTag({ kind }: { kind: 'photo' | 'note' | 'printed' }) {
+  const printed = kind === 'printed'
+  const tint = printed ? colors.textMuted : colors.teal
   return (
     <span
-      aria-label={kind === 'photo' ? 'Has a photo' : 'Has a note'}
-      title={kind === 'photo' ? 'Has a photo' : 'Has a note'}
-      style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 8, background: colors.tealPillBg, border: `1px solid ${colors.teal}`, color: colors.teal }}
+      aria-label={INDICATOR_LABEL[kind]}
+      title={INDICATOR_LABEL[kind]}
+      style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 8, background: printed ? '#F3F3F0' : colors.tealPillBg, border: `1px solid ${printed ? colors.border : colors.teal}`, color: tint }}
     >
-      {kind === 'photo' ? <CameraIcon size={14} /> : <FlagIcon size={13} strokeWidth={2.4} style={{ color: colors.teal }} />}
+      {kind === 'photo' ? <CameraIcon size={14} /> : kind === 'note' ? <FlagIcon size={13} strokeWidth={2.4} style={{ color: colors.teal }} /> : <PrinterIcon size={14} color={tint} />}
     </span>
   )
 }
@@ -436,6 +450,7 @@ export function WorkListScreen({
         <div style={{ flex: 1 }} />
         {photoPens[r.pw.id] ? <IndicatorTag kind="photo" /> : null}
         {noteByPwId[r.pw.id] ? <IndicatorTag kind="note" /> : null}
+        {r.pw.label_printed_at ? <IndicatorTag kind="printed" /> : null}
         <StatusPill status={r.status} />
       </div>
 

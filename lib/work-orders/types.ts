@@ -14,6 +14,10 @@ export type Barn = Tables['barn']['Row']
 
 /** A pen_work with all related rows joined in. */
 export type PenWorkFull = PenWork & {
+  // When the pen card label was last printed (or null if never). Added by a
+  // migration; declared here because the generated row type hasn't been
+  // regenerated yet. The fetch selects '*', so the value is present at runtime.
+  label_printed_at: string | null
   seller: Pick<Party, 'id' | 'name' | 'customer_number'> | null
   buyer: Pick<Party, 'id' | 'name' | 'customer_number'> | null
   buyerNumber: Pick<BuyerNumber, 'id' | 'number' | 'typical_destination' | 'typical_state'> | null
