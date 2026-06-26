@@ -420,6 +420,7 @@ export function WorkListScreen({
           note={noteByPwId[selected.id] ?? null}
           onNoteSaved={(v) => setNoteByPwId((m) => ({ ...m, [selected.id]: v }))}
           onPhotoAdded={() => setPhotoPens((m) => ({ ...m, [selected.id]: true }))}
+          onPhotoCountChanged={(n) => setPhotoPens((m) => ({ ...m, [selected.id]: n > 0 }))}
           onBack={() => setSelected(null)}
           onStart={() => go(selected)}
           going={going}
@@ -532,11 +533,80 @@ function DetailRow({ label, value, last }: { label: string; value: string; last?
   )
 }
 
+// A saved photo: the signed URL to show it and the storage path to delete it.
+type Photo = { url: string; path: string }
+
+// Shrink a picked image to a JPEG before upload. We cap the longest edge at
+// ~1600px and re-encode at ~0.8 quality. This keeps the file small so uploads
+// don't stall on a phone in the yard, and — important on iPhones — it turns a
+// HEIC photo into a JPEG so it both uploads and displays everywhere. Returns the
+// JPEG blob, or null when the browser can't read the image (the caller then
+// uploads the original file so a picture is never lost).
+const PHOTO_MAX_EDGE = 1600
+const PHOTO_QUALITY = 0.8
+
+// Read the image into something we can draw, trying the fast path first and
+// falling back to loading it through an object URL.
+async function decodeImage(
+  file: File,
+): Promise<{ width: number; height: number; draw: (ctx: CanvasRenderingContext2D, w: number, h: number) => void; cleanup: () => void } | null> {
+  try {
+    const bitmap = await createImageBitmap(file)
+    return {
+      width: bitmap.width,
+      height: bitmap.height,
+      draw: (ctx, w, h) => ctx.drawImage(bitmap, 0, 0, w, h),
+      cleanup: () => bitmap.close(),
+    }
+  } catch {
+    try {
+      const url = URL.createObjectURL(file)
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new Image()
+        el.onload = () => resolve(el)
+        el.onerror = () => reject(new Error('decode failed'))
+        el.src = url
+      })
+      return {
+        width: img.naturalWidth,
+        height: img.naturalHeight,
+        draw: (ctx, w, h) => ctx.drawImage(img, 0, 0, w, h),
+        cleanup: () => URL.revokeObjectURL(url),
+      }
+    } catch {
+      return null
+    }
+  }
+}
+
+async function shrinkToJpeg(file: File): Promise<Blob | null> {
+  const decoded = await decodeImage(file)
+  if (!decoded) return null
+  try {
+    const { width, height } = decoded
+    if (!width || !height) return null
+    const scale = Math.min(1, PHOTO_MAX_EDGE / Math.max(width, height))
+    const w = Math.max(1, Math.round(width * scale))
+    const h = Math.max(1, Math.round(height * scale))
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+    decoded.draw(ctx, w, h)
+    return await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', PHOTO_QUALITY))
+  } catch {
+    return null
+  } finally {
+    decoded.cleanup()
+  }
+}
+
 // The job popup. Top half is the work-order summary (who, what, which pen, how
 // many head). Below it sit the two add controls and the saved photos + note —
 // this popup is the single place a job's photos and note are added and viewed.
 function Detail({
-  pw, worked, products, supabase, barnId, note, onNoteSaved, onPhotoAdded, onBack, onStart, going,
+  pw, worked, products, supabase, barnId, note, onNoteSaved, onPhotoAdded, onPhotoCountChanged, onBack, onStart, going,
 }: {
   pw: PenWorkFull
   worked: number
@@ -546,6 +616,7 @@ function Detail({
   note: string | null
   onNoteSaved: (note: string | null) => void
   onPhotoAdded: () => void
+  onPhotoCountChanged: (count: number) => void
   onBack: () => void
   onStart: () => void
   going: boolean
@@ -563,49 +634,83 @@ function Detail({
   const mounted = useRef(true)
   useEffect(() => () => { mounted.current = false }, [])
 
-  // Photos for this job, signed for display (the bucket is private). Loaded on
-  // open and again right after an upload so a new picture shows without a reload.
-  const [photoUrls, setPhotoUrls] = useState<string[]>([])
+  // Photos for this job, signed for display (the bucket is private). We keep each
+  // photo's storage path alongside its URL so the current one can be deleted.
+  // Loaded on open and again right after an upload or delete so the carousel
+  // stays in step without a reload.
+  const [photos, setPhotos] = useState<Photo[]>([])
   const [photoLoading, setPhotoLoading] = useState(true)
   const [photoFailed, setPhotoFailed] = useState(false)
   const [photoIdx, setPhotoIdx] = useState(0)
   const [uploading, setUploading] = useState(false)
   const [uploadFailed, setUploadFailed] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteFailed, setDeleteFailed] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const loadPhotos = useCallback(async () => {
+  // List this job's photos and sign them. Returns how many there are so callers
+  // (add / delete) can clamp the carousel and tell the parent the new count.
+  const loadPhotos = useCallback(async (): Promise<number> => {
     setPhotoFailed(false)
     const { data, error } = await supabase.storage
       .from('pen-photos')
       .list(`${barnId}/${pw.id}`, { limit: 100, sortBy: { column: 'name', order: 'asc' } })
-    if (!mounted.current) return
-    if (error || !data) { setPhotoFailed(true); setPhotoUrls([]); setPhotoLoading(false); return }
+    if (!mounted.current) return 0
+    if (error || !data) { setPhotoFailed(true); setPhotos([]); setPhotoLoading(false); return 0 }
     const files = data.filter((e) => e.id !== null) // real files, not nested folders
-    if (!files.length) { setPhotoUrls([]); setPhotoLoading(false); return }
+    if (!files.length) { setPhotos([]); setPhotoLoading(false); return 0 }
     const paths = files.map((f) => `${barnId}/${pw.id}/${f.name}`)
     const { data: signed } = await supabase.storage.from('pen-photos').createSignedUrls(paths, 3600)
-    if (!mounted.current) return
-    setPhotoUrls((signed ?? []).map((s) => s.signedUrl).filter((u): u is string => !!u))
+    if (!mounted.current) return 0
+    const next: Photo[] = (signed ?? [])
+      .map((s, i) => ({ url: s.signedUrl, path: paths[i] }))
+      .filter((p): p is Photo => !!p.url)
+    setPhotos(next)
     setPhotoLoading(false)
+    return next.length
   }, [supabase, barnId, pw.id])
 
   useEffect(() => { loadPhotos() }, [loadPhotos])
 
-  // Upload a picked image to this job's folder, then reload and jump to it.
+  // Upload a picked image to this job's folder, then reload and jump to it. We
+  // shrink + re-encode to JPEG first (small files, and HEIC from iPhones becomes
+  // a JPEG that uploads and displays); if the browser can't read the image we
+  // fall back to uploading the original so a picture is never lost.
   async function addPhoto(file: File) {
     setUploading(true); setUploadFailed(false)
     try {
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+      const shrunk = await shrinkToJpeg(file).catch(() => null)
+      const ext = shrunk ? 'jpg' : ((file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg')
       const path = `${barnId}/${pw.id}/${Date.now()}.${ext}`
-      const { error } = await supabase.storage.from('pen-photos').upload(path, file, { contentType: file.type || undefined, upsert: false })
+      const body: Blob | File = shrunk ?? file
+      const contentType = shrunk ? 'image/jpeg' : (file.type || undefined)
+      const { error } = await supabase.storage.from('pen-photos').upload(path, body, { contentType, upsert: false })
       if (error) throw error
       onPhotoAdded() // light up the card's photo icon right away
-      await loadPhotos()
-      if (mounted.current) setPhotoIdx(Number.MAX_SAFE_INTEGER) // show the newest (clamped on render)
+      const n = await loadPhotos()
+      if (mounted.current) { setPhotoIdx(Number.MAX_SAFE_INTEGER); onPhotoCountChanged(n) } // show the newest (clamped on render)
     } catch {
       if (mounted.current) setUploadFailed(true)
     } finally {
       if (mounted.current) setUploading(false)
+    }
+  }
+
+  // Delete the photo currently shown, after a confirm. Reload, clamp the
+  // carousel to what's left, and tell the parent the new count so the card's
+  // camera icon clears once the last photo is gone.
+  async function deleteCurrentPhoto(path: string) {
+    if (!window.confirm('Delete this photo? This can’t be undone.')) return
+    setDeleting(true); setDeleteFailed(false)
+    try {
+      const { error } = await supabase.storage.from('pen-photos').remove([path])
+      if (error) throw error
+      const n = await loadPhotos()
+      if (mounted.current) { setPhotoIdx((i) => Math.max(0, Math.min(i, n - 1))); onPhotoCountChanged(n) }
+    } catch {
+      if (mounted.current) setDeleteFailed(true)
+    } finally {
+      if (mounted.current) setDeleting(false)
     }
   }
 
@@ -637,7 +742,7 @@ function Detail({
     setNoteSaving(false)
   }
 
-  const count = photoUrls.length
+  const count = photos.length
   const cur = count ? Math.min(photoIdx, count - 1) : 0
   const addBtnStyle = { flex: 1, height: 48, gap: 8, borderRadius: 12, fontSize: 15, fontWeight: 800 } as const
 
@@ -703,8 +808,10 @@ function Detail({
                   {photoLoading ? (
                     <span style={{ color: '#8FA8CC', fontSize: 14, fontWeight: 600 }}>Loading…</span>
                   ) : (
+                    // Only the current photo is rendered, decoded off the main
+                    // thread and lazily — we never preload the whole roll.
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={photoUrls[cur]} alt={`Photo ${cur + 1}`} style={{ maxWidth: '100%', maxHeight: '42vh', objectFit: 'contain' }} />
+                    <img src={photos[cur]?.url} alt={`Photo ${cur + 1}`} decoding="async" loading="lazy" style={{ maxWidth: '100%', maxHeight: '42vh', objectFit: 'contain' }} />
                   )}
                 </div>
                 {count > 1 ? (
@@ -714,6 +821,12 @@ function Detail({
                     <Button variant="outline" type="button" onClick={() => setPhotoIdx((i) => (Math.min(i, count - 1) + 1) % count)} style={{ height: 38, padding: '0 14px', borderRadius: 9, fontSize: 14, fontWeight: 700 }}>Next ›</Button>
                   </div>
                 ) : null}
+                {!photoLoading && count > 0 ? (
+                  <Button variant="outline" type="button" onClick={() => { const t = photos[cur]; if (t && !deleting) deleteCurrentPhoto(t.path) }} disabled={deleting} style={{ height: 40, borderRadius: 10, fontSize: 14, fontWeight: 700, color: colors.danger }}>
+                    {deleting ? 'Deleting…' : 'Delete photo'}
+                  </Button>
+                ) : null}
+                {deleteFailed ? <div style={{ fontSize: 12, fontWeight: 700, color: colors.danger }}>Couldn’t delete the photo — try again.</div> : null}
               </div>
             </SectionCard>
           ) : photoFailed ? (
