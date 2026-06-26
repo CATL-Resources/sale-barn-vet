@@ -3,11 +3,12 @@
 // print route MUST match this, or the print comes out scaled wrong. Reusable:
 // hand it the fields and it picks the seller or buyer layout automatically.
 //
-// The card uses border-box sizing and a ~0.12in inner margin so content never
-// runs to the very edge (printers can't print edge-to-edge). The consignor name
-// and the notes WRAP to as many lines as needed and are never truncated — they
-// are required content. Black fills (work-type pill, buyer-number pill, divider)
-// carry print-color-adjust: exact so the printer prints them solid.
+// No border box. The card uses border-box sizing and an inner margin that's a
+// little wider on the left and top, so content sits in from those edges and the
+// printer's unprintable margin doesn't clip it. The consignor name and the notes
+// WRAP to as many lines as needed and are never truncated — they are required
+// content. Black fills (work-type pill, buyer-number pill, divider) carry
+// print-color-adjust: exact so the printer prints them solid.
 
 export type PenCardData = {
   pen: string
@@ -52,9 +53,10 @@ export function PenCardLabel({ data }: { data: PenCardData }) {
         height: '2.125in',
         background: '#fff',
         color: BLACK,
-        border: `2px solid ${BLACK}`,
-        borderRadius: 6,
-        padding: '0.12in',
+        // No border box. Extra room on the left and top (and less on the right /
+        // bottom) shifts the content in from those edges, so the printer's
+        // unprintable margin doesn't clip the left/top of the card.
+        padding: '0.2in 0.1in 0.1in 0.26in',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -98,12 +100,12 @@ export function PenCardLabel({ data }: { data: PenCardData }) {
           </div>
         </div>
 
-        {/* HEAD — fixed right column, right-aligned, its own number */}
-        <div style={{ width: '0.82in', flexShrink: 0, textAlign: 'right' }}>
+        {/* HEAD — fixed right column, right-aligned, its own (now bigger) number */}
+        <div style={{ width: '0.92in', flexShrink: 0, textAlign: 'right' }}>
           <div style={microLabel}>HEAD</div>
-          <div className="tnum" style={{ fontSize: 22, fontWeight: 800, lineHeight: 0.9, letterSpacing: '-0.02em', marginTop: 1, whiteSpace: 'nowrap' }}>
+          <div className="tnum" style={{ fontSize: 32, fontWeight: 800, lineHeight: 0.9, letterSpacing: '-0.02em', marginTop: 1, whiteSpace: 'nowrap' }}>
             {data.head}
-            <span style={{ fontSize: 12, fontWeight: 700 }}> hd</span>
+            <span style={{ fontSize: 14, fontWeight: 700 }}> hd</span>
           </div>
         </div>
       </div>
