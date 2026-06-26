@@ -4,10 +4,13 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from '@/app/login/actions'
 
-// Kept deliberately short — Home and Barn Settings. Room to add more later.
+// Kept deliberately short — Home, the Sale Dashboard, and Barn Settings. This
+// menu item is the one intentional way into the Sale Dashboard (a desktop
+// screen); /day picks the current sale and sends you to its dashboard.
 // (No Chute/Office switch here; that placement is a separate decision.)
 const NAV = [
   { label: 'Home', href: '/' },
+  { label: 'Sale Dashboard', href: '/day' },
   { label: 'Barn Settings', href: '/settings' },
 ]
 
