@@ -14,6 +14,7 @@ import {
 } from './types'
 import { applyPenDefaults, draftWithDefaults, fieldRequired, fieldShows, missingRequiredLabels, resolveFields, type PenFieldDefaults } from './fields'
 import { isEid, isBackTag } from './scan-format'
+import { beepSaved, buzzSaved } from './feedback'
 import {
   findDuplicateEid,
   saveAnimalRecord,
@@ -26,6 +27,12 @@ import {
 
 export type ToastKind = 'error' | 'warn' | 'success'
 export type ToastMsg = { kind: ToastKind; message: string } | null
+
+// The strong "Saved" confirmation that fires after a good save. `id` rises on
+// every save so the on-screen burst replays even on rapid back-to-back saves;
+// `head` is the batch's running head count to show ("Saved — 24 head"), or null
+// when it isn't available in the save path.
+export type SaveConfirm = { id: number; head: number | null } | null
 
 export type StartBatchInput = {
   saleDayId: string | null
@@ -104,6 +111,13 @@ export function useCapture(
       : emptyDraft(),
   )
   const [worked, setWorked] = useState(initial?.worked ?? 0)
+  // A synchronous mirror of `worked` so the save path can read the running head
+  // count the instant a record lands — even on rapid back-to-back saves, where
+  // the next save fires before React has re-rendered with the new count.
+  const workedRef = useRef(worked)
+  useEffect(() => {
+    workedRef.current = worked
+  }, [worked])
   const [sorted, setSorted] = useState(0)
   const [stageTally, setStageTally] = useState<Record<string, number>>({})
   const [sortPens, setSortPens] = useState<SortPen[]>([])
@@ -135,6 +149,32 @@ export function useCapture(
     if (kind !== 'warn') window.setTimeout(() => setToast(null), 3200)
   }, [])
   const dismissToast = useCallback(() => setToast(null), [])
+
+  // The strong, multi-sensory "Saved" confirmation. Fired ONLY after a record has
+  // really landed in the database — never optimistically — and fully
+  // fire-and-forget: it kicks off the visual, the beep, and the buzz, then
+  // returns at once so the next scan is never held up.
+  const [saveConfirm, setSaveConfirm] = useState<SaveConfirm>(null)
+  const saveConfirmId = useRef(0)
+  const saveConfirmTimer = useRef<number | null>(null)
+  const confirmSave = useCallback((head: number | null) => {
+    saveConfirmId.current += 1
+    setSaveConfirm({ id: saveConfirmId.current, head })
+    // The visual clears fast — quicker than the 3.2s toast — so it never lags the
+    // next animal. A fresh save resets the timer so back-to-back saves each get a
+    // full burst.
+    if (saveConfirmTimer.current != null) window.clearTimeout(saveConfirmTimer.current)
+    saveConfirmTimer.current = window.setTimeout(() => setSaveConfirm(null), 1150)
+    // Sound + buzz are best-effort extras: they never throw and never block.
+    beepSaved()
+    buzzSaved()
+  }, [])
+  useEffect(
+    () => () => {
+      if (saveConfirmTimer.current != null) window.clearTimeout(saveConfirmTimer.current)
+    },
+    [],
+  )
 
   const patchDraft = useCallback((fields: Partial<AnimalDraft>) => {
     setDraft((d) => ({ ...d, ...fields }))
@@ -451,7 +491,9 @@ export function useCapture(
           setBatch((b) => (b ? { ...b, headStarted: frozen } : b))
         }
 
-        setWorked((w) => w + 1)
+        const nextWorked = workedRef.current + 1
+        workedRef.current = nextWorked
+        setWorked(nextWorked)
         if (shows('preg_stage') && draft.pregStatus) {
           const code = draft.pregStatus
           setStageTally((t) => ({ ...t, [code]: (t[code] ?? 0) + 1 }))
@@ -461,7 +503,9 @@ export function useCapture(
           setSorted((s) => s + 1)
           setSortPens((prev) => prev.map((p) => (p.id === penId ? { ...p, count: p.count + 1 } : p)))
         }
-        flash('success', 'Saved')
+        // The insert succeeded — only now fire the strong save confirmation (big
+        // visual + beep + buzz), with the batch's new running head count.
+        confirmSave(nextWorked)
         return true
       } catch (e) {
         flash('error', errMsg(e, 'Could not save — try again'))
@@ -470,7 +514,7 @@ export function useCapture(
         setSaving(false)
       }
     },
-    [batch, saving, bootstrap.barn.official_id_type, barnId, draft, userId, shows, supabase, flash],
+    [batch, saving, bootstrap.barn.official_id_type, barnId, draft, userId, shows, supabase, flash, confirmSave],
   )
 
   /**
@@ -799,6 +843,7 @@ export function useCapture(
     sortPens,
     saving,
     toast,
+    saveConfirm,
     resolved,
     shows,
     required,

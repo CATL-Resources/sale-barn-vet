@@ -846,3 +846,22 @@ button {
   gap: 14px;
   align-items: start;
 }
+
+/* The strong "Saved" confirmation at the chute (components/capture/save-confirm).
+   All three animations finish well within a second so they never lag the next
+   animal. The big green band is the guaranteed channel; the wash and the edge
+   pulse are there to be caught in the corner of the eye. */
+@keyframes sbv-save-wash {
+  0% { opacity: 0.5; }
+  100% { opacity: 0; }
+}
+@keyframes sbv-save-edge {
+  0% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes sbv-save-band {
+  0% { opacity: 0; transform: translateY(-8px) scale(0.94); }
+  12% { opacity: 1; transform: translateY(0) scale(1); }
+  70% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(0) scale(1); }
+}
