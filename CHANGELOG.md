@@ -4,7 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- Animals report — filter, sort, group, export (with sort pen + mixed pens) _(2026-06-26, `dc30b6d`)_
+- stamp pen cards as printed and show a printed icon _(2026-06-26, `c5c93d9`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -60,6 +60,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Animals report: filter, sort, group, export (sort pen + mixed pens) _(2026-06-26, `a923cea`)_
 - allow deleting pen-photos (add the missing delete policy) _(2026-06-26, `1d9f94b`)_
 - pen_work.label_printed_at (schema only) _(2026-06-26, `f2946b6`)_
 - Add the app on-screen keyboard to the animal edit sheet _(2026-06-26, `51493fd`)_
