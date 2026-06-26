@@ -4,7 +4,13 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **home:** sale-day hub that splits into office vs. chute _(2026-06-20, `01f1bea`)_
+- **work-orders:** navy band + gold line on each pen-work card (narrow view) _(2026-06-26, `3527572`)_
+- **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
+- one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
+- **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
+- **capture:** route scans by shape; required EID hard-blocks _(2026-06-21, `e47bede`)_
+- run full screen from the home screen (installable PWA) _(2026-06-21, `36c9ac0`)_
+- menu reachable on every screen with Barn Settings; clickable brand; cleaner hub; sticky Save & next _(2026-06-20, `dc4c92b`)_
 - **find:** global animal search by EID / back tag / tag number _(2026-06-20, `5d57631`)_
 - **work-orders:** Work Cows — office + chute share one start path, plus delete _(2026-06-20, `b2e60a2`)_
 - **work-orders:** cancel/reset fix, fast customer search, inline location + customer edit _(2026-06-20, `6a8a429`)_
@@ -19,13 +25,20 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 - customer import — schema + data + idempotent load script _(2026-06-19, `61c2629`)_
 - **capture:** record a cow — per-work-type fields, scan loop, dup guard, scroll _(2026-06-19, `6f72a8b`)_
 - **capture:** chute capture screen wired to live schema with shared sort pens _(2026-06-18, `5217e93`)_
-- **settings:** build the Settings screen on St. Onge's real config _(2026-06-18, `f61ddd6`)_
 
 ## Fixes
 
+- **capture:** instant EID fill + 2nd EID works for two 840 tags _(2026-06-21, `a34d6e9`)_
+- **capture:** stop the wand EID scan splitting into a couple of digits _(2026-06-21, `41f9a98`)_
+- **layout:** app fills the screen on phone and tablet (remove the 390px frame) _(2026-06-21, `4b7054e`)_
 - close-out returns to the chute Work list; block duplicate sale days _(2026-06-20, `054da35`)_
 - **work-orders:** close the edit panel; pen-first row + three-dots menu _(2026-06-20, `abe7e7b`)_
 - **capture:** stop the field cards from clipping their rows _(2026-06-19, `a749dc6`)_
+
+## Refactor
+
+- **layout:** one shared content container (--content-max); layouts own the shell _(2026-06-21, `8c18143`)_
+- **tokens:** single source for colors + sizing; reconcile teal to #55BAAA _(2026-06-21, `0ccb5b8`)_
 
 ## Docs
 
@@ -43,24 +56,17 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Capture scan: clear stale duplicate warning + stop the stray leading digit _(2026-06-22, `f567e07`)_
+- Foundation 4b: office Work Orders table scrolls sideways on small screens _(2026-06-21, `07224b5`)_
+- Foundation 4a: Title Case the on-screen labels _(2026-06-21, `177d0d3`)_
+- Foundation 3b: one shared RequiredMark (the gold star) _(2026-06-21, `a2e7b17`)_
+- Foundation 3a: shared Button, SectionCard, and Modal _(2026-06-21, `0780ccb`)_
+- Foundation 2: one shared screen header _(2026-06-21, `6438b95`)_
+- Capture polish + Barn Settings: lead with pen/seller, no identifier defaults, required shows through, clearer labels _(2026-06-21, `39813ea`)_
+- Sale-day hub: one tap splits into office Work orders vs. chute Work the cattle _(2026-06-20, `6f5d554`)_
 - one active sale day per date per barn _(2026-06-20, `64b23f3`)_
 - Barn Work List (chute view): live worked count, phone/tablet layouts, reachable from Home _(2026-06-20, `5f0dd0a`)_
 - freeze the started count on the first animal of a bound office order _(2026-06-20, `a1f7fdb`)_
 - Work Orders: Animal list with copy / CSV export for health papers _(2026-06-20, `af37735`)_
 - drop "Scan the next cow", close-out returns to Work Orders, Print label in row menu _(2026-06-20, `cca98c4`)_
 - hide the Age field for chute ID jobs _(2026-06-20, `fb4fd74`)_
-- Settings prefs: field options store + age/ID flexibility, seed St. Onge defaults _(2026-06-17, `3d38126`)_
-- St. Onge capture form: turn off age, breed, fetal sex (settings-driven) _(2026-06-17, `ece0ea1`)_
-- Capture screen design brief (preg fields + quick notes) _(2026-06-17, `43adb01`)_
-- Add missing back-tag columns to barn (schema + seed) _(2026-06-17, `c3593de`)_
-- Quick notes table + work-type preg-check flag (schema + seed) _(2026-06-17, `824523c`)_
-- Barn preferences schema — field config, age designation, preg stage _(2026-06-17, `b06482d`)_
-- Office work-orders screen (pen_work model) _(2026-06-17, `984aa66`)_
-- Schema fix: pen + pen_work _(2026-06-16, `c0e1bd8`)_
-- Build 2: chuteside Capture screen _(2026-06-16, `38dbb49`)_
-- Build 1: app shell + Sale Day home _(2026-06-16, `a42ab7c`)_
-- RLS hardening _(2026-06-16, `5ece64d`)_
-- Auth + RLS _(2026-06-16, `07acbdf`)_
-- Spec sync + live Supabase wiring + Next.js foundation _(2026-06-16, `5cf5e34`)_
-- Scaffold Sale Barn Vet v1 _(2026-06-14, `9d65ec6`)_
-- first commit _(2026-06-14, `45e0d6a`)_
