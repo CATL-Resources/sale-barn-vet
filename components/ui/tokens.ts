@@ -7,6 +7,7 @@ export const colors = {
   goldPressed: '#E3C01F',
   teal: '#55BAAA',
   tealDeep: '#55BAAA',
+  tealBright: '#0CA678', // punchier teal-green for an active "Staged" pen — reads across the yard
   page: '#F5F5F0',
   canvas: '#E9E9E4',
   white: '#FFFFFF',

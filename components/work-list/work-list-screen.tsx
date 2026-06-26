@@ -117,7 +117,8 @@ function GearIcon({ color, size = 16 }: { color: string; size?: number }) {
 // The yard-crew "Staged" marker — a small TEAL control in the actions row (no
 // purple anywhere on this screen). It's a role="button" span with its own tap
 // zone. Tap toggles it; the behavior, the To Grab filter, and auto-clear are all
-// unchanged — only the color and size.
+// unchanged. When staged it fills with a brighter, more saturated teal-green so a
+// staged pen reads at a glance across the yard; the off state is unchanged.
 function StagedChip({ up, busy, onToggle }: { up: boolean; busy: boolean; onToggle: () => void }) {
   return (
     <span
@@ -138,8 +139,8 @@ function StagedChip({ up, busy, onToggle }: { up: boolean; busy: boolean; onTogg
         borderRadius: 999,
         cursor: busy ? 'default' : 'pointer',
         opacity: busy ? 0.6 : 1,
-        background: up ? colors.teal : colors.tealPillBg,
-        border: `1px solid ${colors.teal}`,
+        background: up ? colors.tealBright : colors.tealPillBg,
+        border: `1px solid ${up ? colors.tealBright : colors.teal}`,
         color: up ? '#fff' : colors.teal,
         fontSize: 13,
         fontWeight: 700,
@@ -491,7 +492,7 @@ function PenDefaultsEditor({
       overlayStyle={{ padding: 0 }}
       panelStyle={{ background: '#F5F5F0', borderRadius: 0, boxShadow: 'none' }}
     >
-      <div style={{ background: colors.navy, flexShrink: 0, padding: '14px 16px 16px', color: '#fff' }}>
+      <div style={{ background: colors.navy, flexShrink: 0, padding: 'calc(14px + env(safe-area-inset-top)) 16px 16px', color: '#fff' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button type="button" onClick={onClose} aria-label="Back" style={{ width: 34, height: 34, flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', color: '#fff', fontSize: 22 }}>‹</button>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -755,7 +756,7 @@ function Detail({
       overlayStyle={{ padding: 0 }}
       panelStyle={{ background: '#F5F5F0', borderRadius: 0, boxShadow: 'none' }}
     >
-        <div style={{ background: colors.navy, flexShrink: 0, padding: '14px 16px 16px', color: '#fff' }}>
+        <div style={{ background: colors.navy, flexShrink: 0, padding: 'calc(14px + env(safe-area-inset-top)) 16px 16px', color: '#fff' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <button type="button" onClick={onBack} aria-label="Back" style={{ width: 34, height: 34, flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', color: '#fff', fontSize: 22 }}>‹</button>
             <div style={{ flex: 1, minWidth: 0 }}>
