@@ -4,7 +4,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- Animals report — filter, sort, group, export (with sort pen + mixed pens) _(2026-06-26, `dc30b6d`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -46,6 +45,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Docs
 
+- add the office desktop design file and a spec-changelog entry _(2026-06-26, `2e14f26`)_
 - log the chute flow + sale day fixes and the test-data wipe _(2026-06-20, `6816a18`)_
 - update CHANGELOG for the Work Orders panel + row fixes _(2026-06-20, `e2359d9`)_
 - update CHANGELOG for the Work Orders fixes _(2026-06-20, `561afdb`)_
@@ -58,8 +58,13 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 - add a changelog script so npm run changelog works _(2026-06-19, `db43609`)_
 
+## Style
+
+- restyle the desktop Sale Dashboard to the approved design _(2026-06-26, `02d444a`)_
+
 ## Other
 
+- Animals report: filter, sort, group, export (sort pen + mixed pens) _(2026-06-26, `a923cea`)_
 - allow deleting pen-photos (add the missing delete policy) _(2026-06-26, `1d9f94b`)_
 - pen_work.label_printed_at (schema only) _(2026-06-26, `f2946b6`)_
 - Add the app on-screen keyboard to the animal edit sheet _(2026-06-26, `51493fd`)_

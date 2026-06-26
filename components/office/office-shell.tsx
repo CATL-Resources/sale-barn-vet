@@ -95,16 +95,22 @@ export function OfficeShell({
   const wo = `/work-orders/${currentSaleId}`
   const pl = `/work-list/${currentSaleId}`
   const on = (prefix: string) => pathname.startsWith(prefix)
+  // Open vs closed, read from the label the page already built (presentation
+  // only — drives the header status dot's color, no data of its own).
+  const dayOpen = /open/i.test(saleLabel)
 
   const groupLabel: React.CSSProperties = { fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.45)', padding: '0 16px', margin: '14px 0 4px' }
 
   return (
     <div className="office-shell">
-      <aside className="office-sidebar" style={{ background: colors.navy, color: '#fff' }}>
+      <aside className="office-sidebar" style={{ background: 'var(--surface-sidebar)', color: '#fff' }}>
         {/* Brand */}
         <div style={{ padding: '16px 16px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ width: 30, height: 30, borderRadius: 8, background: colors.gold, color: colors.navy, fontWeight: 900, fontSize: 13, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>SB</span>
-          <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.01em' }}>Sale Barn <span style={{ color: colors.gold }}>Vet</span></span>
+          <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
+            <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.01em' }}>Sale Barn <span style={{ color: colors.gold }}>Vet</span></span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: colors.navySubText, marginTop: 2 }}>Office</span>
+          </span>
         </div>
 
         <nav style={{ paddingTop: 4 }}>
@@ -131,25 +137,29 @@ export function OfficeShell({
       </aside>
 
       <div className="office-main">
-        {/* Slim top bar: barn + sale-day label left, sale-day selector right. */}
+        {/* Slim top bar on the navy header gradient: a teal status dot + the
+            operation + sale-day label on the left, the rounded date-selector pill,
+            and the wordmark on the far right. */}
         <header className="office-topbar">
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 15, fontWeight: 800, color: colors.navy, letterSpacing: '-0.01em' }}>{barnName}</span>
-            <span style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted }}>{saleLabel}</span>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ width: 8, height: 8, borderRadius: 999, flexShrink: 0, background: dayOpen ? colors.teal : 'rgba(255,255,255,0.35)', boxShadow: dayOpen ? '0 0 0 3px rgba(85,186,170,0.22)' : 'none' }} />
+            <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', letterSpacing: '-0.01em' }}>{barnName}</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: colors.navySubText }}>{saleLabel}</span>
           </div>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: colors.textMuted }}>Sale day</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: colors.navySubText }}>Sale day</span>
             <select
               value={currentSaleId}
               onChange={(e) => router.push(`/day/${e.target.value}`)}
               aria-label="Switch sale day"
-              style={{ height: 36, borderRadius: 9, border: `1px solid ${colors.border}`, background: '#fff', color: colors.textPrimary, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, padding: '0 10px', cursor: 'pointer', maxWidth: 220 }}
+              style={{ height: 34, borderRadius: 999, border: '1px solid rgba(255,255,255,0.18)', background: 'rgba(255,255,255,0.08)', color: '#fff', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, padding: '0 14px', cursor: 'pointer', maxWidth: 220 }}
             >
               {saleDays.map((d) => (
-                <option key={d.id} value={d.id}>{dayOptionLabel(d.sale_date, d.status)}</option>
+                <option key={d.id} value={d.id} style={{ color: colors.textPrimary }}>{dayOptionLabel(d.sale_date, d.status)}</option>
               ))}
             </select>
           </label>
+          <span style={{ flexShrink: 0, fontSize: 14, fontWeight: 800, letterSpacing: '-0.01em', color: '#fff' }}>Sale Barn <span style={{ color: colors.gold }}>Vet</span></span>
         </header>
 
         <main className="office-content">
