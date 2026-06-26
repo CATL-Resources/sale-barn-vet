@@ -1,16 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { BatchInfo, CaptureBootstrap } from '@/lib/capture/types'
 import type { CapturedAnimal } from '@/lib/capture/save-animal'
 import type { PenFieldDefaults } from '@/lib/capture/fields'
 import { useCapture } from '@/lib/capture/use-capture'
+import { unlockAudio } from '@/lib/capture/feedback'
 import { StartBatch } from './start-batch'
 import { CaptureForm } from './capture-form'
 import { CloseOutSheet } from './close-out-sheet'
 import { AnimalListSheet } from './animal-list-sheet'
 import { AnimalEditSheet, type EditTarget } from './animal-edit-sheet'
 import { CaptureToast } from './toast'
+import { SaveConfirmBurst } from './save-confirm'
 import { OptionPicker, type Option } from './sheets'
 
 export function CaptureScreen({
@@ -31,6 +33,27 @@ export function CaptureScreen({
   const [editing, setEditing] = useState<EditTarget | null>(null)
   // Bumped after a save/remove so the open animal list re-fetches.
   const [reloadKey, setReloadKey] = useState(0)
+
+  // Unlock audio on the FIRST real tap or scan of the capture session. iOS only
+  // lets web audio play if the shared AudioContext is created/resumed inside a
+  // user gesture, so we build it here once and reuse it for every later beep.
+  // (A wand scan arrives as keydown; a finger tap as pointerdown.)
+  useEffect(() => {
+    let done = false
+    const unlock = () => {
+      if (done) return
+      done = true
+      unlockAudio()
+      window.removeEventListener('pointerdown', unlock)
+      window.removeEventListener('keydown', unlock)
+    }
+    window.addEventListener('pointerdown', unlock)
+    window.addEventListener('keydown', unlock)
+    return () => {
+      window.removeEventListener('pointerdown', unlock)
+      window.removeEventListener('keydown', unlock)
+    }
+  }, [])
 
   // Sort tap: toggle off when already sorted; quiet for 0–1 open pens; pick when many.
   function onTapSort() {
@@ -69,6 +92,10 @@ export function CaptureScreen({
       )}
 
       <CaptureToast toast={api.toast} onDismiss={api.dismissToast} />
+
+      {/* The strong "Saved" burst. Keyed by the save id so it replays on every
+          save, including rapid back-to-back ones. */}
+      <SaveConfirmBurst key={api.saveConfirm?.id} confirm={api.saveConfirm} />
 
       {closeOutOpen && api.step === 'capture' && <CloseOutSheet api={api} onClose={() => setCloseOutOpen(false)} />}
 
