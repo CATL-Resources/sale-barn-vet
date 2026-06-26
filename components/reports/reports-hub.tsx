@@ -16,6 +16,8 @@ import { fetchPenWorks } from '@/lib/work-orders/queries'
 import type { Barn, PenWorkFull } from '@/lib/work-orders/types'
 import { ScopeSelector } from './scope-selector'
 import { BillingView } from './billing-view'
+import { CustomerReportView } from './customer-report-view'
+import { SaleSummaryView } from './sale-summary-view'
 import {
   VIEW_ORDER,
   defaultScope,
@@ -47,6 +49,8 @@ export function ReportsHub({
   const dayIds = useMemo(() => scopeDayIds(scope, saleDays), [scope, saleDays])
   const label = scopeLabel(scope, saleDays)
   const dayKey = dayIds.join(',')
+  // sale_day_id -> date, for the drill-down's per-sale-day grouping.
+  const dayDateById = useMemo(() => new Map(saleDays.map((d) => [d.id, d.sale_date])), [saleDays])
 
   const [rows, setRows] = useState<AnimalRow[]>([])
   const [hasSecondaryEid, setHasSecondaryEid] = useState(false)
@@ -150,6 +154,10 @@ export function ReportsHub({
           />
         ) : view === 'billing' ? (
           <BillingView penWorks={penWorks} barn={barn} barnName={barn.name} search={search} scopeText={label} />
+        ) : view === 'customer' ? (
+          <CustomerReportView penWorks={penWorks} barn={barn} barnName={barn.name} search={search} scopeText={label} dayDateById={dayDateById} />
+        ) : view === 'sale_summary' ? (
+          <SaleSummaryView rows={rows} search={search} scopeText={label} barnName={barn.name} />
         ) : (
           <StubView label={VIEW_ORDER.find((v) => v.key === view)?.label ?? ''} />
         )}
