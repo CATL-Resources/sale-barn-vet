@@ -93,7 +93,7 @@ export function DayHub({ saleDay, barn, metrics }: { saleDay: SaleDay; barn: Bar
             title="Pen List"
             badge={`${metrics.pensInUse} Pens · ${metrics.toWork} Head To Work`}
           />
-          <NavCard href="/find" title="Animals" badge={`${metrics.animals} Animals`} />
+          <NavCard href={`/animals/${saleDay.id}`} title="Animals" badge={`${metrics.animals} Animals`} />
         </div>
       </AppContainer>
     </>
