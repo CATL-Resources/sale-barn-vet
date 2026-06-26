@@ -31,8 +31,10 @@ export function CaptureToast({ toast, onDismiss }: { toast: ToastMsg; onDismiss:
         boxShadow: '0 10px 28px rgba(8,18,40,0.18)',
       }}
     >
-      {success ? <CheckCircleIcon size={19} color={iconColor} sw={2.2} /> : <AlertIcon size={19} color={iconColor} sw={2.4} />}
-      <span style={{ flex: 1, fontSize: 13.5, fontWeight: 700, color: text, letterSpacing: '-0.01em' }}>
+      {/* The "Saved" confirmation is sized up so it's easy to catch at the chute;
+          the warn variant keeps its smaller size (its messages run longer). */}
+      {success ? <CheckCircleIcon size={24} color={iconColor} sw={2.2} /> : <AlertIcon size={19} color={iconColor} sw={2.4} />}
+      <span style={{ flex: 1, fontSize: success ? 18 : 13.5, fontWeight: success ? 800 : 700, color: text, letterSpacing: '-0.01em' }}>
         {toast.message}
       </span>
       <button
