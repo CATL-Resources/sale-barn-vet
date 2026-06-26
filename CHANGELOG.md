@@ -28,7 +28,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
-- add the app on-screen keyboard to the animal edit sheet _(2026-06-26, `e3baa1c`)_
+- pen capture defaults never carry to another pen _(2026-06-26, `f522176`)_
 - a required field that's blank now blocks the save (not just EID) _(2026-06-25, `4afa527`)_
 - pen labels clip on the office Work Orders board _(2026-06-24, `d96cb4d`)_
 - duplicate-EID check must not fail silently on a query error _(2026-06-24, `2440e84`)_

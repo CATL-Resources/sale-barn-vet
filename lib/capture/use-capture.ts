@@ -81,17 +81,26 @@ export function useCapture(
   const supabase = useMemo(() => createClient(), [])
   const barnId = bootstrap.barn.id
 
-  // The pen these defaults belong to, so they only ever seed the pen they were
-  // set for — switching to another batch in-session never carries them over.
+  // The pen these office defaults belong to. They may only ever seed a draft for
+  // THIS pen — never another. Two things keep that true: the capture screen is
+  // re-keyed per pen (opening a different pen remounts this hook with clean state
+  // and that pen's own defaults), and penDefaultsForBatch re-checks the pen at
+  // apply time, so even an in-session batch switch can't carry them across.
   const initialPenWorkId = initial?.batch.penWorkId ?? null
+  const penDefaultsForBatch = useCallback(
+    (b: BatchInfo | null): PenFieldDefaults | undefined =>
+      b && b.penWorkId === initialPenWorkId ? penDefaults : undefined,
+    [initialPenWorkId, penDefaults],
+  )
 
   const [step, setStep] = useState<Step>(initial ? 'capture' : 'start')
   const [batch, setBatch] = useState<BatchInfo | null>(initial?.batch ?? null)
   // A bound batch opens straight on Capture, so seed the first draft with the
-  // work type's field defaults plus the office's per-pen defaults; else blank.
+  // work type's field defaults plus the office's per-pen defaults — only ever for
+  // the pen they belong to; else blank.
   const [draft, setDraft] = useState<AnimalDraft>(() =>
     initial
-      ? applyPenDefaults(draftWithDefaults(resolveFields(bootstrap.fields, initial.batch.workTypeId)), penDefaults)
+      ? applyPenDefaults(draftWithDefaults(resolveFields(bootstrap.fields, initial.batch.workTypeId)), penDefaultsForBatch(initial.batch))
       : emptyDraft(),
   )
   const [worked, setWorked] = useState(initial?.worked ?? 0)
@@ -514,15 +523,14 @@ export function useCapture(
         setFlag(null)
         if (checkFailed) flash('warn', 'Couldn’t check for duplicates — saved anyway')
         // Re-seed for the next animal: config defaults, plus the pen's office
-        // defaults but only while still on the pen they were set for.
-        setDraft(
-          applyPenDefaults(draftWithDefaults(resolved), batch?.penWorkId === initialPenWorkId ? penDefaults : undefined),
-        )
+        // defaults — but only when the batch being worked is still the pen they
+        // were set for (re-derived here, never carried from another pen).
+        setDraft(applyPenDefaults(draftWithDefaults(resolved), penDefaultsForBatch(batch)))
         setSecondaryEidOpen(false)
       }
       return ok
     },
-    [batch, draft, eidRequired, localDuplicate, checkDuplicate, buildAndInsert, patchDraft, resolved, flash, initialPenWorkId, penDefaults],
+    [batch, draft, eidRequired, localDuplicate, checkDuplicate, buildAndInsert, patchDraft, resolved, flash, penDefaultsForBatch],
   )
 
   // Manual EID entry (typed into the EID box, not scanned). Fill and wait, same
