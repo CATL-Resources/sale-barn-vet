@@ -4,7 +4,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- stamp pen cards as printed and show a printed icon _(2026-06-26, `c5c93d9`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -29,6 +28,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
+- **work-orders:** let the buyer number field accept letters and numbers _(2026-06-26, `ab5b74d`)_
 - a required field that's blank now blocks the save (not just EID) _(2026-06-25, `4afa527`)_
 - pen labels clip on the office Work Orders board _(2026-06-24, `d96cb4d`)_
 - duplicate-EID check must not fail silently on a query error _(2026-06-24, `2440e84`)_
@@ -46,7 +46,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Docs
 
-- regenerate changelog _(2026-06-26, `2720d79`)_
 - log the chute flow + sale day fixes and the test-data wipe _(2026-06-20, `6816a18`)_
 - update CHANGELOG for the Work Orders panel + row fixes _(2026-06-20, `e2359d9`)_
 - update CHANGELOG for the Work Orders fixes _(2026-06-20, `561afdb`)_
@@ -61,6 +60,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Stamp pen cards as printed + show a printed icon _(2026-06-26, `6dabaa1`)_
 - Restyle the desktop Sale Dashboard to the approved design _(2026-06-26, `7fe401d`)_
 - Animals report: filter, sort, group, export (sort pen + mixed pens) _(2026-06-26, `a923cea`)_
 - allow deleting pen-photos (add the missing delete policy) _(2026-06-26, `1d9f94b`)_
