@@ -38,8 +38,9 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: 'head', label: 'Head' },
   { key: 'status', label: 'Status' },
 ]
-// The office line_status lifecycle order, used by the Status sort.
-const LINE_STATUS_RANK: Record<string, number> = { open: 0, worked: 1, clean: 2, needs_resolution: 3, resolved: 4, billed: 5 }
+// The Status sort follows the visible status pill (the derived work status), in
+// the same order the summary strip lists it: Not Started, In Progress, Complete.
+const STATUS_RANK: Record<WorkStatus, number> = { not_started: 0, in_progress: 1, complete: 2 }
 const headOf = (pw: PenWorkFull) => pw.head_billed ?? pw.head_worked ?? 0
 
 
@@ -91,7 +92,7 @@ export function WorkOrdersBoard({
         case 'head':
           return headOf(b.pw) - headOf(a.pw) || penCmp // most head first
         case 'status':
-          return (LINE_STATUS_RANK[a.pw.line_status] ?? 99) - (LINE_STATUS_RANK[b.pw.line_status] ?? 99) || penCmp
+          return STATUS_RANK[a.status] - STATUS_RANK[b.status] || penCmp
         default:
           return penCmp
       }
