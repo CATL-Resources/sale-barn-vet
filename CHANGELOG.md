@@ -4,6 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
+- **work-list:** print the pen card label from the Pen List and mark it printed _(2026-06-27, `b10390e`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -28,7 +29,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
-- **work-orders:** Status sort follows the visible status pill _(2026-06-27, `1010af5`)_
 - a required field that's blank now blocks the save (not just EID) _(2026-06-25, `4afa527`)_
 - pen labels clip on the office Work Orders board _(2026-06-24, `d96cb4d`)_
 - duplicate-EID check must not fail silently on a query error _(2026-06-24, `2440e84`)_
@@ -60,6 +60,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Work Orders: Status sort follows the visible status pill _(2026-06-26, `dd8a26e`)_
 - Work Orders: pen band on mobile cards + sortable list _(2026-06-26, `e692241`)_
 - Make Save & next (and its confirmation) fire faster at the chute _(2026-06-26, `a5c7b53`)_
 - Reports hub: Customer Report + Animal Sale Summary, with per-customer drill-down _(2026-06-26, `e4e4b0f`)_
