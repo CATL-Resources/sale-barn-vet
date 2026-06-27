@@ -4,7 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **work-list:** print the pen card label from the Pen List and mark it printed _(2026-06-27, `b10390e`)_
+- **work-orders:** show notes and photos per work order on the desktop board _(2026-06-27, `733570c`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -60,6 +60,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Pen List: print the pen card label from a row and mark it printed _(2026-06-26, `307f8af`)_
 - Work Orders: Status sort follows the visible status pill _(2026-06-26, `dd8a26e`)_
 - Work Orders: pen band on mobile cards + sortable list _(2026-06-26, `e692241`)_
 - Make Save & next (and its confirmation) fire faster at the chute _(2026-06-26, `a5c7b53`)_
