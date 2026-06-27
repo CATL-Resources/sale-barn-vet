@@ -733,35 +733,22 @@ button {
   flex-direction: column;
   gap: 12px;
 }
-/* Mobile-first pen card: two tidy rows (identity, then actions) stacked, so the
-   phone never crams everything onto one wide line. */
-.wl-card {
-  width: 100%;
-  text-align: left;
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 11px 12px;
+/* Option E pen card: three columns (gradient pen anchor, info, chute rail) laid
+   out horizontally and clipped to the rounded corners. */
+.wl-oe-card {
   display: flex;
-  flex-direction: column;
-  gap: 9px;
-  cursor: pointer;
-  font-family: inherit;
-  box-shadow: 0 1px 2px rgba(14, 38, 70, 0.05);
-}
-.wl-card:active {
-  background: var(--drawer-selected);
-}
-/* The Open / Resume button now lives in the actions row and shows at every size. */
-.wl-rowaction {
-  display: inline-flex;
+  align-items: stretch;
+  overflow: hidden;
+  width: 100%;
+  border-radius: 14px;
+  background: var(--white);
+  border: 1px solid #e4e4de;
+  box-shadow: 0 1px 2px rgba(14, 38, 70, 0.04);
+  min-height: 96px;
 }
 @media (min-width: 720px) {
   .wl-wrap {
     padding: 18px;
-  }
-  .wl-card {
-    padding: 13px 16px;
   }
 }
 
