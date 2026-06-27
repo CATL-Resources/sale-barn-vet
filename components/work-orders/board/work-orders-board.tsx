@@ -7,6 +7,7 @@ import { ScreenHeader } from '@/components/ui/screen-header'
 import { HeaderBack } from '@/components/ui/header-back'
 import { PlusIcon, SearchIcon, TrashIcon } from '@/components/ui/icons'
 import { deriveStatus, STATUS_LABEL, type WorkStatus } from '@/lib/work-orders/status'
+import { naturalCompare, textCompare } from '@/lib/animals/natural-sort'
 import type { AnimalType, Barn, PenWorkFull, SaleDay, SpecialChargeFull, WorkType } from '@/lib/work-orders/types'
 import { deleteWorkOrder } from '@/app/(office)/work-orders/actions'
 import { WorkOrderForm } from './work-order-form'
@@ -28,7 +29,18 @@ const STATUS_STYLE: Record<WorkStatus, { bg: string; border: string; color: stri
   in_progress: { bg: '#FDF1DC', border: '#F1D9A8', color: '#B45309', dot: '#F59E0B' },
   complete: { bg: '#E1F5EE', border: '#9BD9CC', color: '#55BAAA', dot: '#55BAAA' },
 }
-const SORT_RANK: Record<WorkStatus, number> = { in_progress: 0, not_started: 1, complete: 2 }
+// Sort options for the work-order list (default Pen). Front-end ordering only —
+// no schema change. Pen is also the tiebreak under every other sort.
+type SortKey = 'pen' | 'workType' | 'head' | 'status'
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: 'pen', label: 'Pen' },
+  { key: 'workType', label: 'Work Type' },
+  { key: 'head', label: 'Head' },
+  { key: 'status', label: 'Status' },
+]
+// The office line_status lifecycle order, used by the Status sort.
+const LINE_STATUS_RANK: Record<string, number> = { open: 0, worked: 1, clean: 2, needs_resolution: 3, resolved: 4, billed: 5 }
+const headOf = (pw: PenWorkFull) => pw.head_billed ?? pw.head_worked ?? 0
 
 
 function longDate(iso: string) {
@@ -48,6 +60,7 @@ export function WorkOrdersBoard({
 }) {
   const router = useRouter()
   const [query, setQuery] = useState('')
+  const [sortBy, setSortBy] = useState<SortKey>('pen')
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<PenWorkFull | null>(null)
   const [notesOpen, setNotesOpen] = useState<Record<string, boolean>>({})
@@ -62,15 +75,28 @@ export function WorkOrdersBoard({
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return penWorks
+    const mapped = penWorks
       .map((pw) => {
         const isBuyer = !!pw.buyer_party_id
         const p = isBuyer ? pw.buyer : pw.seller
         return { pw, status: deriveStatus(pw), isBuyer, name: p?.name ?? '—', custNo: p?.customer_number ?? null }
       })
       .filter((r) => !q || r.name.toLowerCase().includes(q) || (r.custNo ?? '').includes(q) || (r.pw.buyer_number_text ?? '').includes(q))
-      .sort((a, b) => SORT_RANK[a.status] - SORT_RANK[b.status])
-  }, [penWorks, query])
+    return mapped.sort((a, b) => {
+      // Pen (natural order) is the default and the tiebreak under every sort.
+      const penCmp = naturalCompare(a.pw.pen?.pen_number ?? '', b.pw.pen?.pen_number ?? '')
+      switch (sortBy) {
+        case 'workType':
+          return textCompare(a.pw.workType?.name ?? '', b.pw.workType?.name ?? '') || penCmp
+        case 'head':
+          return headOf(b.pw) - headOf(a.pw) || penCmp // most head first
+        case 'status':
+          return (LINE_STATUS_RANK[a.pw.line_status] ?? 99) - (LINE_STATUS_RANK[b.pw.line_status] ?? 99) || penCmp
+        default:
+          return penCmp
+      }
+    })
+  }, [penWorks, query, sortBy])
 
   const counts = useMemo(() => {
     const c = { not_started: 0, in_progress: 0, complete: 0 }
@@ -112,11 +138,20 @@ export function WorkOrdersBoard({
         {/* TOOLBAR — one line: search + a compact "+" to add a work order. The
             past-sales switcher lived here before; it's gone (it duplicated the
             header and switching days will live elsewhere). */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ flex: '1 1 auto', maxWidth: 460, display: 'flex', alignItems: 'center', gap: 9, height: 44, background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 9, padding: '0 12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 200px', minWidth: 180, maxWidth: 460, display: 'flex', alignItems: 'center', gap: 9, height: 44, background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 9, padding: '0 12px' }}>
             <SearchIcon size={16} style={{ color: colors.textPlaceholder }} />
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search customer or buyer #" style={{ flex: 1, minWidth: 0, border: 'none', background: 'transparent', fontSize: 14, fontWeight: 500, color: colors.textPrimary, outline: 'none', fontFamily: 'inherit' }} />
           </div>
+          {/* Sort control — default Pen. Reorders the list (no data change). */}
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 7, height: 44, flexShrink: 0, background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 9, padding: '0 8px 0 12px' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.03em', color: colors.textMuted }}>Sort</span>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortKey)} aria-label="Sort work orders" style={{ height: 40, border: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, color: colors.navy, cursor: 'pointer', outline: 'none' }}>
+              {SORT_OPTIONS.map((o) => (
+                <option key={o.key} value={o.key}>{o.label}</option>
+              ))}
+            </select>
+          </label>
           <button type="button" onClick={openNew} aria-label="New work order" style={{ width: 44, height: 44, flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 9, background: colors.gold, color: colors.navy, border: 'none', cursor: 'pointer' }}>
             <PlusIcon size={20} style={{ color: colors.navy }} />
           </button>
@@ -204,15 +239,19 @@ export function WorkOrdersBoard({
                 const worked = r.status === 'not_started' ? '—' : r.status === 'in_progress' ? `${r.pw.head_worked ?? 0} of ${r.pw.head_expected ?? 0}` : String(r.pw.head_worked ?? 0)
                 const workedColor = r.status === 'not_started' ? '#C2C2CA' : r.status === 'in_progress' ? '#B45309' : colors.textPrimary
                 return (
-                  <div key={r.pw.id} onClick={() => openEdit(r.pw)} className="press-card" style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, padding: 14, cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: 11 }}>
-                    {/* pen + consignor / buyer on top */}
-                    <div>
-                      <div style={{ fontSize: 19, fontWeight: 800, color: colors.navy, letterSpacing: '-0.01em' }}>{r.pw.pen?.pen_number ? `Pen ${r.pw.pen.pen_number}` : 'No pen'}</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginTop: 4 }}>
-                        <span style={{ fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>{r.name}</span>
-                        <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '2px 8px', color: r.isBuyer ? '#946A00' : colors.navy, background: r.isBuyer ? '#FBEFC2' : '#E7ECF5', border: `1px solid ${r.isBuyer ? '#EBD489' : '#CBD5E8'}` }}>{r.isBuyer ? `Buyer #${r.pw.buyer_number_text ?? '—'}` : 'Seller'}</span>
-                        {r.custNo ? <span style={{ fontSize: 11, fontWeight: 600, color: colors.textPlaceholder }}>#{r.custNo}</span> : null}
-                      </div>
+                  <div key={r.pw.id} onClick={() => openEdit(r.pw)} className="press-card" style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', cursor: 'pointer', display: 'flex', flexDirection: 'column' }}>
+                    {/* Navy band header with a thin gold line — the pen number is the
+                        prominent label so different pens read apart at a glance. */}
+                    <div style={{ background: '#0E2646', borderBottom: '3px solid #F3D12A', padding: '11px 14px' }}>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', letterSpacing: '-0.01em' }}>{r.pw.pen?.pen_number ? `Pen ${r.pw.pen.pen_number}` : 'No pen'}</div>
+                    </div>
+                    {/* body */}
+                    <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 11 }}>
+                    {/* consignor / buyer */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>{r.name}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '2px 8px', color: r.isBuyer ? '#946A00' : colors.navy, background: r.isBuyer ? '#FBEFC2' : '#E7ECF5', border: `1px solid ${r.isBuyer ? '#EBD489' : '#CBD5E8'}` }}>{r.isBuyer ? `Buyer #${r.pw.buyer_number_text ?? '—'}` : 'Seller'}</span>
+                      {r.custNo ? <span style={{ fontSize: 11, fontWeight: 600, color: colors.textPlaceholder }}>#{r.custNo}</span> : null}
                     </div>
                     {/* labeled rows */}
                     <div style={{ borderTop: `1px solid ${colors.rowDivider}` }}>
@@ -230,9 +269,10 @@ export function WorkOrdersBoard({
                       />
                     </div>
                     {r.pw.notes ? <div style={{ fontSize: 13, fontWeight: 500, color: colors.textPrimary, background: '#FDF7EA', border: '1px solid #F1D9A8', borderRadius: 9, padding: '8px 10px', lineHeight: 1.45 }}>{r.pw.notes}</div> : null}
-                    {/* per-card actions — the ⋯ menu (edit / animal list / print / delete) */}
+                    {/* per-card actions — the more-actions menu (edit / animal list / print / delete) */}
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                       <button type="button" onClick={(e) => openRowMenu(e, r.pw)} aria-label="More actions" style={{ width: 44, height: 44, borderRadius: 9, background: '#fff', border: `1px solid ${colors.border}`, color: colors.navy, fontSize: 18, fontWeight: 800, lineHeight: 1, cursor: 'pointer', flexShrink: 0 }}>⋯</button>
+                    </div>
                     </div>
                   </div>
                 )
