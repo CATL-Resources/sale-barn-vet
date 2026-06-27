@@ -19,6 +19,8 @@ import { SectionCard } from '@/components/ui/section-card'
 import { Button, buttonClass } from '@/components/ui/button'
 import { CheckIcon, FlagIcon, CameraIcon } from '@/components/ui/icons'
 import { Modal } from '@/components/ui/modal'
+import { SortPensView } from '@/components/work-list/sort-pens-view'
+import { fetchSortPens, type SortPenSummary } from '@/lib/work-list/sort-pens'
 
 // Only two states show here — finished jobs are filtered out before this screen.
 type ListStatus = 'not_started' | 'in_progress'
@@ -233,6 +235,12 @@ export function WorkListScreen({
   const [animalsFor, setAnimalsFor] = useState<PenWorkFull | null>(null)
   // The open Mixed-pen roster (the owners sharing one pen), or null when closed.
   const [mixedRoster, setMixedRoster] = useState<MixedGroup | null>(null)
+  // Sort pens for this sale day (the pens cattle were sorted into at the chute).
+  // Loaded on demand on the client — never on the page's server fetch — so it
+  // never slows the Pen List's first paint. Re-pulled whenever the server data
+  // refreshes (penWorks gets a new reference) and right after a close/reopen/move.
+  const [sortPens, setSortPens] = useState<SortPenSummary[]>([])
+  const [sortOpen, setSortOpen] = useState(false)
   const [going, startGo] = useTransition()
   // The yard-crew "Staged" markers, kept locally so a tap flips instantly; seeded
   // from the server and persisted through setPenUp. Keyed by pen, so two jobs in
@@ -339,6 +347,19 @@ export function WorkListScreen({
   useEffect(() => {
     setPrintedByPwId(Object.fromEntries(penWorks.map((pw) => [pw.id, !!pw.label_printed_at])))
   }, [penWorks])
+
+  // Reload the sort pens — after a close/reopen/move, and on every server refresh.
+  const refetchSortPens = useCallback(() => {
+    fetchSortPens(supabase, saleDay.id).then(setSortPens).catch(() => {})
+  }, [supabase, saleDay.id])
+
+  useEffect(() => {
+    let alive = true
+    fetchSortPens(supabase, saleDay.id)
+      .then((list) => { if (alive) setSortPens(list) })
+      .catch(() => {})
+    return () => { alive = false }
+  }, [supabase, saleDay.id, penWorks])
 
   useEffect(() => {
     setDefaultsState(defaultsByPenId)
@@ -652,6 +673,24 @@ export function WorkListScreen({
         </div>
       ) : null}
 
+      {/* SORT PENS — the pens cattle were sorted into; reachable even when the
+          work list is empty (end of day, closing pens out). Hidden when there are
+          none for the day. */}
+      {sortPens.length > 0 ? (
+        <button
+          type="button"
+          onClick={() => setSortOpen(true)}
+          style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', boxSizing: 'border-box', height: 50, padding: '0 16px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit', background: colors.tealPillBg, border: `1px solid ${colors.teal}`, color: colors.teal, textAlign: 'left' }}
+        >
+          <span style={{ fontSize: 15, fontWeight: 800 }}>Sort Pens</span>
+          <span style={{ fontSize: 12, fontWeight: 800, background: colors.teal, color: '#fff', borderRadius: 999, padding: '2px 9px', fontVariantNumeric: 'tabular-nums' }}>{sortPens.length}</span>
+          <span style={{ flex: 1 }} />
+          <span style={{ fontSize: 13, fontWeight: 700, color: colors.teal, whiteSpace: 'nowrap' }}>
+            {sortPens.filter((p) => !p.closedAt).length} open · {sortPens.filter((p) => p.closedAt).length} closed ›
+          </span>
+        </button>
+      ) : null}
+
       {/* LIST */}
       {rows.length === 0 ? (
         <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 14, padding: '48px 20px', textAlign: 'center' }}>
@@ -723,6 +762,17 @@ export function WorkListScreen({
           going={going}
           onOpenJob={(pw) => { setMixedRoster(null); go(pw) }}
           onClose={() => setMixedRoster(null)}
+        />
+      ) : null}
+
+      {/* SORT PENS — close out, reopen, and assign a destination + move. */}
+      {sortOpen ? (
+        <SortPensView
+          saleDayId={saleDay.id}
+          barnId={barn.id}
+          pens={sortPens}
+          onChanged={refetchSortPens}
+          onClose={() => setSortOpen(false)}
         />
       ) : null}
 
