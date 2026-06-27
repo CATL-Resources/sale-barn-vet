@@ -8,6 +8,7 @@ import { STATUS_LABEL, type WorkStatus } from '@/lib/work-orders/status'
 import type { Barn, PenWorkFull, SaleDay } from '@/lib/work-orders/types'
 import { startCapture } from '@/lib/work-orders/start-capture'
 import { setPenUp, setPenDefaults, setPenWorkNote } from '@/app/(office)/work-list/actions'
+import { markLabelPrinted } from '@/components/pen-card/actions'
 import { AnimalListModal } from '@/components/work-orders/board/animal-list-modal'
 import { AnimalAttributes } from '@/components/capture/animal-attributes'
 import { resolveFields, applyPenDefaults, extractPenDefaults, type PenFieldDefaults } from '@/lib/capture/fields'
@@ -243,6 +244,13 @@ export function WorkListScreen({
   const [noteByPwId, setNoteByPwId] = useState<Record<string, string | null>>(
     () => Object.fromEntries(penWorks.map((pw) => [pw.id, pw.notes])),
   )
+  // Which jobs have had their pen card label printed — seeded from the server
+  // (label_printed_at) and flipped on locally the instant the print button is
+  // tapped, so the printed mark shows right away. Re-seeded on every refresh, so
+  // a print done on another device shows here too.
+  const [printedByPwId, setPrintedByPwId] = useState<Record<string, boolean>>(
+    () => Object.fromEntries(penWorks.map((pw) => [pw.id, !!pw.label_printed_at])),
+  )
 
   // The latest in-flight "Staged" pens, held in a ref so the reconcile effect can
   // read it without re-running each time a save starts or finishes.
@@ -306,6 +314,10 @@ export function WorkListScreen({
   // made on another device show here too.
   useEffect(() => {
     setNoteByPwId(Object.fromEntries(penWorks.map((pw) => [pw.id, pw.notes])))
+  }, [penWorks])
+
+  useEffect(() => {
+    setPrintedByPwId(Object.fromEntries(penWorks.map((pw) => [pw.id, !!pw.label_printed_at])))
   }, [penWorks])
 
   useEffect(() => {
@@ -430,6 +442,16 @@ export function WorkListScreen({
     })
   }
 
+  // Print this job's pen card label (the existing Dymo 30323 print view), then
+  // stamp it printed. The window opens synchronously inside the click so the
+  // popup isn't blocked; the printed mark flips on right away and the stamp is
+  // fire-and-forget. Per work order — each job prints and marks its own label.
+  function printCard(pw: PenWorkFull) {
+    window.open(`/print/pen-card/${pw.id}`, '_blank', 'noopener,noreferrer,width=720,height=520')
+    setPrintedByPwId((m) => ({ ...m, [pw.id]: true }))
+    void markLabelPrinted(pw.id)
+  }
+
   const headText = (r: { worked: number; expected: number; status: ListStatus }) =>
     r.status === 'in_progress' ? `${r.worked} of ${r.expected} head` : `${r.expected} head`
 
@@ -450,7 +472,7 @@ export function WorkListScreen({
         <div style={{ flex: 1 }} />
         {photoPens[r.pw.id] ? <IndicatorTag kind="photo" /> : null}
         {noteByPwId[r.pw.id] ? <IndicatorTag kind="note" /> : null}
-        {r.pw.label_printed_at ? <IndicatorTag kind="printed" /> : null}
+        {printedByPwId[r.pw.id] ? <IndicatorTag kind="printed" /> : null}
         <StatusPill status={r.status} />
       </div>
 
@@ -462,21 +484,31 @@ export function WorkListScreen({
       </div>
 
       {/* Row 2 — actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         {r.pw.pen?.id ? (
           <StagedChip up={penUp(r.pw.pen.id)} busy={!!upBusy[r.pw.pen.id]} onToggle={() => toggleUp(r.pw.pen!.id)} />
         ) : null}
         {r.pw.pen?.id && bootstrap ? (
           <SetDefaultChip hasDefaults={!!defaultsState[r.pw.pen.id]} onOpen={() => openDefaults(r.pw)} />
         ) : null}
-        <div style={{ flex: 1 }} />
+        {/* Print this job's pen card label, then mark it printed. */}
+        <span
+          role="button"
+          tabIndex={0}
+          aria-label={printedByPwId[r.pw.id] ? 'Reprint pen card' : 'Print pen card'}
+          onClick={(e) => { e.stopPropagation(); printCard(r.pw) }}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); printCard(r.pw) } }}
+          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 40, padding: '0 16px', borderRadius: 999, cursor: 'pointer', background: '#fff', border: `1px solid ${colors.border}`, color: colors.navy, fontSize: 13, fontWeight: 700 }}
+        >
+          {printedByPwId[r.pw.id] ? 'Reprint' : 'Print'}
+        </span>
         <span
           role="button"
           tabIndex={0}
           aria-label={r.status === 'in_progress' ? 'Resume' : 'Open'}
           onClick={(e) => { e.stopPropagation(); go(r.pw) }}
           className={buttonClass(r.status === 'in_progress' ? 'outline' : 'primary', false, 'wl-rowaction')}
-          style={{ flexShrink: 0, height: 40, gap: 7, padding: '0 18px', borderRadius: 9, fontSize: 14, cursor: going ? 'default' : 'pointer', opacity: going ? 0.6 : 1 }}
+          style={{ flexShrink: 0, height: 40, gap: 7, padding: '0 18px', borderRadius: 9, fontSize: 14, cursor: going ? 'default' : 'pointer', opacity: going ? 0.6 : 1, marginLeft: 'auto' }}
         >
           {r.status === 'in_progress' ? 'Resume' : 'Open'} ›
         </span>
