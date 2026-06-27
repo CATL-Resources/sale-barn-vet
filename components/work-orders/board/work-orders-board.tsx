@@ -1,7 +1,7 @@
 'use client'
 
 import { colors } from '@/components/ui/tokens'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { ScreenHeader } from '@/components/ui/screen-header'
@@ -222,8 +222,8 @@ export function WorkOrdersBoard({
                     <div onClick={() => openEdit(r.pw)} style={{ display: 'grid', gridTemplateColumns: GRID, alignItems: 'stretch', minHeight: 46, padding: '0 18px', cursor: 'pointer' }}>
                       <Cell pad wrap weight={800} size={16} color={colors.navy}>{r.pw.pen?.pen_number ?? '—'}</Cell>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0, padding: '0 10px 0 12px', borderRight: '1px solid #EFF0F4' }}>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: colors.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</span>
                         <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap', color: '#0E2646', background: r.isBuyer ? '#F3D12A' : '#55BAAA', border: `1px solid ${r.isBuyer ? '#E0BE1F' : '#3FA89A'}` }}>{r.isBuyer ? `Buyer #${r.pw.buyer_number_text ?? '—'}` : 'Seller'}</span>
+                        <span style={{ fontSize: 14, fontWeight: 700, color: colors.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</span>
                         {r.custNo ? <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 600, color: colors.textPlaceholder, whiteSpace: 'nowrap' }}>#{r.custNo}</span> : null}
                         <div style={{ flex: 1 }} />
                         {photoPens[r.pw.id] ? (
@@ -243,9 +243,14 @@ export function WorkOrdersBoard({
                       </div>
                     </div>
                     {r.pw.notes ? (
-                      <div style={{ padding: '0 18px 12px 18px' }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: colors.textPlaceholder, marginBottom: 3 }}>Notes</div>
-                        <div style={{ fontSize: 13, fontWeight: 500, color: colors.textPrimary, lineHeight: 1.45 }}>{r.pw.notes}</div>
+                      // Align the note under the CONSIGNOR column (not the pen): an
+                      // empty cell holds the pen column, the note starts at column 2.
+                      <div style={{ display: 'grid', gridTemplateColumns: GRID, padding: '0 18px 12px 18px' }}>
+                        <div />
+                        <div style={{ gridColumn: '2 / -1', paddingLeft: 12 }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: colors.textPlaceholder, marginBottom: 3 }}>Notes</div>
+                          <div style={{ fontSize: 13, fontWeight: 500, color: colors.textPrimary, lineHeight: 1.45 }}>{r.pw.notes}</div>
+                        </div>
                       </div>
                     ) : null}
                   </div>
@@ -277,8 +282,8 @@ export function WorkOrdersBoard({
                     <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 11 }}>
                     {/* consignor / buyer */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>{r.name}</span>
                       <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '2px 8px', color: '#0E2646', background: r.isBuyer ? '#F3D12A' : '#55BAAA', border: `1px solid ${r.isBuyer ? '#E0BE1F' : '#3FA89A'}` }}>{r.isBuyer ? `Buyer #${r.pw.buyer_number_text ?? '—'}` : 'Seller'}</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>{r.name}</span>
                       {r.custNo ? <span style={{ fontSize: 11, fontWeight: 600, color: colors.textPlaceholder }}>#{r.custNo}</span> : null}
                     </div>
                     {/* labeled rows */}
@@ -364,7 +369,13 @@ export function WorkOrdersBoard({
       ) : null}
 
       {viewer ? (
-        <PhotoViewer pw={viewer} barnId={barn.id} supabase={supabase} onClose={() => setViewer(null)} />
+        <PhotoViewer
+          pw={viewer}
+          barnId={barn.id}
+          supabase={supabase}
+          onClose={() => setViewer(null)}
+          onChanged={(count) => setPhotoPens((m) => ({ ...m, [viewer.id]: count > 0 }))}
+        />
       ) : null}
     </div>
   )
@@ -398,46 +409,61 @@ function Cell({ children, pad, end, ellipsis, wrap, color = colors.textPrimary, 
   )
 }
 
-// Read-only photo viewer for a work order. Photos live only in the private
-// pen-photos bucket under {barn_id}/{pen_work_id}/; we list that prefix and sign
-// each object for display. A large current image plus a thumbnail strip — no
-// upload, no delete on this screen.
-function PhotoViewer({ pw, barnId, supabase, onClose }: { pw: PenWorkFull; barnId: string; supabase: ReturnType<typeof createClient>; onClose: () => void }) {
-  const [photos, setPhotos] = useState<string[]>([])
+// Photo viewer for a work order. Photos live only in the private pen-photos
+// bucket under {barn_id}/{pen_work_id}/; we list that prefix and sign each
+// object for display, keeping each one's storage path so it can be deleted (the
+// pen_photos_delete_own_barn policy allows it). A large current image, a
+// thumbnail strip, and a delete control on the current photo. Deleting the last
+// photo clears the row's Photos pill via onChanged.
+function PhotoViewer({ pw, barnId, supabase, onClose, onChanged }: { pw: PenWorkFull; barnId: string; supabase: ReturnType<typeof createClient>; onClose: () => void; onChanged: (count: number) => void }) {
+  const [photos, setPhotos] = useState<{ url: string; path: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [failed, setFailed] = useState(false)
   const [idx, setIdx] = useState(0)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteFailed, setDeleteFailed] = useState(false)
+  const alive = useRef(true)
+  useEffect(() => () => { alive.current = false }, [])
 
-  useEffect(() => {
-    let alive = true
-    setLoading(true)
+  // List + sign this work order's photos, keeping each storage path. Returns the
+  // count so delete can clamp the carousel and tell the board.
+  const load = useCallback(async (): Promise<number> => {
     setFailed(false)
-    void (async () => {
-      const { data, error } = await supabase.storage
-        .from('pen-photos')
-        .list(`${barnId}/${pw.id}`, { limit: 100, sortBy: { column: 'name', order: 'asc' } })
-      if (!alive) return
-      if (error || !data) {
-        setFailed(true)
-        setLoading(false)
-        return
-      }
-      const files = data.filter((e) => e.id !== null) // real files, not nested folders
-      if (!files.length) {
-        setPhotos([])
-        setLoading(false)
-        return
-      }
-      const paths = files.map((f) => `${barnId}/${pw.id}/${f.name}`)
-      const { data: signed } = await supabase.storage.from('pen-photos').createSignedUrls(paths, 3600)
-      if (!alive) return
-      setPhotos((signed ?? []).map((s) => s.signedUrl).filter((u): u is string => !!u))
-      setLoading(false)
-    })()
-    return () => {
-      alive = false
-    }
+    const { data, error } = await supabase.storage
+      .from('pen-photos')
+      .list(`${barnId}/${pw.id}`, { limit: 100, sortBy: { column: 'name', order: 'asc' } })
+    if (!alive.current) return 0
+    if (error || !data) { setFailed(true); setPhotos([]); setLoading(false); return 0 }
+    const files = data.filter((e) => e.id !== null) // real files, not nested folders
+    if (!files.length) { setPhotos([]); setLoading(false); return 0 }
+    const paths = files.map((f) => `${barnId}/${pw.id}/${f.name}`)
+    const { data: signed } = await supabase.storage.from('pen-photos').createSignedUrls(paths, 3600)
+    if (!alive.current) return 0
+    const next = (signed ?? [])
+      .map((s, i) => ({ url: s.signedUrl, path: paths[i] }))
+      .filter((p): p is { url: string; path: string } => !!p.url)
+    setPhotos(next)
+    setLoading(false)
+    return next.length
   }, [supabase, barnId, pw.id])
+
+  useEffect(() => { setLoading(true); void load() }, [load])
+
+  // Delete the photo on screen, after a confirm, then refresh and clamp.
+  async function deleteCurrent(path: string) {
+    if (!window.confirm('Delete this photo? This can’t be undone.')) return
+    setDeleting(true); setDeleteFailed(false)
+    try {
+      const { error } = await supabase.storage.from('pen-photos').remove([path])
+      if (error) throw error
+      const n = await load()
+      if (alive.current) { setIdx((i) => Math.max(0, Math.min(i, n - 1))); onChanged(n) }
+    } catch {
+      if (alive.current) setDeleteFailed(true)
+    } finally {
+      if (alive.current) setDeleting(false)
+    }
+  }
 
   const name = (pw.buyer_party_id ? pw.buyer : pw.seller)?.name ?? '—'
   const title = `${pw.pen?.pen_number ? `Pen ${pw.pen.pen_number}` : 'No pen'} · ${name}`
@@ -465,15 +491,23 @@ function PhotoViewer({ pw, barnId, supabase, onClose }: { pw: PenWorkFull; barnI
             <>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 240, maxHeight: '56vh', borderRadius: 10, background: '#0A1B33', overflow: 'hidden' }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={photos[cur]} alt={`Photo ${cur + 1}`} decoding="async" loading="lazy" style={{ maxWidth: '100%', maxHeight: '56vh', objectFit: 'contain' }} />
+                <img src={photos[cur]?.url} alt={`Photo ${cur + 1}`} decoding="async" loading="lazy" style={{ maxWidth: '100%', maxHeight: '56vh', objectFit: 'contain' }} />
               </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: colors.textMuted, fontVariantNumeric: 'tabular-nums' }}>Photo {cur + 1} of {photos.length}</span>
+                <button type="button" onClick={() => { const t = photos[cur]; if (t && !deleting) void deleteCurrent(t.path) }} disabled={deleting}
+                  style={{ height: 34, padding: '0 14px', borderRadius: 8, border: `1px solid ${colors.border}`, background: '#fff', color: colors.danger, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: deleting ? 'default' : 'pointer' }}>
+                  {deleting ? 'Deleting…' : 'Delete photo'}
+                </button>
+              </div>
+              {deleteFailed ? <div style={{ fontSize: 12, fontWeight: 700, color: colors.danger }}>Couldn’t delete the photo — try again.</div> : null}
               {photos.length > 1 ? (
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {photos.map((u, i) => (
+                  {photos.map((p, i) => (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      key={i}
-                      src={u}
+                      key={p.path}
+                      src={p.url}
                       alt={`Thumbnail ${i + 1}`}
                       onClick={() => setIdx(i)}
                       decoding="async"
