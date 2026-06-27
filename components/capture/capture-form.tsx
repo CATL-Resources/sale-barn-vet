@@ -330,7 +330,7 @@ export function CaptureForm({
         </div>
       </div>
 
-      <div className="sbv-screenheader" style={{ position: 'relative', zIndex: 1, boxShadow: '0 6px 18px rgba(8,18,40,0.30)' }}>
+      <div className="sbv-screenheader" style={{ position: 'relative', zIndex: 1, boxShadow: '0 6px 18px rgba(8,18,40,0.30)', borderBottomLeftRadius: 18, borderBottomRightRadius: 18 }}>
         <div className="sbv-container" style={{ paddingTop: 0, paddingBottom: 14 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF', fontVariantNumeric: 'tabular-nums' }}>

@@ -18,12 +18,12 @@ import { AnimalListModal } from './animal-list-modal'
 // together), then consignor, work type, head, worked, status, actions. The pen
 // column is wide enough for a full typed label (not just a 2-digit number) and
 // its cell wraps, so a longer pen label like "North 3" shows in full instead of
-// being clipped. Work type gets the most room and is allowed to wrap to two
-// lines, so a full name like "Preg and Mouth Combo" shows in full; the other
-// columns are tightened to make room. Fluid widths so the table fits a tablet
-// (>=768px) without sideways scroll; the phone gets stacked cards instead (see
-// .wo-cards / .wo-board-table).
-const GRID = '88px minmax(110px, 1fr) minmax(150px, 1.1fr) 52px 80px 104px 116px'
+// being clipped. Consignor gets the most room and is allowed to wrap, so a long
+// consignor name fits more before it truncates; the work-type column is narrowed
+// to hand that width over. Fluid widths so the table fits a tablet (>=768px)
+// without sideways scroll; the phone gets stacked cards instead (see .wo-cards /
+// .wo-board-table).
+const GRID = '88px minmax(150px, 1.5fr) minmax(108px, 0.8fr) 52px 80px 104px 116px'
 
 const STATUS_STYLE: Record<WorkStatus, { bg: string; border: string; color: string; dot: string }> = {
   not_started: { bg: '#F3F3F0', border: '#E4E4DE', color: '#717182', dot: '#C2C2CA' },
@@ -213,14 +213,17 @@ export function WorkOrdersBoard({
               {rows.map((r, i) => {
                 const st = STATUS_STYLE[r.status]
                 const worked = r.status === 'not_started' ? '—' : r.status === 'in_progress' ? `${r.pw.head_worked ?? 0} of ${r.pw.head_expected ?? 0}` : String(r.pw.head_worked ?? 0)
-                const workedColor = r.status === 'not_started' ? '#C2C2CA' : r.status === 'in_progress' ? '#B45309' : colors.textPrimary
+                // Worked != head (expected): flag the WORKED number warn orange + bold.
+                // Only when a worked number actually shows (not the "—" of not started).
+                const workedMismatch = r.status !== 'not_started' && (r.pw.head_worked ?? 0) !== (r.pw.head_expected ?? 0)
+                const workedColor = workedMismatch ? '#F59E0B' : r.status === 'not_started' ? '#C2C2CA' : r.status === 'in_progress' ? '#B45309' : colors.textPrimary
                 return (
                   <div key={r.pw.id} style={{ background: i % 2 === 1 ? '#FAFBFC' : '#fff', borderBottom: i < rows.length - 1 ? `1px solid ${colors.rowDivider}` : 'none' }}>
                     <div onClick={() => openEdit(r.pw)} style={{ display: 'grid', gridTemplateColumns: GRID, alignItems: 'stretch', minHeight: 46, padding: '0 18px', cursor: 'pointer' }}>
                       <Cell pad wrap weight={800} size={16} color={colors.navy}>{r.pw.pen?.pen_number ?? '—'}</Cell>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 7, minWidth: 0, padding: '0 10px 0 12px', borderRight: '1px solid #EFF0F4' }}>
                         <span style={{ fontSize: 14, fontWeight: 700, color: colors.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</span>
-                        <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap', color: r.isBuyer ? '#946A00' : colors.navy, background: r.isBuyer ? '#FBEFC2' : '#E7ECF5', border: `1px solid ${r.isBuyer ? '#EBD489' : '#CBD5E8'}` }}>{r.isBuyer ? `Buyer #${r.pw.buyer_number_text ?? '—'}` : 'Seller'}</span>
+                        <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap', color: '#0E2646', background: r.isBuyer ? '#F3D12A' : '#55BAAA', border: `1px solid ${r.isBuyer ? '#E0BE1F' : '#3FA89A'}` }}>{r.isBuyer ? `Buyer #${r.pw.buyer_number_text ?? '—'}` : 'Seller'}</span>
                         {r.custNo ? <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 600, color: colors.textPlaceholder, whiteSpace: 'nowrap' }}>#{r.custNo}</span> : null}
                         <div style={{ flex: 1 }} />
                         {photoPens[r.pw.id] ? (
@@ -230,7 +233,7 @@ export function WorkOrdersBoard({
                       </div>
                       <Cell pad wrap color={r.pw.workType ? colors.textPrimary : colors.textPlaceholder} weight={600} size={13}>{r.pw.workType?.name ?? '—'}</Cell>
                       <Cell end weight={800} size={15} color={colors.teal}>{r.pw.head_expected ?? 0}</Cell>
-                      <Cell end weight={700} size={13} color={workedColor}>{worked}</Cell>
+                      <Cell end weight={workedMismatch ? 800 : 700} size={13} color={workedColor}>{worked}</Cell>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 12px', borderRight: '1px solid #EFF0F4' }}>
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 24, padding: '0 10px', borderRadius: 999, background: st.bg, border: `1px solid ${st.border}`, fontSize: 12, fontWeight: 700, color: st.color, whiteSpace: 'nowrap' }}><span style={{ width: 7, height: 7, borderRadius: 999, background: st.dot }} />{STATUS_LABEL[r.status]}</span>
                       </div>
@@ -259,7 +262,10 @@ export function WorkOrdersBoard({
               {rows.map((r) => {
                 const st = STATUS_STYLE[r.status]
                 const worked = r.status === 'not_started' ? '—' : r.status === 'in_progress' ? `${r.pw.head_worked ?? 0} of ${r.pw.head_expected ?? 0}` : String(r.pw.head_worked ?? 0)
-                const workedColor = r.status === 'not_started' ? '#C2C2CA' : r.status === 'in_progress' ? '#B45309' : colors.textPrimary
+                // Worked != head (expected): flag the WORKED number warn orange + bold.
+                // Only when a worked number actually shows (not the "—" of not started).
+                const workedMismatch = r.status !== 'not_started' && (r.pw.head_worked ?? 0) !== (r.pw.head_expected ?? 0)
+                const workedColor = workedMismatch ? '#F59E0B' : r.status === 'not_started' ? '#C2C2CA' : r.status === 'in_progress' ? '#B45309' : colors.textPrimary
                 return (
                   <div key={r.pw.id} onClick={() => openEdit(r.pw)} className="press-card" style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', cursor: 'pointer', display: 'flex', flexDirection: 'column' }}>
                     {/* Navy band header with a thin gold line — the pen number is the
@@ -272,14 +278,14 @@ export function WorkOrdersBoard({
                     {/* consignor / buyer */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>{r.name}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '2px 8px', color: r.isBuyer ? '#946A00' : colors.navy, background: r.isBuyer ? '#FBEFC2' : '#E7ECF5', border: `1px solid ${r.isBuyer ? '#EBD489' : '#CBD5E8'}` }}>{r.isBuyer ? `Buyer #${r.pw.buyer_number_text ?? '—'}` : 'Seller'}</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '2px 8px', color: '#0E2646', background: r.isBuyer ? '#F3D12A' : '#55BAAA', border: `1px solid ${r.isBuyer ? '#E0BE1F' : '#3FA89A'}` }}>{r.isBuyer ? `Buyer #${r.pw.buyer_number_text ?? '—'}` : 'Seller'}</span>
                       {r.custNo ? <span style={{ fontSize: 11, fontWeight: 600, color: colors.textPlaceholder }}>#{r.custNo}</span> : null}
                     </div>
                     {/* labeled rows */}
                     <div style={{ borderTop: `1px solid ${colors.rowDivider}` }}>
                       <CardRow label="Work type" value={<span style={{ color: r.pw.workType ? colors.textPrimary : colors.textPlaceholder }}>{r.pw.workType?.name ?? 'No work type'}</span>} />
                       <CardRow label="Head" value={<span style={{ color: colors.teal }}>{r.pw.head_expected ?? 0}</span>} />
-                      <CardRow label="Worked" value={<span style={{ color: workedColor }}>{worked}</span>} />
+                      <CardRow label="Worked" value={<span style={{ color: workedColor, fontWeight: workedMismatch ? 800 : undefined }}>{worked}</span>} />
                       <CardRow
                         label="Status"
                         last
