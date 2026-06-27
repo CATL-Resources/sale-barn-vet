@@ -28,6 +28,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
+- work orders board — pill before name, restore photo delete, note under consignor _(2026-06-27, `d0bba1e`)_
 - a required field that's blank now blocks the save (not just EID) _(2026-06-25, `4afa527`)_
 - pen labels clip on the office Work Orders board _(2026-06-24, `d96cb4d`)_
 - duplicate-EID check must not fail silently on a query error _(2026-06-24, `2440e84`)_
@@ -59,7 +60,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
-- Harden chute wand scan ingest (Part A: the assembly engine) _(2026-06-27, `37e8310`)_
+- Harden chute wand scan ingest (Part A: the assembly engine) _(2026-06-27, `ac95256`)_
 - Office + capture formatting polish (visual only) _(2026-06-27, `a21b2a2`)_
 - Sort-pen closeout on the chute Pen List _(2026-06-27, `45733a8`)_
 - Add the closed-out marker columns to pen (closed_at, closed_by) _(2026-06-27, `9605df2`)_
