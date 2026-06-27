@@ -4,7 +4,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **work-list:** sort-pen closeout on the chute Pen List _(2026-06-27, `dc9a53e`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -60,6 +59,9 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Harden chute wand scan ingest (Part A: the assembly engine) _(2026-06-27, `37e8310`)_
+- Office + capture formatting polish (visual only) _(2026-06-27, `a21b2a2`)_
+- Sort-pen closeout on the chute Pen List _(2026-06-27, `45733a8`)_
 - Add the closed-out marker columns to pen (closed_at, closed_by) _(2026-06-27, `9605df2`)_
 - Show mixed pens as one grouped card on the chute Pen List _(2026-06-27, `4208bda`)_
 - backstop unique index for duplicate EIDs within a work order _(2026-06-26, `b9e9d54`)_
