@@ -42,6 +42,24 @@ function buyerNo(pw: PenWorkFull): string | null {
   return pw.buyer_number_text?.trim() || pw.buyerNumber?.number?.trim() || null
 }
 
+// The owner of a job: the consignor (seller) it's for, or the buyer on a
+// buyer-side order. A pen is "mixed" when its open jobs name more than one
+// distinct owner — animals from two customers share the one pen. One owner with
+// two work types is NOT mixed.
+function ownerKey(pw: PenWorkFull): string | null {
+  return pw.seller_party_id ?? pw.buyer_party_id ?? null
+}
+
+// One job inside a mixed pen — just the bits the Mixed card and its roster show.
+type MixedJob = {
+  pw: PenWorkFull
+  name: string
+  worked: number
+  expected: number
+  status: ListStatus
+}
+type MixedGroup = { penId: string; penNumber: string; rows: MixedJob[] }
+
 // A little printer outline for the "label printed" mark.
 function PrinterIcon({ color, size = 14 }: { color: string; size?: number }) {
   return (
@@ -213,6 +231,8 @@ export function WorkListScreen({
   const router = useRouter()
   const [selected, setSelected] = useState<PenWorkFull | null>(null)
   const [animalsFor, setAnimalsFor] = useState<PenWorkFull | null>(null)
+  // The open Mixed-pen roster (the owners sharing one pen), or null when closed.
+  const [mixedRoster, setMixedRoster] = useState<MixedGroup | null>(null)
   const [going, startGo] = useTransition()
   // The yard-crew "Staged" markers, kept locally so a tap flips instantly; seeded
   // from the server and persisted through setPenUp. Keyed by pen, so two jobs in
@@ -516,6 +536,89 @@ export function WorkListScreen({
     </div>
   )
 
+  // In the By Pen view, fold a pen's jobs into ONE "Mixed" card when that pen
+  // holds more than one distinct owner (animals from two customers share it).
+  // One owner with two work types is NOT mixed — those stay separate cards, just
+  // like before. We group by pen id, so the rows' order doesn't matter; a pen
+  // with finished-only jobs never reaches this screen, so it never shows here.
+  type ListItem = { kind: 'single'; row: Row } | { kind: 'mixed'; group: MixedGroup }
+  const toItems = (rs: Row[]): ListItem[] => {
+    const order: string[] = []
+    const groups = new Map<string, Row[]>()
+    for (const r of rs) {
+      const key = r.pw.pen?.id ?? `nopen:${r.pw.id}`
+      const list = groups.get(key)
+      if (list) list.push(r)
+      else { groups.set(key, [r]); order.push(key) }
+    }
+    const items: ListItem[] = []
+    for (const key of order) {
+      const grp = groups.get(key)!
+      const penId = grp[0].pw.pen?.id
+      const penNumber = grp[0].pw.pen?.pen_number
+      const owners = new Set(grp.map((r) => ownerKey(r.pw)).filter((x): x is string => !!x))
+      if (penId && penNumber && owners.size > 1) {
+        items.push({ kind: 'mixed', group: { penId, penNumber, rows: grp } })
+      } else {
+        for (const r of grp) items.push({ kind: 'single', row: r })
+      }
+    }
+    return items
+  }
+
+  // The Mixed card: pen number, a clear "Mixed" marker, total head, and the
+  // owner breakdown (each customer with their head). Read-only — it shows what
+  // the work orders already say and changes no head or billing. Tapping it opens
+  // the roster; the pen-level Staged chip stays on the card (staging is per pen).
+  const renderMixedCard = (g: MixedGroup) => {
+    const owners: { key: string; name: string; head: number; worked: number }[] = []
+    const byOwner = new Map<string, (typeof owners)[number]>()
+    for (const r of g.rows) {
+      const key = ownerKey(r.pw) ?? r.pw.id
+      const o = byOwner.get(key)
+      if (o) { o.head += r.expected; o.worked += r.worked }
+      else { const rec = { key, name: r.name, head: r.expected, worked: r.worked }; byOwner.set(key, rec); owners.push(rec) }
+    }
+    const totalHead = g.rows.reduce((a, r) => a + r.expected, 0)
+    const totalWorked = g.rows.reduce((a, r) => a + r.worked, 0)
+    const headStr = totalWorked > 0 ? `${totalWorked} of ${totalHead} head` : `${totalHead} head`
+    return (
+      <div
+        key={`mixed:${g.penId}`}
+        role="button"
+        tabIndex={0}
+        className="wl-card"
+        onClick={() => setMixedRoster(g)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMixedRoster(g) } }}
+      >
+        {/* Row 1 — pen + the Mixed marker + total head */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 19, fontWeight: 800, color: colors.navy, letterSpacing: '-0.01em' }}>Pen {g.penNumber}</span>
+          <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: colors.gold, background: colors.navy, borderRadius: 999, padding: '3px 10px' }}>Mixed</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: colors.textMuted }}>{owners.length} owners</span>
+          <div style={{ flex: 1 }} />
+          <span style={{ fontSize: 13, fontWeight: 700, color: colors.textMuted, whiteSpace: 'nowrap' }}>{headStr}</span>
+        </div>
+
+        {/* Owner breakdown — each customer sharing the pen, with their head. */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+          {owners.map((o) => (
+            <div key={o.key} style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: colors.teal, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.name}</span>
+              <span style={{ flexShrink: 0, fontSize: 13, fontWeight: 600, color: colors.textMuted, fontVariantNumeric: 'tabular-nums' }}>{o.worked > 0 ? `${o.worked} of ${o.head}` : o.head} head</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Actions — stage the whole pen (staging is per pen), and open the roster. */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <StagedChip up={penUp(g.penId)} busy={!!upBusy[g.penId]} onToggle={() => toggleUp(g.penId)} />
+          <span style={{ marginLeft: 'auto', fontSize: 14, fontWeight: 700, color: colors.navy }}>View {owners.length} owners ›</span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <>
       {/* HEADER — one tight navy block: title + date on the left, the pen/head
@@ -575,7 +678,10 @@ export function WorkListScreen({
                 <span style={{ fontSize: 12, fontWeight: 700, color: colors.textMuted, fontVariantNumeric: 'tabular-nums' }}>{section.rows.length} {section.rows.length === 1 ? 'pen' : 'pens'}</span>
               </div>
             ) : null}
-            {section.rows.map((r) => renderCard(r))}
+            {(groupBy === 'pen'
+              ? toItems(section.rows)
+              : section.rows.map((r): ListItem => ({ kind: 'single', row: r }))
+            ).map((it) => (it.kind === 'mixed' ? renderMixedCard(it.group) : renderCard(it.row)))}
           </div>
         ))
       )}
@@ -608,6 +714,18 @@ export function WorkListScreen({
         />
       ) : null}
 
+      {/* MIXED PEN ROSTER — the owners sharing one pen. Read-only; the one action
+          is opening an owner's job to work it (the same capture flow as a normal
+          card). Head moves and reassignment are a later slice. */}
+      {mixedRoster ? (
+        <MixedRoster
+          group={mixedRoster}
+          going={going}
+          onOpenJob={(pw) => { setMixedRoster(null); go(pw) }}
+          onClose={() => setMixedRoster(null)}
+        />
+      ) : null}
+
       {/* SET DEFAULTS — the per-pen editor (same fields the work type captures) */}
       {editing && bootstrap ? (
         <PenDefaultsEditor
@@ -624,6 +742,76 @@ export function WorkListScreen({
       ) : null}
       </div>
     </>
+  )
+}
+
+// The roster behind a Mixed card: every owner sharing the pen, with their head,
+// work type and status. Read-only here — the one action is opening a job to work
+// it (the same capture flow the normal cards use). Head moves / reassignment are
+// a later slice, so nothing here changes head or billing.
+function MixedRoster({
+  group, going, onOpenJob, onClose,
+}: {
+  group: MixedGroup
+  going: boolean
+  onOpenJob: (pw: PenWorkFull) => void
+  onClose: () => void
+}) {
+  const totalHead = group.rows.reduce((a, r) => a + r.expected, 0)
+  const totalWorked = group.rows.reduce((a, r) => a + r.worked, 0)
+  const headStr = totalWorked > 0 ? `${totalWorked} of ${totalHead} head` : `${totalHead} head`
+  const ownerCount = new Set(group.rows.map((r) => ownerKey(r.pw) ?? r.pw.id)).size
+  // Sort by owner name so an owner's work types sit together.
+  const jobs = [...group.rows].sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }))
+
+  return (
+    <Modal
+      size="md"
+      align="top"
+      zIndex={70}
+      onClose={onClose}
+      overlayStyle={{ padding: 0 }}
+      panelStyle={{ background: '#F5F5F0', borderRadius: 0, boxShadow: 'none' }}
+    >
+      <div style={{ background: colors.navy, flexShrink: 0, padding: 'calc(14px + env(safe-area-inset-top)) 16px 16px', color: '#fff' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button type="button" onClick={onClose} aria-label="Back" style={{ width: 34, height: 34, flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', color: '#fff', fontSize: 22 }}>‹</button>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 21, fontWeight: 800, letterSpacing: '-0.01em' }}>Pen {group.penNumber}</span>
+              <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: colors.navy, background: colors.gold, borderRadius: 999, padding: '3px 10px' }}>Mixed</span>
+            </div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#55BAAA', marginTop: 1 }}>{ownerCount} owners · {headStr}</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 10, flex: 1, overflowY: 'auto' }}>
+        {jobs.map((r) => {
+          const headValue = r.status === 'in_progress' ? `${r.worked} of ${r.expected} head` : `${r.expected} head`
+          return (
+            <div key={r.pw.id} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 14, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 16, fontWeight: 800, color: colors.navy, minWidth: 0 }}>{r.name}</span>
+                <div style={{ flex: 1 }} />
+                <StatusPill status={r.status} />
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted }}>{r.pw.workType?.name ?? 'Work'} · {headValue}</div>
+              <Button
+                variant={r.status === 'in_progress' ? 'outline' : 'primary'}
+                type="button"
+                onClick={() => onOpenJob(r.pw)}
+                disabled={going}
+                fullWidth
+                style={{ height: 48, gap: 8, borderRadius: 12, fontSize: 16, fontWeight: 800 }}
+              >
+                {going ? 'Opening…' : r.status === 'in_progress' ? 'Resume' : 'Start Working'} ›
+              </Button>
+            </div>
+          )
+        })}
+      </div>
+    </Modal>
   )
 }
 
