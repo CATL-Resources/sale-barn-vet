@@ -4,7 +4,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **reports:** Customer Report + Animal Sale Summary, with per-customer drill-down _(2026-06-26, `b3142b4`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -39,6 +38,10 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 - **work-orders:** close the edit panel; pen-first row + three-dots menu _(2026-06-20, `abe7e7b`)_
 - **capture:** stop the field cards from clipping their rows _(2026-06-19, `a749dc6`)_
 
+## Performance
+
+- **capture:** make Save & next (and its confirmation) fire faster _(2026-06-27, `9ba0fbe`)_
+
 ## Refactor
 
 - **layout:** one shared content container (--content-max); layouts own the shell _(2026-06-21, `8c18143`)_
@@ -60,6 +63,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Reports hub: Customer Report + Animal Sale Summary, with per-customer drill-down _(2026-06-26, `e4e4b0f`)_
 - Reports hub: Billing view — vet, sales tax, admin, SOL as separate buckets _(2026-06-26, `9a99842`)_
 - Reports hub: shell + scope/search/switcher + Animals view _(2026-06-26, `1d824e4`)_
 - Stronger save confirmation at the chute — big visual, beep, buzz _(2026-06-26, `0d055e5`)_
