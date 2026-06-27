@@ -13,7 +13,7 @@ import { fieldRequired, fieldShows, type ResolvedFields } from '@/lib/capture/fi
 import { ChevronDown, ChevronUp, CalendarIcon, PencilIcon, FlagIcon, CheckIcon } from './icons'
 import { OptionPicker, type Option } from './sheets'
 import { SectionCard } from '@/components/ui/section-card'
-import { RequiredMark } from '@/components/ui/required-mark'
+import { RequiredMark, RequiredAccent } from '@/components/ui/required-mark'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -58,6 +58,19 @@ export function AnimalAttributes({
 
   const shows = (k: string) => fieldShows(k, { resolved, pregStatus: draft.pregStatus })
   const required = (k: string) => fieldRequired(k, resolved)
+  // Whether a field has an answer yet — drives the required accent (amber empty,
+  // green filled). One place so the map below stays simple.
+  const fieldFilled = (k: string): boolean => {
+    switch (k) {
+      case 'age': return !!draft.ageDesignation
+      case 'breed': return !!draft.breed
+      case 'hide_color': return !!draft.color
+      case 'preg_stage': return !!draft.pregStatus
+      case 'preg_timing': return !!draft.pregTiming
+      case 'fetal_sex': return !!draft.fetalSex
+      default: return false
+    }
+  }
 
   const orderedFields = CARD_FIELDS.filter((k) => shows(k)).sort(
     (a, b) => (resolved.get(a)?.sort_order ?? 0) - (resolved.get(b)?.sort_order ?? 0),
@@ -176,7 +189,20 @@ export function AnimalAttributes({
           the extra label was a wasted row on the chute. */}
       {orderedFields.length > 0 && (
         <div style={{ background: '#FFFFFF', border: '1px solid #E4E4DE', borderRadius: 14, padding: 12 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>{orderedFields.map((k) => renderField(k))}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Required fields get a left accent — amber until answered, green once
+                filled — so it's obvious at a glance what's still to fill. */}
+            {orderedFields.map((k) =>
+              required(k) ? (
+                <div key={k} style={{ display: 'flex', gap: 9 }}>
+                  <RequiredAccent filled={fieldFilled(k)} />
+                  <div style={{ flex: 1, minWidth: 0 }}>{renderField(k)}</div>
+                </div>
+              ) : (
+                renderField(k)
+              ),
+            )}
+          </div>
         </div>
       )}
 

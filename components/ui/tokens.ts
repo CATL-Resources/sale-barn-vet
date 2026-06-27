@@ -22,7 +22,8 @@ export const colors = {
   drawerSelected: '#F3F6FB',
   danger: '#E24B4A',
   dangerBg: '#FCEBEB',
-  warning: '#F59E0B', // amber status dot
+  warning: '#F59E0B', // amber status dot / required field not yet filled
+  success: '#16A34A', // green "done" — filled required field; matches the save-confirmation green
   // Work-orders screen additions
   bronze: '#B45309', // under-worked head warning ("X of Y")
   buyerRole: '#946A00', // "Buyer #N" role label

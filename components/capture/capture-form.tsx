@@ -1,15 +1,15 @@
 'use client'
 
-import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import type { CaptureApi } from '@/lib/capture/use-capture'
 import { useScanRouter } from '@/lib/capture/use-scan-router'
 import { useOnScreenKeyboard } from '@/lib/capture/use-onscreen-keyboard'
 import { isBackTag } from '@/lib/capture/scan-format'
 import { isScannableField } from '@/lib/capture/fields'
-import { ChevronLeft, ScanIcon, SortIcon, CloseOutIcon, FlagIcon, CheckIcon, XIcon, KeyboardIcon } from './icons'
+import { ChevronLeft, ChevronUp, ChevronDown, ScanIcon, SortIcon, CloseOutIcon, FlagIcon, CheckIcon, XIcon, KeyboardIcon } from './icons'
 import { ScreenHeader } from '@/components/ui/screen-header'
 import { Button } from '@/components/ui/button'
-import { RequiredMark } from '@/components/ui/required-mark'
+import { RequiredMark, RequiredAccent } from '@/components/ui/required-mark'
 import { AnimalAttributes } from './animal-attributes'
 import { OnScreenKeyboard } from './onscreen-keyboard'
 import { StatusBanner } from './status-banner'
@@ -86,6 +86,11 @@ export function CaptureForm({
   const eidRef = useRef<HTMLInputElement>(null)
   const idRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const [eidType, setEidType] = useState('')
+  // The navy banner collapses to a compact pills-only row so the form (and the
+  // Save button) gets the vertical space. Default collapsed; the choice is
+  // remembered per device. Start collapsed and only expand if the device asked
+  // for it, so first paint matches the default with no flash.
+  const [headerCollapsed, setHeaderCollapsed] = useState(true)
 
   // The app's own on-screen keyboard (for when a paired wand makes iOS hide the
   // native one). Types into whichever capture field has focus.
@@ -106,6 +111,15 @@ export function CaptureForm({
   useEffect(() => {
     if (flag) setEidType('')
   }, [flag])
+
+  // Restore the remembered banner state once on mount (default stays collapsed).
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem('sbv.capture.headerCollapsed') === '0') setHeaderCollapsed(false)
+    } catch {
+      /* storage blocked — keep the default */
+    }
+  }, [])
 
   // When the operator opens the secondary EID slot, drop the cursor in it.
   useEffect(() => {
@@ -132,6 +146,17 @@ export function CaptureForm({
   }, [focusTick])
 
   if (!batch) return null
+
+  const toggleHeader = () =>
+    setHeaderCollapsed((c) => {
+      const next = !c
+      try {
+        window.localStorage.setItem('sbv.capture.headerCollapsed', next ? '1' : '0')
+      } catch {
+        /* ignore */
+      }
+      return next
+    })
 
   const head = batch.headStarted
   const left = head != null ? Math.max(0, head - worked) : null
@@ -171,9 +196,7 @@ export function CaptureForm({
   }
 
   // --- identity inputs (typed tags) ---
-  // `trailing` rides on the same row, to the right of the input — used to tuck
-  // the "+ 2nd EID" pill onto the back-tag row instead of giving it its own line.
-  const navyInput = (key: 'backTag' | 'visualTag' | 'metalTag', label: string, placeholder: string, trailing?: ReactNode) => {
+  const navyInput = (key: 'backTag' | 'visualTag' | 'metalTag', label: string, placeholder: string) => {
     const fieldKey = key === 'backTag' ? 'back_tag' : key === 'visualTag' ? 'visual_tag' : 'metal_tag'
     // The back-tag field takes only the 8-char shape 46MA1234: upper-case the
     // letters and cap the length as it's typed (or filled by the on-screen
@@ -197,7 +220,6 @@ export function CaptureForm({
             onFocus={() => { bind.onFocus(); setSecondEidTarget(false) }}
             style={{ flex: 1, minWidth: 0, height: 46, padding: '0 13px', borderRadius: 11, background: 'rgba(255,255,255,0.08)', border: `1px solid ${badBackTag ? '#E24B4A' : 'rgba(255,255,255,0.18)'}`, color: '#FFFFFF', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, outline: 'none' }}
           />
-          {trailing}
         </div>
         {badBackTag && (
           <div style={{ marginLeft: 70, marginTop: 4, fontSize: 11, fontWeight: 600, color: '#F3B0B0' }}>
@@ -253,96 +275,10 @@ export function CaptureForm({
     </div>
   )
 
-  // The EID field — the rich scan/typed-tag block. Rendered in its config slot
-  // among the identity fields below.
-  const eidBlock = (
-    <div style={{ marginBottom: 9 }}>
-      {active ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <RequiredMark />}</div>
-          <div style={{ flex: 1, minWidth: 0, minHeight: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '6px 13px', borderRadius: 11, background: isEid15(draft.eid) ? '#E1F5EE' : '#FEF3C7', border: `1px solid ${isEid15(draft.eid) ? '#55BAAA' : '#F2C879'}` }}>
-            <ScanIcon size={19} color={isEid15(draft.eid) ? '#55BAAA' : '#B45309'} />
-            <EidNumber v={draft.eid} head={isEid15(draft.eid) ? '#55BAAA' : '#92580C'} tail={isEid15(draft.eid) ? '#0E2646' : '#7A4A06'} />
-            {!isEid15(draft.eid) && <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: '#B45309', fontVariantNumeric: 'tabular-nums' }}>{draft.eid.replace(/\D/g, '').length}/15</span>}
-            <button type="button" aria-label="Clear EID" onClick={() => patchDraft({ eid: '' })} style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
-              <XIcon size={15} color={isEid15(draft.eid) ? '#55BAAA' : '#B45309'} sw={2.2} />
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <RequiredMark />}</div>
-          <div style={{ flex: 1, minWidth: 0, height: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '0 13px', borderRadius: 11, background: flag ? FLAG_RED_BG : '#FFFFFF', border: flag ? `2px solid ${FLAG_RED}` : '2px solid #55BAAA', boxShadow: flag ? 'none' : '0 0 0 3px rgba(85,186,170,0.35)' }}>
-            <ScanIcon size={19} color={flag ? FLAG_RED : '#55BAAA'} />
-            {scanInput('Scan or type EID', false)}
-            {eidType.trim() && !isEid15(eidType) ? (
-              <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: '#B45309', fontVariantNumeric: 'tabular-nums' }}>{eidType.replace(/\D/g, '').length}/15</span>
-            ) : (
-              <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: flag ? FLAG_RED : '#55BAAA' }}>
-                <span style={{ width: 6, height: 6, borderRadius: 999, background: flag ? FLAG_RED : '#55BAAA' }} />
-                READER ON
-              </span>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-
-  // Identity fields shown for this work type, in config sort_order. The on-demand
-  // 2nd-EID slot stays pinned to the bottom of the card (it's off the normal flow).
-  const identityInput = (key: string) => {
-    switch (key) {
-      case 'eid':
-        return eidBlock
-      case 'back_tag':
-        return navyInput('backTag', 'Back Tag', 'Scan the back tag barcode')
-      default:
-        return null
-    }
-  }
-
-  // Typed (non-scannable) ID fields render below the navy bar on a light card, in
-  // dark-on-white inputs that match the other typed fields.
-  const typedTagInput = (key: string) => {
-    const meta =
-      key === 'visual_tag'
-        ? { prop: 'visualTag' as const, label: 'Tag #', ph: 'Type the tag number' }
-        : key === 'metal_tag'
-          ? { prop: 'metalTag' as const, label: 'Metal Tag', ph: 'Type the metal tag' }
-          : null
-    if (!meta) return null
-    const { prop, label, ph } = meta
-    const bind = kbd.bind(key, draft[prop], (val) => patchDraft({ [prop]: val } as Partial<typeof draft>))
-    return (
-      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 64, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: 3 }}>{label}{required(key) && <RequiredMark />}</div>
-        <input
-          ref={(el) => { idRefs.current[prop] = el }}
-          value={draft[prop]}
-          onChange={(e) => patchDraft({ [prop]: e.target.value } as Partial<typeof draft>)}
-          onKeyDown={swallowEnter}
-          placeholder={ph}
-          {...bind}
-          onFocus={() => { bind.onFocus(); setSecondEidTarget(false) }}
-          style={{ flex: 1, minWidth: 0, height: 46, padding: '0 13px', borderRadius: 11, background: '#FFFFFF', border: '1px solid #D4D4D0', color: '#1A1A1A', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, outline: 'none' }}
-        />
-      </div>
-    )
-  }
-
-  const orderedIdentity = (['eid', 'back_tag', 'visual_tag', 'metal_tag'] as const)
-    .filter((k) => api.shows(k))
-    .sort((a, b) => (resolved.get(a)?.sort_order ?? 0) - (resolved.get(b)?.sort_order ?? 0))
-  // Scannable IDs (EID, back tag, plus the tap-to-reveal 2nd EID) stay in the navy
-  // bar; typed IDs (visual / metal tag) drop below it. Driven by the field
-  // library's scannable property, not a hard-coded "visual tag goes below".
-  const scannableIds = orderedIdentity.filter((k) => isScannableField(k))
-  const typedIds = orderedIdentity.filter((k) => !isScannableField(k))
-
   // The on-demand second EID. Collapsed, it's just the small "+ 2nd EID" pill,
-  // which we tuck onto the end of the back-tag row to save a whole line. Once it's
-  // opened or filled it becomes its own full input row under the scan fields.
+  // which now rides on the EID row itself (the scan value uses only part of the
+  // width). Once it's opened or filled it becomes its own full input row under
+  // the scan fields. Tap-to-reveal is unchanged.
   const secondEidActive = api.shows('eid') && (secondaryEidOpen || draft.eid2.trim().length > 0)
   const secondEidPill = api.shows('eid') && !secondEidActive ? (
     <button
@@ -380,64 +316,194 @@ export function CaptureForm({
       </div>
     )
   })() : null
-  const hasBackTag = scannableIds.includes('back_tag')
+
+  // The EID field — the rich scan/typed-tag block. Rendered in its config slot
+  // among the identity fields below. The required accent (amber empty, green once
+  // a full EID is in) sits between the label and the box; the "+ 2nd EID" pill
+  // rides at the end of the row.
+  const eidBlock = (
+    <div style={{ marginBottom: 9 }}>
+      {active ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <RequiredMark />}</div>
+          {eidRequired() && <RequiredAccent filled={isEid15(draft.eid)} />}
+          <div style={{ flex: 1, minWidth: 0, minHeight: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '6px 13px', borderRadius: 11, background: isEid15(draft.eid) ? '#E1F5EE' : '#FEF3C7', border: `1px solid ${isEid15(draft.eid) ? '#55BAAA' : '#F2C879'}` }}>
+            <ScanIcon size={19} color={isEid15(draft.eid) ? '#55BAAA' : '#B45309'} />
+            <EidNumber v={draft.eid} head={isEid15(draft.eid) ? '#55BAAA' : '#92580C'} tail={isEid15(draft.eid) ? '#0E2646' : '#7A4A06'} />
+            {!isEid15(draft.eid) && <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: '#B45309', fontVariantNumeric: 'tabular-nums' }}>{draft.eid.replace(/\D/g, '').length}/15</span>}
+            <button type="button" aria-label="Clear EID" onClick={() => patchDraft({ eid: '' })} style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
+              <XIcon size={15} color={isEid15(draft.eid) ? '#55BAAA' : '#B45309'} sw={2.2} />
+            </button>
+          </div>
+          {secondEidPill}
+        </div>
+      ) : (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <RequiredMark />}</div>
+          {eidRequired() && <RequiredAccent filled={isEid15(draft.eid)} />}
+          <div style={{ flex: 1, minWidth: 0, height: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '0 13px', borderRadius: 11, background: flag ? FLAG_RED_BG : '#FFFFFF', border: flag ? `2px solid ${FLAG_RED}` : '2px solid #55BAAA', boxShadow: flag ? 'none' : '0 0 0 3px rgba(85,186,170,0.35)' }}>
+            <ScanIcon size={19} color={flag ? FLAG_RED : '#55BAAA'} />
+            {scanInput('Scan or type EID', false)}
+            {eidType.trim() && !isEid15(eidType) ? (
+              <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: '#B45309', fontVariantNumeric: 'tabular-nums' }}>{eidType.replace(/\D/g, '').length}/15</span>
+            ) : (
+              <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', color: flag ? FLAG_RED : '#55BAAA' }}>
+                <span style={{ width: 6, height: 6, borderRadius: 999, background: flag ? FLAG_RED : '#55BAAA' }} />
+                READER ON
+              </span>
+            )}
+          </div>
+          {secondEidPill}
+        </div>
+      )}
+    </div>
+  )
+
+  // Identity fields shown for this work type, in config sort_order. The on-demand
+  // 2nd-EID slot stays pinned to the bottom of the card (it's off the normal flow).
+  const identityInput = (key: string) => {
+    switch (key) {
+      case 'eid':
+        return eidBlock
+      case 'back_tag':
+        return navyInput('backTag', 'Back Tag', 'Scan the back tag barcode')
+      default:
+        return null
+    }
+  }
+
+  // Typed (non-scannable) ID fields render below the navy bar on a light card, in
+  // dark-on-white inputs that match the other typed fields.
+  const typedTagInput = (key: string) => {
+    const meta =
+      key === 'visual_tag'
+        ? { prop: 'visualTag' as const, label: 'Tag #', ph: 'Type the tag number' }
+        : key === 'metal_tag'
+          ? { prop: 'metalTag' as const, label: 'Metal Tag', ph: 'Type the metal tag' }
+          : null
+    if (!meta) return null
+    const { prop, label, ph } = meta
+    const bind = kbd.bind(key, draft[prop], (val) => patchDraft({ [prop]: val } as Partial<typeof draft>))
+    return (
+      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 64, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: 3 }}>{label}{required(key) && <RequiredMark />}</div>
+        {required(key) && <RequiredAccent filled={!!draft[prop].trim()} />}
+        <input
+          ref={(el) => { idRefs.current[prop] = el }}
+          value={draft[prop]}
+          onChange={(e) => patchDraft({ [prop]: e.target.value } as Partial<typeof draft>)}
+          onKeyDown={swallowEnter}
+          placeholder={ph}
+          {...bind}
+          onFocus={() => { bind.onFocus(); setSecondEidTarget(false) }}
+          style={{ flex: 1, minWidth: 0, height: 46, padding: '0 13px', borderRadius: 11, background: '#FFFFFF', border: '1px solid #D4D4D0', color: '#1A1A1A', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, outline: 'none' }}
+        />
+      </div>
+    )
+  }
+
+  const orderedIdentity = (['eid', 'back_tag', 'visual_tag', 'metal_tag'] as const)
+    .filter((k) => api.shows(k))
+    .sort((a, b) => (resolved.get(a)?.sort_order ?? 0) - (resolved.get(b)?.sort_order ?? 0))
+  // Scannable IDs (EID, back tag, plus the tap-to-reveal 2nd EID) stay in the navy
+  // bar; typed IDs (visual / metal tag) drop below it. Driven by the field
+  // library's scannable property, not a hard-coded "visual tag goes below".
+  const scannableIds = orderedIdentity.filter((k) => isScannableField(k))
+  const typedIds = orderedIdentity.filter((k) => !isScannableField(k))
+
+  // Header pieces shared by the collapsed and expanded banner, so the back
+  // control and the Animals / Close-out buttons read the same in both states.
+  const backLink = (
+    <a href={`/work-list/${batch.saleDayId}`} aria-label="Back to Pen List" style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <ChevronLeft size={22} color="#FFFFFF" />
+    </a>
+  )
+  const animalsPill = (
+    <button
+      type="button"
+      onClick={onOpenAnimals}
+      aria-label="Animals worked"
+      style={{ flexShrink: 0, minHeight: 34, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0 16px', borderRadius: 999, background: 'rgba(85,186,170,0.16)', border: '1px solid rgba(85,186,170,0.55)', color: '#7FD3C4', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontVariantNumeric: 'tabular-nums' }}
+    >
+      Animals {worked}
+    </button>
+  )
+  const closeOutButton = (
+    <button
+      type="button"
+      onClick={onOpenCloseOut}
+      style={{ flexShrink: 0, minHeight: 34, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0 16px', borderRadius: 999, background: 'rgba(243,209,42,0.16)', border: '1px solid rgba(243,209,42,0.55)', color: '#F3D12A', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
+    >
+      <CloseOutIcon size={15} color="#F3D12A" sw={2.2} />
+      Close out
+    </button>
+  )
+  // The collapse/expand chevron. Down = tap to expand (in the collapsed bar); up
+  // = tap to collapse (in the expanded banner).
+  const headerChevron = (dir: 'up' | 'down') => (
+    <button
+      type="button"
+      onClick={toggleHeader}
+      aria-label={dir === 'down' ? 'Expand header' : 'Collapse header'}
+      aria-expanded={dir === 'up'}
+      style={{ flexShrink: 0, width: 34, height: 34, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+    >
+      {dir === 'down' ? <ChevronDown size={22} color="#FFFFFF" /> : <ChevronUp size={22} color="#FFFFFF" />}
+    </button>
+  )
 
   return (
     <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-      <ScreenHeader
-        back={
-          <a href={`/work-list/${batch.saleDayId}`} aria-label="Back to Pen List" style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <ChevronLeft size={22} color="#FFFFFF" />
-          </a>
-        }
-        title={`${batch.penNumber ? `Pen ${batch.penNumber}` : 'No pen'}${batch.sellerName ? ` · ${batch.sellerName}` : ''}`}
-        subtitle={batch.workTypeName}
-      />
-
-      {/* Animals + Close out sit on their OWN row beneath the title, so the pen +
-          consignor name gets the full width of the header and isn't clipped on a
-          phone (it used to share the row with these two buttons). */}
-      <div className="sbv-screenheader" style={{ flexShrink: 0 }}>
-        {/* Two distinct buttons, pushed to the edges of the content column:
-            Animals (teal) hugs the left like the title/labels, Close out (gold)
-            hugs the right. Different colors so they don't read as one pair, and
-            edge-aligned with the rest of the text instead of floating centered. */}
-        <div className="sbv-container" style={{ paddingTop: 0, paddingBottom: 10, display: 'flex', gap: 8, justifyContent: 'space-between' }}>
-          <button
-            type="button"
-            onClick={onOpenAnimals}
-            aria-label="Animals worked"
-            style={{ minHeight: 34, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0 16px', borderRadius: 999, background: 'rgba(85,186,170,0.16)', border: '1px solid rgba(85,186,170,0.55)', color: '#7FD3C4', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontVariantNumeric: 'tabular-nums' }}
-          >
-            Animals {worked}
-          </button>
-          <button
-            type="button"
-            onClick={onOpenCloseOut}
-            style={{ minHeight: 34, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '0 16px', borderRadius: 999, background: 'rgba(243,209,42,0.16)', border: '1px solid rgba(243,209,42,0.55)', color: '#F3D12A', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
-          >
-            <CloseOutIcon size={15} color="#F3D12A" sw={2.2} />
-            Close out
-          </button>
-        </div>
-      </div>
-
-      <div className="sbv-screenheader" style={{ position: 'relative', zIndex: 1, boxShadow: '0 6px 18px rgba(8,18,40,0.30)', borderBottomLeftRadius: 18, borderBottomRightRadius: 18 }}>
-        <div className="sbv-container" style={{ paddingTop: 0, paddingBottom: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF', fontVariantNumeric: 'tabular-nums' }}>
-              {head != null ? `${worked} of ${head} head` : `${worked} head`}
-            </span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: sorted > 0 ? '#7FD9CB' : '#8FA8CC', fontVariantNumeric: 'tabular-nums' }}>
-              {sorted > 0 ? `${sorted} sorted${left != null ? ` · ${left} left` : ''}` : left != null ? `${left} left` : 'in this batch'}
-            </span>
-          </div>
-          <div style={{ height: 7, borderRadius: 999, background: 'rgba(255,255,255,0.14)', overflow: 'hidden', display: 'flex' }}>
-            <div style={{ height: '100%', width: `${goldPct}%`, background: '#F3D12A' }} />
-            <div style={{ height: '100%', width: `${tealPct}%`, background: '#55BAAA' }} />
+      {headerCollapsed ? (
+        /* Collapsed: one compact navy row — back, the Animals count, Close out,
+           and the expand chevron. Title, work type, the head line, and the
+           progress bar are hidden so the form gets the height. */
+        <div className="sbv-screenheader" style={{ flexShrink: 0 }}>
+          <div className="sbv-container sbv-screenheader-inner">
+            {backLink}
+            <div style={{ flex: 1, minWidth: 0 }} />
+            {animalsPill}
+            {closeOutButton}
+            {headerChevron('down')}
           </div>
         </div>
-      </div>
+      ) : (
+        <>
+          <ScreenHeader
+            back={backLink}
+            title={`${batch.penNumber ? `Pen ${batch.penNumber}` : 'No pen'}${batch.sellerName ? ` · ${batch.sellerName}` : ''}`}
+            subtitle={batch.workTypeName}
+            right={headerChevron('up')}
+          />
+
+          {/* Animals + Close out sit on their OWN row beneath the title, so the pen +
+              consignor name gets the full width of the header and isn't clipped on a
+              phone (it used to share the row with these two buttons). */}
+          <div className="sbv-screenheader" style={{ flexShrink: 0 }}>
+            <div className="sbv-container" style={{ paddingTop: 0, paddingBottom: 10, display: 'flex', gap: 8, justifyContent: 'space-between' }}>
+              {animalsPill}
+              {closeOutButton}
+            </div>
+          </div>
+
+          <div className="sbv-screenheader" style={{ position: 'relative', zIndex: 1, boxShadow: '0 6px 18px rgba(8,18,40,0.30)', borderBottomLeftRadius: 18, borderBottomRightRadius: 18 }}>
+            <div className="sbv-container" style={{ paddingTop: 0, paddingBottom: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#FFFFFF', fontVariantNumeric: 'tabular-nums' }}>
+                  {head != null ? `${worked} of ${head} head` : `${worked} head`}
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: sorted > 0 ? '#7FD9CB' : '#8FA8CC', fontVariantNumeric: 'tabular-nums' }}>
+                  {sorted > 0 ? `${sorted} sorted${left != null ? ` · ${left} left` : ''}` : left != null ? `${left} left` : 'in this batch'}
+                </span>
+              </div>
+              <div style={{ height: 7, borderRadius: 999, background: 'rgba(255,255,255,0.14)', overflow: 'hidden', display: 'flex' }}>
+                <div style={{ height: '100%', width: `${goldPct}%`, background: '#F3D12A' }} />
+                <div style={{ height: '100%', width: `${tealPct}%`, background: '#55BAAA' }} />
+              </div>
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="sbv-scroll">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 11, padding: 12 }}>
@@ -478,19 +544,12 @@ export function CaptureForm({
 
           {/* identity — SCANNABLE fields in the navy scan bar; typed tags below.
               No "Identity" label inside the box: the fields speak for themselves
-              and the chute needs the row. The "+ 2nd EID" pill rides on the back
-              tag row to save another. */}
+              and the chute needs the row. The "+ 2nd EID" pill rides on the EID
+              row (see eidBlock); the expanded 2nd-EID input drops in below. */}
           <div style={{ background: '#0E2646', borderRadius: 14, padding: 14 }}>
             {scannableIds.map((k) => (
-              <Fragment key={k}>
-                {k === 'back_tag'
-                  ? navyInput('backTag', 'Back Tag', 'Scan the back tag barcode', secondEidPill)
-                  : identityInput(k)}
-              </Fragment>
+              <Fragment key={k}>{identityInput(k)}</Fragment>
             ))}
-
-            {/* If there's no back-tag row to ride on, the pill keeps its own line. */}
-            {!hasBackTag && secondEidPill && <div style={{ marginTop: 4 }}>{secondEidPill}</div>}
 
             {secondEidRow}
           </div>
