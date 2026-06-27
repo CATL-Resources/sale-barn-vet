@@ -24,6 +24,8 @@ import {
   type IdType,
 } from '@/lib/capture/save-animal'
 import { useOnScreenKeyboard } from '@/lib/capture/use-onscreen-keyboard'
+import { useScanRouter } from '@/lib/capture/use-scan-router'
+import { isBackTag, isEid } from '@/lib/capture/scan-format'
 import { AnimalAttributes } from './animal-attributes'
 import { OnScreenKeyboard } from './onscreen-keyboard'
 import { FlagBanner, FLAG_RED, FLAG_RED_BG, FieldFlagLabel } from './flag'
@@ -82,6 +84,8 @@ export function AnimalEditSheet({
   // Two-step guard for Remove: the first tap only arms it, the second confirms.
   // So a single mis-tap can never wipe an animal.
   const [confirmRemove, setConfirmRemove] = useState(false)
+  // Which EID field a scan fills (the user taps to aim). Back tags route by shape.
+  const [scanTarget, setScanTarget] = useState<'eid' | 'eid2'>('eid')
 
   const patch = (p: Partial<AnimalDraft>) => setDraft((d) => ({ ...d, ...p }))
 
@@ -90,6 +94,34 @@ export function AnimalEditSheet({
   // without this there's no way to type a note or tag in the edit sheet. It types
   // into whichever field below has focus (the EID/tag inputs and the note).
   const kbd = useOnScreenKeyboard()
+
+  // While the sheet is open, the SAME Part A scan engine fills its fields. Tap the
+  // EID, 2nd EID, or back-tag field to aim, then scan: a back tag routes by shape
+  // to the back-tag field, an EID lands in whichever EID field is the active
+  // target, and the duplicate guard still fires on a full EID. The capture
+  // screen's own scan listener is off while this sheet is open, so only one runs.
+  const routeSheetScan = (raw: string) => {
+    if (!batch) return
+    const code = raw.trim()
+    if (!code) return
+    setErr(null)
+    if (isBackTag(code)) {
+      if (api.shows('back_tag')) { setFlag(null); patch({ backTag: code.toUpperCase() }) }
+      return
+    }
+    if (isEid(code)) {
+      if (scanTarget === 'eid2') {
+        patch({ eid2: code })
+      } else {
+        setFlag(null)
+        patch({ eid: code })
+        void guardEid(code)
+      }
+      return
+    }
+    setErr('Unrecognized scan — rescan')
+  }
+  useScanRouter(routeSheetScan, true)
 
   useEffect(() => {
     if (!batch) return
@@ -228,32 +260,36 @@ export function AnimalEditSheet({
     onChange: (v: string) => void,
     placeholder: string,
     bindKey: string,
-    opts?: { flagged?: boolean },
-  ) => (
-    <div
-      style={{
-        flex: 1,
-        minWidth: 0,
-        height: 46,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '0 12px',
-        borderRadius: 10,
-        background: opts?.flagged ? FLAG_RED_BG : '#FFFFFF',
-        border: `1px solid ${opts?.flagged ? FLAG_RED : '#D4D4D0'}`,
-      }}
-    >
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        {...kbd.bind(bindKey, value, onChange)}
-        style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, color: opts?.flagged ? FLAG_RED : '#1A1A1A', fontVariantNumeric: 'tabular-nums' }}
-      />
-      {opts?.flagged && <FieldFlagLabel text="DUPLICATE" />}
-    </div>
-  )
+    opts?: { flagged?: boolean; onFocus?: () => void },
+  ) => {
+    const bind = kbd.bind(bindKey, value, onChange)
+    return (
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          height: 46,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '0 12px',
+          borderRadius: 10,
+          background: opts?.flagged ? FLAG_RED_BG : '#FFFFFF',
+          border: `1px solid ${opts?.flagged ? FLAG_RED : '#D4D4D0'}`,
+        }}
+      >
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          {...bind}
+          onFocus={() => { bind.onFocus(); opts?.onFocus?.() }}
+          style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, color: opts?.flagged ? FLAG_RED : '#1A1A1A', fontVariantNumeric: 'tabular-nums' }}
+        />
+        {opts?.flagged && <FieldFlagLabel text="DUPLICATE" />}
+      </div>
+    )
+  }
 
   const labelCol = (text: string, star?: boolean) => (
     <div style={{ width: 84, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#1A1A1A', display: 'flex', alignItems: 'center', gap: 3 }}>
@@ -321,19 +357,19 @@ export function AnimalEditSheet({
           {shows('eid') && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {labelCol('EID', eidRequired && !isEid15)}
-              {idInput(draft.eid, (v) => { setFlag(null); patch({ eid: v }); void guardEid(v) }, 'Scan or type EID', 'eid', { flagged: !!flag })}
+              {idInput(draft.eid, (v) => { setFlag(null); patch({ eid: v }); void guardEid(v) }, 'Scan or type EID', 'eid', { flagged: !!flag, onFocus: () => setScanTarget('eid') })}
             </div>
           )}
           {shows('eid') && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {labelCol('2nd EID')}
-              {idInput(draft.eid2, (v) => patch({ eid2: v }), 'Optional · 900-series', 'eid2')}
+              {idInput(draft.eid2, (v) => patch({ eid2: v }), 'Optional · 900-series', 'eid2', { onFocus: () => setScanTarget('eid2') })}
             </div>
           )}
           {TAG_FIELDS.filter((t) => shows(t.fieldKey)).map((t) => (
             <div key={t.key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {labelCol(t.label, required(t.fieldKey) && !draft[t.key].trim())}
-              {idInput(draft[t.key], (v) => patch({ [t.key]: v } as Partial<AnimalDraft>), `Type the ${t.label.toLowerCase()}`, t.key)}
+              {idInput(draft[t.key], (v) => patch({ [t.key]: v } as Partial<AnimalDraft>), `Type the ${t.label.toLowerCase()}`, t.key, { onFocus: () => setScanTarget('eid') })}
             </div>
           ))}
         </div>

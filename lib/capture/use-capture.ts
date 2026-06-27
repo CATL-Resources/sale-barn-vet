@@ -137,6 +137,10 @@ export function useCapture(
   // The secondary-EID slot is off the normal flow: it only appears (and catches
   // non-840 EID scans) once the operator opens it on the rare two-EID cow.
   const [secondaryEidOpen, setSecondaryEidOpen] = useState(false)
+  // The second EID becomes the scan target ONLY when the user taps it (tap-only).
+  // While armed, the next clean 15-digit EID lands in the second slot; a non-840
+  // EID no longer auto-routes here.
+  const [secondEidTarget, setSecondEidTarget] = useState(false)
   // The duplicate-tag flag (the red banner). Set when an EID already worked in
   // this pen_work is entered; cleared on the next fresh scan or a good save.
   const [flag, setFlag] = useState<DuplicateHit | null>(null)
@@ -670,6 +674,12 @@ export function useCapture(
       //   - neither (a garbled or two-wand-interleaved read) -> re-scan flag
       // A read that's neither shape is never dumped into a field or truncated.
       if (isBackTag(code)) {
+        // While the 2nd EID is the active scan target the scanner is dedicated to
+        // it — reject a back tag rather than route it to the wrong field.
+        if (secondEidTarget) {
+          flash('warn', 'The 2nd EID takes a 15-digit EID — rescan with the field untapped')
+          return
+        }
         // Store the back tag in its canonical upper-case form (46MA1234).
         patchDraft({ backTag: code.toUpperCase() })
         setFocusTick((n) => n + 1)
@@ -684,33 +694,34 @@ export function useCapture(
       // A 15-digit EID. Live refs so two reads back-to-back don't both land on
       // the primary slot.
       const value = code
-      if (value === liveEid.current.trim() || value === liveEid2.current.trim()) return
-      const is840 = value.startsWith('840')
+      if (value === liveEid.current.trim() || value === liveEid2.current.trim()) {
+        if (secondEidTarget) setSecondEidTarget(false)
+        return
+      }
 
-      if (secondaryEidOpen) {
-        // Slot open: an 840 fills the primary if it's empty, else the second.
-        if (!liveEid.current.trim() && is840) {
-          liveEid.current = value
-          patchDraft({ eid: value })
-          setFocusTick((n) => n + 1)
-          void flagIfDuplicate(value)
-        } else {
-          liveEid2.current = value
-          patchDraft({ eid2: value })
-          setFocusTick((n) => n + 1)
-        }
-      } else if (is840) {
+      // TAP-ONLY second EID. The second slot fills ONLY while it is the active
+      // scan target (the user tapped it). A clean 15-digit EID lands there, then
+      // the target reverts to the primary. A non-840 EID no longer auto-jumps here.
+      if (secondEidTarget) {
+        liveEid2.current = value
+        patchDraft({ eid2: value })
+        setSecondEidTarget(false)
+        setFocusTick((n) => n + 1)
+        return
+      }
+
+      if (value.startsWith('840')) {
         liveEid.current = value
         patchDraft({ eid: value })
         setFocusTick((n) => n + 1)
         void flagIfDuplicate(value)
       } else {
-        // 15 digits but NOT an official 840 tag — flag it at once (Warn, never
-        // blocks the save).
-        flash('warn', 'That EID doesn’t start with 840 — open “2nd EID” if it’s a second tag')
+        // 15 digits but NOT an official 840 tag, and the second slot isn’t the
+        // target — nudge (Warn, never blocks the save).
+        flash('warn', 'That EID doesn’t start with 840 — tap the 2nd EID field to scan a second tag')
       }
     },
-    [batch, secondaryEidOpen, patchDraft, flash, flagIfDuplicate],
+    [batch, secondEidTarget, patchDraft, flash, flagIfDuplicate],
   )
 
   const closeBatch = useCallback(async (): Promise<boolean> => {
@@ -871,6 +882,8 @@ export function useCapture(
     focusTick,
     secondaryEidOpen,
     setSecondaryEidOpen,
+    secondEidTarget,
+    setSecondEidTarget,
     closeBatch,
     clearSort,
     chooseSortPen,

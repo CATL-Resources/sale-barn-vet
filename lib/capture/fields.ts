@@ -106,6 +106,16 @@ const DEFAULT_TARGETS: Partial<Record<string, keyof AnimalDraft>> = {
   notes: 'notes',
 }
 
+// Which identifier fields are SCANNABLE (read by a wand) vs typed by hand. The
+// capture screen groups the scannable ones into the navy ID bar and drops the
+// typed ones below with the other typed fields. Kept here as a field-library
+// property — NOT a hard-coded "the visual tag goes below" — so a barn that scans
+// its visual tag only has to flip the key here.
+const SCANNABLE_FIELD_KEYS = new Set(['eid', 'secondary_eid', 'back_tag'])
+export function isScannableField(key: string): boolean {
+  return SCANNABLE_FIELD_KEYS.has(key)
+}
+
 // Plain-language names for the required-blocking message, when a field has no
 // custom display label of its own.
 const REQUIRED_LABELS: Record<string, string> = {

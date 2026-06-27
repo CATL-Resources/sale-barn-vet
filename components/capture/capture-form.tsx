@@ -5,6 +5,7 @@ import type { CaptureApi } from '@/lib/capture/use-capture'
 import { useScanRouter } from '@/lib/capture/use-scan-router'
 import { useOnScreenKeyboard } from '@/lib/capture/use-onscreen-keyboard'
 import { isBackTag } from '@/lib/capture/scan-format'
+import { isScannableField } from '@/lib/capture/fields'
 import { ChevronLeft, ScanIcon, SortIcon, CloseOutIcon, FlagIcon, CheckIcon, XIcon, KeyboardIcon } from './icons'
 import { ScreenHeader } from '@/components/ui/screen-header'
 import { Button } from '@/components/ui/button'
@@ -48,11 +49,15 @@ export function CaptureForm({
   onOpenCloseOut,
   onOpenAnimals,
   onTapSort,
+  scanActive,
 }: {
   api: CaptureApi
   onOpenCloseOut: () => void
   onOpenAnimals: () => void
   onTapSort: () => void
+  // Off while an overlay sheet is open, so the capture screen and the edit sheet
+  // never both run the global scan listener at once.
+  scanActive: boolean
 }) {
   const {
     bootstrap,
@@ -72,6 +77,8 @@ export function CaptureForm({
     focusTick,
     secondaryEidOpen,
     setSecondaryEidOpen,
+    secondEidTarget,
+    setSecondEidTarget,
     flag,
   } = api
   const eidRef = useRef<HTMLInputElement>(null)
@@ -82,8 +89,9 @@ export function CaptureForm({
   // native one). Types into whichever capture field has focus.
   const kbd = useOnScreenKeyboard()
 
-  // Route every wand scan by its shape, no matter which field has focus.
-  useScanRouter(routeScan, true)
+  // Route every wand scan by its shape, no matter which field has focus. Off
+  // while an overlay (the edit sheet) is open, so two scan listeners never run.
+  useScanRouter(routeScan, scanActive)
 
   // Once the EID is set (scanned or committed), clear the manual-entry box so a
   // stray character from the scan burst can't linger behind the filled chip.
@@ -170,6 +178,7 @@ export function CaptureForm({
     // Back tag must read NN-LL-NNNN (e.g. 46MA1234). Flag once 8+ chars don't fit.
     const v = draft[key].trim()
     const badBackTag = key === 'backTag' && v.length >= 8 && !isBackTag(v)
+    const bind = kbd.bind(fieldKey, draft[key], (val) => patchDraft({ [key]: clean(val) } as Partial<typeof draft>))
     return (
       <div style={{ marginBottom: 9 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -180,7 +189,8 @@ export function CaptureForm({
             onChange={(e) => patchDraft({ [key]: clean(e.target.value) } as Partial<typeof draft>)}
             onKeyDown={swallowEnter}
             placeholder={placeholder}
-            {...kbd.bind(fieldKey, draft[key], (v) => patchDraft({ [key]: clean(v) } as Partial<typeof draft>))}
+            {...bind}
+            onFocus={() => { bind.onFocus(); setSecondEidTarget(false) }}
             style={{ flex: 1, minWidth: 0, height: 46, padding: '0 13px', borderRadius: 11, background: 'rgba(255,255,255,0.08)', border: `1px solid ${badBackTag ? '#E24B4A' : 'rgba(255,255,255,0.18)'}`, color: '#FFFFFF', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, outline: 'none' }}
           />
         </div>
@@ -197,24 +207,28 @@ export function CaptureForm({
   // allowing the partial "8"/"84"/"840" while it's being typed.
   const eidTyped = eidType.trim()
   const eidBad840 = eidTyped.length >= 3 && !eidTyped.startsWith('840') && !'840'.startsWith(eidTyped)
-  const scanInput = (placeholder: string, dashed: boolean) => (
-    <input
-      ref={eidRef}
-      autoFocus
-      value={eidType}
-      onChange={(e) => setEidValue(e.target.value)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault()
-          void onEidEnter()
-        }
-      }}
-      placeholder={placeholder}
-      title={eidBad840 ? 'EID should start with 840' : undefined}
-      {...kbd.bind('eid', eidType, setEidValue)}
-      style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: dashed ? 14 : 16, fontWeight: 700, color: eidBad840 ? '#E24B4A' : '#1A1A1A', fontVariantNumeric: 'tabular-nums' }}
-    />
-  )
+  const scanInput = (placeholder: string, dashed: boolean) => {
+    const bind = kbd.bind('eid', eidType, setEidValue)
+    return (
+      <input
+        ref={eidRef}
+        autoFocus
+        value={eidType}
+        onChange={(e) => setEidValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault()
+            void onEidEnter()
+          }
+        }}
+        placeholder={placeholder}
+        title={eidBad840 ? 'EID should start with 840' : undefined}
+        {...bind}
+        onFocus={() => { bind.onFocus(); setSecondEidTarget(false) }}
+        style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: dashed ? 14 : 16, fontWeight: 700, color: eidBad840 ? '#E24B4A' : '#1A1A1A', fontVariantNumeric: 'tabular-nums' }}
+      />
+    )
+  }
 
   // The sort toggle row that leads the Quick notes card (capture-only).
   const sortRow = (
@@ -278,17 +292,48 @@ export function CaptureForm({
         return eidBlock
       case 'back_tag':
         return navyInput('backTag', 'Back Tag', 'Scan the back tag barcode')
-      case 'visual_tag':
-        return navyInput('visualTag', 'Tag #', 'Type the tag number')
-      case 'metal_tag':
-        return navyInput('metalTag', 'Metal Tag', 'Type the metal tag')
       default:
         return null
     }
   }
+
+  // Typed (non-scannable) ID fields render below the navy bar on a light card, in
+  // dark-on-white inputs that match the other typed fields.
+  const typedTagInput = (key: string) => {
+    const meta =
+      key === 'visual_tag'
+        ? { prop: 'visualTag' as const, label: 'Tag #', ph: 'Type the tag number' }
+        : key === 'metal_tag'
+          ? { prop: 'metalTag' as const, label: 'Metal Tag', ph: 'Type the metal tag' }
+          : null
+    if (!meta) return null
+    const { prop, label, ph } = meta
+    const bind = kbd.bind(key, draft[prop], (val) => patchDraft({ [prop]: val } as Partial<typeof draft>))
+    return (
+      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ width: 64, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: 3 }}>{label}{required(key) && <RequiredMark />}</div>
+        <input
+          ref={(el) => { idRefs.current[prop] = el }}
+          value={draft[prop]}
+          onChange={(e) => patchDraft({ [prop]: e.target.value } as Partial<typeof draft>)}
+          onKeyDown={swallowEnter}
+          placeholder={ph}
+          {...bind}
+          onFocus={() => { bind.onFocus(); setSecondEidTarget(false) }}
+          style={{ flex: 1, minWidth: 0, height: 46, padding: '0 13px', borderRadius: 11, background: '#FFFFFF', border: '1px solid #D4D4D0', color: '#1A1A1A', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, outline: 'none' }}
+        />
+      </div>
+    )
+  }
+
   const orderedIdentity = (['eid', 'back_tag', 'visual_tag', 'metal_tag'] as const)
     .filter((k) => api.shows(k))
     .sort((a, b) => (resolved.get(a)?.sort_order ?? 0) - (resolved.get(b)?.sort_order ?? 0))
+  // Scannable IDs (EID, back tag, plus the tap-to-reveal 2nd EID) stay in the navy
+  // bar; typed IDs (visual / metal tag) drop below it. Driven by the field
+  // library's scannable property, not a hard-coded "visual tag goes below".
+  const scannableIds = orderedIdentity.filter((k) => isScannableField(k))
+  const typedIds = orderedIdentity.filter((k) => !isScannableField(k))
 
   return (
     <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -375,44 +420,59 @@ export function CaptureForm({
             </div>
           )}
 
-          {/* identity — fields render in config sort_order; nothing else shows */}
+          {/* identity — SCANNABLE fields in the navy scan bar; typed tags below */}
           <div style={{ background: '#0E2646', borderRadius: 14, padding: 14 }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#8FA8CC', textTransform: 'uppercase', marginBottom: 11 }}>
               Identity · {bootstrap.barn.official_id_type} barn
             </div>
-            {orderedIdentity.map((k) => (
+            {scannableIds.map((k) => (
               <Fragment key={k}>{identityInput(k)}</Fragment>
             ))}
 
-            {/* On-demand secondary EID — off the normal flow. */}
-            {api.shows('eid') && (secondaryEidOpen || draft.eid2.trim() ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 9 }}>
-                <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA' }}>2nd EID</div>
-                <div style={{ flex: 1, minWidth: 0, height: 46, display: 'flex', alignItems: 'center', gap: 8, padding: '0 11px', borderRadius: 11, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.18)' }}>
-                  <input
-                    ref={(el) => { idRefs.current['eid2'] = el }}
-                    value={draft.eid2}
-                    onChange={(e) => patchDraft({ eid2: cleanEid(e.target.value) })}
-                    onKeyDown={swallowEnter}
-                    placeholder="Scan or type 2nd EID"
-                    {...kbd.bind('eid2', draft.eid2, (v) => patchDraft({ eid2: cleanEid(v) }))}
-                    style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, color: '#FFFFFF', fontVariantNumeric: 'tabular-nums' }}
-                  />
-                  <button type="button" aria-label="Remove second EID" onClick={() => { patchDraft({ eid2: '' }); setSecondaryEidOpen(false) }} style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
-                    <XIcon size={15} color="#C9D5EA" sw={2.2} />
-                  </button>
+            {/* Tap-to-reveal second EID — scannable, but a TAP-ONLY target: the
+                next 15-digit EID lands here only while it's tapped (shown by the
+                teal ring), then routing reverts to the primary EID. */}
+            {api.shows('eid') && (secondaryEidOpen || draft.eid2.trim() ? (() => {
+              const bind = kbd.bind('eid2', draft.eid2, (v) => patchDraft({ eid2: cleanEid(v) }))
+              return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 9 }}>
+                  <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA' }}>2nd EID</div>
+                  <div style={{ flex: 1, minWidth: 0, height: 46, display: 'flex', alignItems: 'center', gap: 8, padding: '0 11px', borderRadius: 11, background: 'rgba(255,255,255,0.08)', border: `1px solid ${secondEidTarget ? '#55BAAA' : 'rgba(255,255,255,0.18)'}`, boxShadow: secondEidTarget ? '0 0 0 3px rgba(85,186,170,0.35)' : 'none' }}>
+                    <input
+                      ref={(el) => { idRefs.current['eid2'] = el }}
+                      value={draft.eid2}
+                      onChange={(e) => patchDraft({ eid2: cleanEid(e.target.value) })}
+                      onKeyDown={swallowEnter}
+                      placeholder={secondEidTarget ? 'Scan the second EID' : 'Tap, then scan the 2nd EID'}
+                      {...bind}
+                      onFocus={() => { bind.onFocus(); setSecondEidTarget(true) }}
+                      style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, color: '#FFFFFF', fontVariantNumeric: 'tabular-nums' }}
+                    />
+                    {secondEidTarget && <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 800, letterSpacing: '0.05em', color: '#7FD3C4' }}>SCANNING</span>}
+                    <button type="button" aria-label="Remove second EID" onClick={() => { patchDraft({ eid2: '' }); setSecondaryEidOpen(false); setSecondEidTarget(false) }} style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
+                      <XIcon size={15} color="#C9D5EA" sw={2.2} />
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ) : (
+              )
+            })() : (
               <button
                 type="button"
-                onClick={() => setSecondaryEidOpen(true)}
+                onClick={() => { setSecondaryEidOpen(true); setSecondEidTarget(true) }}
                 style={{ marginTop: 4, height: 36, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 999, background: 'transparent', border: '1px dashed rgba(255,255,255,0.32)', color: '#C9D5EA', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
               >
                 + 2nd EID
               </button>
             ))}
           </div>
+
+          {/* Typed ID tags (visual / metal) — typed by hand, so they sit below the
+              navy scan bar with the other typed fields. */}
+          {typedIds.length > 0 && (
+            <div style={{ background: '#FFFFFF', border: '1px solid #E4E4DE', borderRadius: 14, padding: 12, display: 'flex', flexDirection: 'column', gap: 9 }}>
+              {typedIds.map((k) => typedTagInput(k))}
+            </div>
+          )}
 
           {/* attributes + quick notes + note — shared, config-driven; keyed by
               the worked count so its expand/note state resets after each save. */}

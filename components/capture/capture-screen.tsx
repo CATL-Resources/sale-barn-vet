@@ -88,6 +88,7 @@ export function CaptureScreen({
           onOpenCloseOut={() => setCloseOutOpen(true)}
           onOpenAnimals={() => setAnimalsOpen(true)}
           onTapSort={onTapSort}
+          scanActive={!closeOutOpen && !animalsOpen && !editing && !sortSheetOpen}
         />
       )}
 
