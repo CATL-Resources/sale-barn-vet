@@ -1,13 +1,19 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { isEid, isBackTag } from './scan-format'
+import {
+  isEid,
+  isBackTagBody,
+  backTagBodyCanExtend,
+  eidCanExtend,
+  BACK_TAG_PREFIX,
+} from './scan-format'
 
 /**
- * Set an <input>/<textarea> value so React's onChange notices. Used to wipe the
- * characters a recognised scan dropped into the focused field (React tracks the
- * value itself, so a plain assignment is ignored — we have to go through the
- * native setter and fire an input event).
+ * Set an <input>/<textarea> value so React's onChange notices. Used by the safety
+ * flush to drop a burst that never formed a clean shape into the focused field
+ * (React tracks the value itself, so a plain assignment is ignored — we go through
+ * the native setter and fire an input event).
  */
 function setNativeValue(el: HTMLInputElement | HTMLTextAreaElement, value: string) {
   const proto = el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
@@ -17,40 +23,45 @@ function setNativeValue(el: HTMLInputElement | HTMLTextAreaElement, value: strin
 }
 
 /**
- * Screen-level scan capture, built so it can never drop a digit and so two
- * people scanning the same animal at once don't clobber each other.
+ * Screen-level wand scan capture for the chute. Both scanners are Bluetooth HID
+ * keyboard-wedge devices: a fast burst of single keydowns into whatever field has
+ * focus, ending in Enter. There is no device id on a keydown, so two scanners
+ * can't be told apart by source alone.
  *
- * A keyboard-wedge wand types a fast burst of characters then Enter, into
- * whatever field has focus. The hard lesson from the chute: any scheme that
- * BLOCKS the wand's keys mid-burst and rebuilds the number from a copy is
- * fragile — on a slower tablet one late or missed key and the number comes back
- * as a single digit (or split in two). So we let every character land in the
- * focused field as it arrives and quietly keep a timed copy.
+ * OUT-OF-BAND ASSEMBLY. Unlike the old catcher, raw scan characters never land in
+ * a field. The moment a machine-speed burst is detected (the second key arrives
+ * within the per-key gap), every key is intercepted (preventDefault) into a hidden
+ * buffer; only a COMPLETE, shape-validated code is handed to `onScan`, which routes
+ * and writes it. This kills the "characters appear then vanish" flicker and stops
+ * a garbled or interleaved burst from ever spilling into the field.
  *
- * COMMIT ON SHAPE MATCH, not just Enter. After each character we test the copy:
- * the moment it forms a COMPLETE tag — a 15-digit EID or an 8-char back tag —
- * we commit it right away. We wipe the characters it dropped into the focused
- * field and hand the whole code to `onScan` to be routed by its shape, then
- * start a fresh copy for whatever comes next. We do NOT wait for Enter. This is
- * what splits a combined burst: when two wands fire on one animal and the codes
- * run together (a back tag then an EID, back to back), the back tag commits at
- * char 8 and the EID commits 15 chars later, each landing in its own field
- * instead of one cutting the other off.
+ * Two assemblers run in parallel on the bare (non-bracketed) stream — a 15-digit
+ * EID and an 8-char back-tag body — each fed every character it can validly extend,
+ * committing the instant one completes. So a back tag with no prefix still routes,
+ * and two codes that can't be separated complete neither and raise a rescan instead
+ * of a corrupt save.
  *
- * Enter is kept only as a fallback delimiter: anything that came in as a fast
- * machine burst but never matched a clean shape is handed to `onScan` on Enter
- * so it can be flagged for a re-scan (see below).
+ * BACK-TAG BRACKET. The back-tag scanner wraps its code: "$" + 8-char body + CR.
+ * The "$" opens a bracketed capture collected until the carriage return; the body
+ * is validated against the exact pattern and committed (or rescanned on a mismatch).
+ * Because "$" is neither a digit nor a letter, the back tag is self-identifying even
+ * right behind an EID.
  *
- * Two PERFECTLY simultaneous bursts — chars from both wands interleaved into one
- * stream — can't be pulled apart here: a browser keydown carries no device id,
- * so there's no way to tell which wand a character came from. The interleaved
- * copy never forms a clean shape, so it intentionally falls through to the
- * re-scan flag rather than guessing. In practice the two wands are a hair apart
- * and arrive back-to-back, which the shape-match split handles.
+ * POST-COMMIT COOLDOWN. After any code commits, a burst that starts within the
+ * cooldown window is still assembled but only routed if it is a DIFFERENT code;
+ * a repeat of the just-committed code, or a partial that never forms a shape, is
+ * dropped (not flushed). That kills the double-fire / repeat-stream partial — whose
+ * echo lands ~160ms behind — without eating a genuine second scan of a different
+ * tag (a real second scan needs human reaction time and forms a different code).
  *
- * Because we never block a key until we KNOW we have a whole tag, the digits are
- * never lost: worst case the burst just isn't recognised and the number stays in
- * the box for the normal Save path — you can't be left with one digit.
+ * SAFETY FLUSH. If an intercepted burst does not form a valid shape within a short
+ * timeout (and it isn't double-fire debris), the raw buffer is flushed into the
+ * field so nothing is ever lost on a slow tablet. A slow / human-typed key is
+ * detected on the first gap and passes through untouched.
+ *
+ * A normal single scan still commits on shape-match within its own burst, with no
+ * added latency — the cooldown and the buffer only change the double-fire, overflow,
+ * and simultaneous cases.
  */
 export function useScanRouter(onScan: (code: string) => void, active: boolean) {
   const onScanRef = useRef(onScan)
@@ -59,150 +70,286 @@ export function useScanRouter(onScan: (code: string) => void, active: boolean) {
   useEffect(() => {
     if (!active) return
 
-    let buffer = ''
-    let startTime = 0 // when the current run of characters began
-    let lastTime = 0 // when the last character arrived
-    // Every field this run's characters landed in, mapped to that field's value
-    // BEFORE the run touched it, so a recognised scan can be wiped back out of
-    // each one. It's a set of fields, not a single field, because committing one
-    // tag mid-burst (a back tag) can move focus, so the next tag's characters
-    // (the EID right behind it) can land in a DIFFERENT box — we have to be able
-    // to clean every box the burst leaked into, not just the first.
-    let leaks = new Map<HTMLInputElement | HTMLTextAreaElement, string>()
-    // After a shape-match commit the wand still sends its trailing Enter; we
-    // swallow that one Enter so it can't submit a form or add a newline.
-    let pendingEnterSwallow = false
-    let lastCommitTime = 0
-
-    // Silence this long between keys means a new, separate entry has started, so
-    // we begin a fresh run. Generous, so one slow key on a busy tablet never
-    // splits a single scan in two.
-    const END_MS = 400
-    // A machine burst averages well under this many ms per key, even on a slow
-    // tablet with the odd stalled key; no one hand-types a long code this fast,
-    // so it cleanly tells a wand from a person.
+    // --- Tunables -----------------------------------------------------------
+    // A machine burst averages well under this per key, even on a slow tablet;
+    // no one hand-types a long code this fast, so it tells a wand from a person.
     const AVG_GAP_MAX = 80
-    const MIN_LEN = 4 // shortest run we'll treat as a scan (a back tag barcode)
+    // Silence this long ends a run — a new, separate entry has begun.
+    const END_MS = 400
+    // While still deciding if the first key is a wand or a person, how long we
+    // hold that one key before deciding "person" and letting it through.
+    const DECIDE_MS = 120
+    // A recognised machine burst that never forms a clean shape is flushed to the
+    // field after this, so a garbled read is never lost.
+    const SAFETY_FLUSH_MS = 350
+    // After a commit, how long a fresh burst is treated as possible double-fire
+    // debris (routed only if it's a different code). Tunable 150-300; 200 covers
+    // the ~160ms echo while staying under human reaction time.
+    const SCAN_COOLDOWN_MS = 200
+    // A hard cap on a non-bracketed burst that never resolves to a shape.
+    const MAX_RUN = 32
 
-    // Record a field the run's characters are landing in, the first time we see
-    // it, with the value it held BEFORE this run — that's what we restore it to.
-    // (keydown fires before the character lands, so el.value here is the prior.)
-    function noteLeak(target: EventTarget | null) {
-      const el = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement ? target : null
-      if (el && !leaks.has(el)) leaks.set(el, el.value)
+    // --- Run state ----------------------------------------------------------
+    let phase: 'idle' | 'pending' | 'burst' | 'backtag' | 'passthrough' = 'idle'
+    let raw = '' // every intercepted character this run (for the safety flush)
+    let eid = '' // EID candidate: the digits so far, kept a valid EID prefix
+    let bt = '' // back-tag body candidate: kept a valid body-pattern prefix
+    let startTime = 0
+    let lastTime = 0
+    let field: HTMLInputElement | HTMLTextAreaElement | null = null
+    let runInCooldown = false // did this run start inside the post-commit window?
+    let cooldownUntil = 0
+    let lastCode = '' // the code the last commit routed (to spot a repeat)
+    let pendingEnterSwallow = false
+    let timer = 0
+
+    const activeEl = (): HTMLInputElement | HTMLTextAreaElement | null => {
+      const el = typeof document !== 'undefined' ? document.activeElement : null
+      return el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement ? el : null
     }
-    // Wipe a recognised scan's characters back out of every field they leaked
-    // into, restoring each to the value it had before the burst. We only touch
-    // fields this burst actually wrote to (and only if they're still mounted), so
-    // we never clobber an unrelated or hand-typed field. Worst case a field went
-    // away mid-burst and there's nothing to wipe — we never drop a digit.
-    function wipeLeaks() {
-      for (const [el, prior] of leaks) {
-        if (!el.isConnected) continue
-        try {
-          setNativeValue(el, prior)
-        } catch {
-          /* field went away — nothing to wipe */
-        }
-      }
-      leaks.clear()
+    const arm = (ms: number) => {
+      clearTimeout(timer)
+      timer = window.setTimeout(onTimeout, ms)
+    }
+    const disarm = () => {
+      clearTimeout(timer)
+      timer = 0
     }
     function reset() {
-      buffer = ''
-      leaks.clear()
-      // Clear the timing too, so no gap/average state bleeds from one burst into
-      // the next back-to-back scan.
+      phase = 'idle'
+      raw = ''
+      eid = ''
+      bt = ''
       startTime = 0
       lastTime = 0
+      field = null
+      runInCooldown = false
+      disarm()
     }
-
-    // Has the running copy formed a whole tag at machine speed? If so, commit it
-    // now. Only fast bursts auto-commit, so a person hand-typing a tag into a
-    // field is never wiped out from under them (a wand is far faster than any
-    // human). Returns true when it committed (the caller then drops the key that
-    // completed the shape, so it doesn't land after we've wiped the field).
-    function tryShapeCommit(): boolean {
-      if (!isEid(buffer) && !isBackTag(buffer)) return false
-      const span = lastTime - startTime
-      const avgGap = buffer.length > 1 ? span / (buffer.length - 1) : Infinity
-      if (avgGap > AVG_GAP_MAX) return false
-      const code = buffer
-      wipeLeaks()
+    function flushToField() {
+      const el = field ?? activeEl()
+      if (el && raw) {
+        try {
+          setNativeValue(el, el.value + raw)
+        } catch {
+          /* field went away — nothing to flush */
+        }
+      }
+    }
+    // A run produced no clean shape. Double-fire debris (started in cooldown) is
+    // dropped silently so no partial reaches the field; a real machine burst that
+    // didn't match is sent on as a rescan; slow/human input is flushed so it's kept.
+    function finishNoShape(fastBurst: boolean) {
+      const inCooldown = runInCooldown
+      if (inCooldown) {
+        reset()
+        cooldownUntil = performance.now() + SCAN_COOLDOWN_MS
+        return
+      }
+      if (fastBurst) {
+        const garbled = raw
+        reset()
+        cooldownUntil = performance.now() + SCAN_COOLDOWN_MS
+        onScanRef.current(garbled)
+      } else {
+        flushToField()
+        reset()
+      }
+    }
+    function commitCode(code: string) {
+      // A repeat of the just-committed code arriving in the cooldown window is a
+      // double-fire — drop it. A different code is a genuine second scan — route it.
+      if (runInCooldown && code === lastCode) {
+        reset()
+        cooldownUntil = performance.now() + SCAN_COOLDOWN_MS
+        return
+      }
+      lastCode = code
       reset()
       pendingEnterSwallow = true
-      lastCommitTime = performance.now()
+      cooldownUntil = performance.now() + SCAN_COOLDOWN_MS
       onScanRef.current(code)
-      return true
+    }
+    function onTimeout() {
+      if (phase === 'pending') {
+        // Only the first key, no fast follow — a person. Let it land, pass through.
+        if (runInCooldown) {
+          reset()
+        } else {
+          flushToField()
+          reset()
+          phase = 'passthrough'
+        }
+        return
+      }
+      if (phase === 'burst' || phase === 'backtag') finishNoShape(true)
+    }
+
+    // Feed one character to the EID + back-tag-body candidates (the bare stream).
+    // Each candidate takes the character only if it can validly extend; a character
+    // that fits neither is kept only in `raw`. Commits and returns true the instant
+    // a candidate completes its shape.
+    function feedCandidates(c: string): boolean {
+      if (/\d/.test(c) && eidCanExtend(eid + c)) {
+        eid += c
+        if (eid.length === 15 && isEid(eid)) {
+          commitCode(eid)
+          return true
+        }
+      }
+      if (backTagBodyCanExtend(bt + c)) {
+        bt += c
+        if (bt.length === 8 && isBackTagBody(bt)) {
+          commitCode(bt)
+          return true
+        }
+      }
+      return false
     }
 
     function onKeyDown(e: KeyboardEvent) {
       if (e.ctrlKey || e.metaKey || e.altKey) return
+      const now = performance.now()
 
       if (e.key === 'Enter') {
-        // The wand's trailing Enter right after a shape-match commit: swallow it
-        // so it can't submit a form or drop a newline.
-        if (!buffer && pendingEnterSwallow && performance.now() - lastCommitTime <= END_MS) {
+        if (phase === 'backtag') {
+          e.preventDefault()
+          e.stopPropagation()
+          if (isBackTagBody(bt)) commitCode(bt)
+          else finishNoShape(true)
+          return
+        }
+        if (phase === 'burst' || phase === 'pending') {
+          e.preventDefault()
+          e.stopPropagation()
+          const span = lastTime - startTime
+          const avgGap = raw.length > 1 ? span / (raw.length - 1) : Infinity
+          finishNoShape(raw.length >= 1 && avgGap <= AVG_GAP_MAX)
+          return
+        }
+        // Idle / passthrough: the wand's trailing Enter (and any echo Enter) lands
+        // in the cooldown window — swallow it so it can't submit a form or advance.
+        if (now < cooldownUntil) {
           e.preventDefault()
           e.stopPropagation()
           pendingEnterSwallow = false
           return
         }
-        const code = buffer
-        const span = lastTime - startTime
-        const avgGap = code.length > 1 ? span / (code.length - 1) : Infinity
-        const wasBurst = code.length >= MIN_LEN && avgGap <= AVG_GAP_MAX
+        // A person's Enter, well clear of any scan — leave it alone.
         pendingEnterSwallow = false
-        if (wasBurst) {
-          // A fast machine burst that never matched a clean shape (e.g. two wands
-          // interleaved into garbage). Don't let the Enter submit or add a
-          // newline; wipe what it leaked and hand it on so it's flagged for a
-          // re-scan rather than dropped into the wrong field.
-          e.preventDefault()
-          e.stopPropagation()
-          wipeLeaks()
-          reset()
-          onScanRef.current(code)
-        } else {
-          // A person pressed Enter — leave their typing in place and let the Enter
-          // through untouched.
-          reset()
-        }
+        if (phase === 'passthrough') phase = 'idle'
         return
       }
 
       if (e.key.length !== 1) return // ignore Shift, Tab, arrows, Backspace, etc.
+      const c = e.key
+      const gap = lastTime ? now - lastTime : Infinity
 
-      const now = performance.now()
-      const gap = now - lastTime
-      lastTime = now
+      // A real idle gap ends a stale passthrough so a fresh burst can be caught.
+      if (gap > END_MS && phase === 'passthrough') phase = 'idle'
 
-      if (!buffer || gap > END_MS) {
-        // First key, or a real pause since the last one: this starts a fresh
-        // run. Forget any earlier run's leak fields and note where this one is
-        // landing. We never block the key — it types in as normal.
-        buffer = e.key
-        startTime = now
-        leaks.clear()
-        pendingEnterSwallow = false // a new run began
-      } else {
-        // Another key right behind the last: same run. Still never blocked.
-        buffer += e.key
-      }
-      // Track the field this character is landing in (the first time we see it)
-      // so a recognised scan can be wiped back out of every box it touched.
-      noteLeak(e.target)
-
-      // Test the running copy after every character: the moment it forms a whole
-      // EID or back tag (at machine speed), commit it now instead of waiting for
-      // Enter. Drop the key that completed the shape so it doesn't land in the
-      // field after we've already wiped it.
-      if (tryShapeCommit()) {
+      // BACK-TAG BRACKET: the scanner's "$" prefix opens a bracketed capture,
+      // whatever had focus. Self-identifying — "$" never collides with a code.
+      if (c === BACK_TAG_PREFIX && (phase === 'idle' || phase === 'passthrough')) {
         e.preventDefault()
         e.stopPropagation()
+        runInCooldown = now < cooldownUntil
+        phase = 'backtag'
+        bt = ''
+        eid = ''
+        raw = c
+        field = activeEl()
+        startTime = now
+        lastTime = now
+        arm(SAFETY_FLUSH_MS)
+        return
+      }
+
+      if (phase === 'backtag') {
+        e.preventDefault()
+        e.stopPropagation()
+        lastTime = now
+        raw += c
+        // The body is exactly 8 chars; a 9th before the CR, or a char that breaks
+        // the pattern, means a malformed/interleaved capture — rescan, never route.
+        if (bt.length >= 8 || !backTagBodyCanExtend(bt + c)) {
+          finishNoShape(true)
+          return
+        }
+        bt += c
+        arm(SAFETY_FLUSH_MS)
+        return
+      }
+
+      if (phase === 'passthrough') {
+        // A person typing on a hardware keyboard — let it land untouched.
+        lastTime = now
+        return
+      }
+
+      if (phase === 'idle') {
+        // First key of a possible burst. Hold it — nothing lands yet — and decide
+        // on the next key: fast follow means a wand, slow/none means a person.
+        e.preventDefault()
+        e.stopPropagation()
+        runInCooldown = now < cooldownUntil
+        phase = 'pending'
+        raw = c
+        eid = ''
+        bt = ''
+        field = activeEl()
+        startTime = now
+        lastTime = now
+        feedCandidates(c)
+        arm(DECIDE_MS)
+        return
+      }
+
+      if (phase === 'pending') {
+        lastTime = now
+        if (gap <= AVG_GAP_MAX) {
+          // Machine speed confirmed — a burst. Keep intercepting.
+          e.preventDefault()
+          e.stopPropagation()
+          phase = 'burst'
+          raw += c
+          if (feedCandidates(c)) return
+          arm(SAFETY_FLUSH_MS)
+        } else if (runInCooldown) {
+          // Slow straggler in the cooldown window — drop it (no field spill).
+          e.preventDefault()
+          e.stopPropagation()
+          reset()
+        } else {
+          // Slow — a person. Flush the held first key and pass the rest through.
+          flushToField()
+          reset()
+          phase = 'passthrough'
+          lastTime = now
+          // Do not preventDefault — let this key land.
+        }
+        return
+      }
+
+      if (phase === 'burst') {
+        e.preventDefault()
+        e.stopPropagation()
+        lastTime = now
+        raw += c
+        if (feedCandidates(c)) return
+        if (raw.length > MAX_RUN) {
+          finishNoShape(true)
+          return
+        }
+        arm(SAFETY_FLUSH_MS)
+        return
       }
     }
 
     window.addEventListener('keydown', onKeyDown, true)
-    return () => window.removeEventListener('keydown', onKeyDown, true)
+    return () => {
+      window.removeEventListener('keydown', onKeyDown, true)
+      disarm()
+    }
   }, [active])
 }
