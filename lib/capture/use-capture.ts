@@ -483,7 +483,9 @@ export function useCapture(
         // is skipped.
         if (batch.headStarted == null && batch.headExpected != null) {
           const frozen = batch.headExpected
-          await supabase
+          // Fire-and-forget bookkeeping — the confirmation must not wait on it.
+          // The ".is(head_started, null)" guard makes the write safe to not await.
+          void supabase
             .from('pen_work')
             .update({ head_started: frozen })
             .eq('id', batch.penWorkId)
@@ -535,24 +537,20 @@ export function useCapture(
       // HARD: a duplicate official EID already worked in THIS pen_work — refuse,
       // raise the flag, and CLEAR the entered value so it isn't left in the field.
       // (The same EID under a different work order is fine and flows through.)
-      let checkFailed = false
       if (ev) {
+        // Instant in-memory block for a tag already worked this session — no
+        // network. The cross-device DB backstop already ran in the background the
+        // moment the tag was scanned or typed (flagIfDuplicate / commitEid), and
+        // it clears the EID on a hit, so a real duplicate is already blocked by
+        // the time Save is pressed. We deliberately do NOT re-run that DB check on
+        // the save path — it added two round-trips that held the save (and its
+        // confirmation) back on a slow barn connection.
         const local = localDuplicate(ev)
         if (local) {
           setFlag(local)
           patchDraft({ eid: '' })
           return false
         }
-        const res = await checkDuplicate(ev)
-        if (res.hit) {
-          setFlag(res.hit)
-          patchDraft({ eid: '' })
-          return false
-        }
-        // The lookup errored — we could NOT confirm this isn't a duplicate. We
-        // still save (never block the chute), but we must NOT treat the error as
-        // an all-clear; note it after the save so the operator knows to spot-check.
-        checkFailed = res.failed
       }
       // HARD: every shown field marked "required" must be filled before the
       // record saves — not just the EID. A blank required field stops the save
@@ -565,7 +563,6 @@ export function useCapture(
       const ok = await buildAndInsert(ev)
       if (ok) {
         setFlag(null)
-        if (checkFailed) flash('warn', 'Couldn’t check for duplicates — saved anyway')
         // Re-seed for the next animal: config defaults, plus the pen's office
         // defaults — but only when the batch being worked is still the pen they
         // were set for (re-derived here, never carried from another pen).
@@ -574,7 +571,7 @@ export function useCapture(
       }
       return ok
     },
-    [batch, draft, eidRequired, localDuplicate, checkDuplicate, buildAndInsert, patchDraft, resolved, flash, penDefaultsForBatch],
+    [batch, draft, eidRequired, localDuplicate, buildAndInsert, patchDraft, resolved, flash, penDefaultsForBatch],
   )
 
   // Manual EID entry (typed into the EID box, not scanned). Fill and wait, same
