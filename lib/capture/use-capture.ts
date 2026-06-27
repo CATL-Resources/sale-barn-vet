@@ -18,12 +18,14 @@ import { beepSaved, buzzSaved } from './feedback'
 import {
   findDuplicateEid,
   saveAnimalRecord,
+  syncHeadWorked,
   timeLabel,
   type DuplicateCheck,
   type DuplicateHit,
   type IdentifierInput,
   type IdType,
 } from './save-animal'
+import { fetchPenLines, getOrCreateHoldLine, countOnLine, type ConsignorLine } from './consignor-lines'
 
 export type ToastKind = 'error' | 'warn' | 'success'
 export type ToastMsg = { kind: ToastKind; message: string } | null
@@ -150,6 +152,13 @@ export function useCapture(
   // While armed, the next clean 15-digit EID lands in the second slot; a non-840
   // EID no longer auto-routes here.
   const [secondEidTarget, setSecondEidTarget] = useState(false)
+  // Mixed-pen per-cow assignment. The pen's consignor lines for the current work
+  // (more than one => the pen is mixed FOR THIS WORK), the pen's Hold line (lazy),
+  // and the consignor the NEXT cow attaches to — sticky-last — or 'hold' to park.
+  const [consignorLines, setConsignorLines] = useState<ConsignorLine[]>([])
+  const [holdLineId, setHoldLineId] = useState<string | null>(null)
+  const [assignTo, setAssignTo] = useState<string | null>(null)
+  const isMixed = consignorLines.length > 1
   // The duplicate-tag flag (the red banner). Set when an EID already worked in
   // this pen_work is entered; cleared on the next fresh scan or a good save.
   const [flag, setFlag] = useState<DuplicateHit | null>(null)
@@ -271,6 +280,30 @@ export function useCapture(
     liveEid.current = draft.eid
     liveEid2.current = draft.eid2
   }, [draft.eid, draft.eid2])
+
+  // Load the pen's consignor lines for the current work once a bound batch opens,
+  // so a mixed pen (more than one consignor line) can show the per-cow picker.
+  // Client-side, like the sort pens — never on the page's server load. The picker
+  // starts sticky on the bound line (the owner tapped to open the pen).
+  useEffect(() => {
+    if (!batch?.penId || !batch.workTypeId) {
+      setConsignorLines([])
+      setHoldLineId(null)
+      return
+    }
+    let alive = true
+    fetchPenLines(supabase, { penId: batch.penId, workTypeId: batch.workTypeId, saleDayId: batch.saleDayId })
+      .then((res) => {
+        if (!alive) return
+        setConsignorLines(res.lines)
+        setHoldLineId(res.holdLineId)
+        setAssignTo((cur) => cur ?? batch.penWorkId)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [supabase, batch?.penId, batch?.workTypeId, batch?.saleDayId, batch?.penWorkId])
 
   // Effective field config for the active work type — the barn-wide rows overlaid
   // with this work type's overrides. Shared with the edit pop-up (lib/capture/fields).
@@ -516,6 +549,25 @@ export function useCapture(
       savingRef.current = true
       setSaving(true)
       try {
+        // The pen_work this cow attaches to. Non-mixed: the one bound line. Mixed:
+        // the picked consignor line, or the pen's Hold line when parked.
+        let target = batch.penWorkId
+        if (isMixed) {
+          if (assignTo === 'hold') {
+            target =
+              holdLineId ??
+              (await getOrCreateHoldLine(supabase, {
+                barnId,
+                penId: batch.penId!,
+                workTypeId: batch.workTypeId,
+                saleDayId: batch.saleDayId,
+              })) ??
+              batch.penWorkId
+            if (target && target !== holdLineId) setHoldLineId(target)
+          } else {
+            target = assignTo ?? batch.penWorkId
+          }
+        }
         const off = bootstrap.barn.official_id_type
         const identifiers: IdentifierInput[] = []
         const addId = (type: IdType, value: string, official: boolean) => {
@@ -533,7 +585,7 @@ export function useCapture(
           animal: {
             barn_id: barnId,
             sale_day_id: batch.saleDayId,
-            pen_work_id: batch.penWorkId,
+            pen_work_id: target,
             animal_type_id: batch.animalTypeId,
             color: shows('hide_color') ? draft.color : null,
             breed: shows('breed') ? draft.breed : null,
@@ -550,6 +602,10 @@ export function useCapture(
           identifiers,
         })
         if (!res.ok) throw new Error(res.error)
+
+        // On a mixed pen cows fan out across lines — keep the affected line's
+        // head_worked correct (distinct non-deleted animals). Fire-and-forget.
+        if (isMixed) void syncHeadWorked(supabase, target)
 
         // Remember this EID so a re-scan is flagged instantly.
         const savedEid = eidValue.trim()
@@ -602,7 +658,7 @@ export function useCapture(
         setSaving(false)
       }
     },
-    [batch, bootstrap.barn.official_id_type, barnId, draft, userId, shows, supabase, showStatus, confirmSave],
+    [batch, bootstrap.barn.official_id_type, barnId, draft, userId, shows, supabase, showStatus, confirmSave, isMixed, assignTo, holdLineId],
   )
 
   /**
@@ -856,6 +912,87 @@ export function useCapture(
     }
   }, [batch, worked, supabase, showStatus, bootstrap])
 
+  // Re-assign a held (or mis-assigned) animal to a consignor line: re-point its
+  // pen_work_id and keep head_worked correct on BOTH the line it left and the one
+  // it joined (distinct non-deleted animals). An assignment can always be changed.
+  const assignAnimalToLine = useCallback(
+    async (animalId: string, fromLineId: string, toLineId: string): Promise<boolean> => {
+      const { error } = await supabase.from('animal').update({ pen_work_id: toLineId }).eq('id', animalId)
+      if (error) {
+        flash('error', 'Could not assign the animal')
+        return false
+      }
+      await syncHeadWorked(supabase, toLineId)
+      await syncHeadWorked(supabase, fromLineId)
+      return true
+    },
+    [supabase, flash],
+  )
+
+  // Close the WHOLE mixed pen at once: finish every consignor line for this pen +
+  // work, each frozen by its OWN head count (distinct non-deleted animals).
+  // Blocked while anything is still on the Hold line — returns the unplaced count
+  // so the caller can show it. Finishing is one-time per line (a reopened line
+  // keeps its first count and frozen rate; we never re-do a finish).
+  const closePen = useCallback(async (): Promise<{ ok: boolean; held?: number }> => {
+    if (!batch) return { ok: false }
+    setSaving(true)
+    try {
+      if (holdLineId) {
+        const held = await countOnLine(supabase, holdLineId)
+        if (held > 0) {
+          flash('warn', `${held} head not yet assigned — place them first`)
+          return { ok: false, held }
+        }
+      }
+      const wt = bootstrap.workTypes.find((w) => w.id === batch.workTypeId)
+      if (!wt) {
+        flash('error', 'Could not find the work-type rate to freeze')
+        return { ok: false }
+      }
+      for (const line of consignorLines) {
+        const { data: cur, error: readErr } = await supabase
+          .from('pen_work')
+          .select('work_complete, frozen_vet_charge')
+          .eq('id', line.id)
+          .maybeSingle()
+        if (readErr) throw readErr
+        if (cur?.work_complete) continue
+        const headCount = await countOnLine(supabase, line.id)
+        if (cur?.frozen_vet_charge != null) {
+          const { error } = await supabase.from('pen_work').update({ work_complete: true }).eq('id', line.id)
+          if (error) throw error
+        } else {
+          const { error } = await supabase
+            .from('pen_work')
+            .update({
+              work_complete: true,
+              head_worked: headCount,
+              frozen_vet_charge: wt.vet_charge,
+              frozen_sol_charge: wt.sol_charge,
+              frozen_admin_rate: bootstrap.barn.admin_fee_rate,
+              frozen_tax_rate: bootstrap.barn.sales_tax_rate,
+            })
+            .eq('id', line.id)
+          if (error) throw error
+        }
+      }
+      setBatch(null)
+      setDraft(emptyDraft())
+      setWorked(0)
+      setSorted(0)
+      setStageTally({})
+      setStep('start')
+      flash('success', 'Pen closed')
+      return { ok: true }
+    } catch (e) {
+      flash('error', errMsg(e, 'Could not close the pen'))
+      return { ok: false }
+    } finally {
+      setSaving(false)
+    }
+  }, [batch, holdLineId, consignorLines, supabase, bootstrap, flash])
+
   // Re-sync the in-batch worked count AND the instant-duplicate set from the
   // live (non-deleted) animals. Called when a batch opens (so a resumed batch
   // knows what's already been worked) and after the animal-list pop-up adds or
@@ -954,6 +1091,13 @@ export function useCapture(
     setSecondaryEidOpen,
     secondEidTarget,
     setSecondEidTarget,
+    isMixed,
+    consignorLines,
+    holdLineId,
+    assignTo,
+    setAssignTo,
+    closePen,
+    assignAnimalToLine,
     closeBatch,
     clearSort,
     chooseSortPen,
