@@ -731,6 +731,8 @@ export type Database = {
       pen: {
         Row: {
           barn_id: string
+          closed_at: string | null
+          closed_by: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -743,6 +745,8 @@ export type Database = {
         }
         Insert: {
           barn_id: string
+          closed_at?: string | null
+          closed_by?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -755,6 +759,8 @@ export type Database = {
         }
         Update: {
           barn_id?: string
+          closed_at?: string | null
+          closed_by?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null

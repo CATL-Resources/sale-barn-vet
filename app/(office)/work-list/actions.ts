@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { upsertPen } from '@/lib/work-orders/pens'
 import type { Json } from '@/types/supabase'
 
 /**
@@ -87,6 +88,94 @@ export async function setPenWorkNote(
     .is('deleted_at', null)
   if (error) return { ok: false, note: null, error: error.message }
   return { ok: true, note: value }
+}
+
+/**
+ * Close a sort pen out at the end of the sale day. Stamps closed_at = now and
+ * closed_by = the signed-in user (the same audit shape as created_by). It does
+ * NOT touch the cattle — the animals stay where they are (their current_pen_id is
+ * unchanged), so a closed pen can still be reopened or have its cattle moved
+ * later. barn_id is passed through and re-checked by RLS, so a pen can only be
+ * closed within the user's own barn.
+ */
+export async function closeSortPen(
+  penId: string,
+  barnId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { ok: false, error: 'Not signed in.' }
+  const { error } = await supabase
+    .from('pen')
+    .update({ closed_at: new Date().toISOString(), closed_by: user.id })
+    .eq('id', penId)
+    .eq('barn_id', barnId)
+    .is('deleted_at', null)
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
+}
+
+/**
+ * Reopen a closed sort pen — clears closed_at / closed_by. Reversible counterpart
+ * to closeSortPen; the cattle are untouched either way. RLS scopes the write to
+ * the user's barn.
+ */
+export async function reopenSortPen(
+  penId: string,
+  barnId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const supabase = createClient()
+  const { error } = await supabase
+    .from('pen')
+    .update({ closed_at: null, closed_by: null })
+    .eq('id', penId)
+    .eq('barn_id', barnId)
+    .is('deleted_at', null)
+  if (error) return { ok: false, error: error.message }
+  return { ok: true }
+}
+
+/**
+ * Move a whole sort pen's cattle to one destination pen. The destination is
+ * entered by number; the pen row is created for this sale day if it's new (the
+ * same lazy pen creation used everywhere). Then every active animal still sitting
+ * in the sort pen has its current_pen_id pointed at the destination — the whole
+ * pen moves together, no splitting.
+ *
+ * This is an internal pen-to-pen move only. It changes nothing about billing: no
+ * pen_work, no head counts, no frozen charges — only animal.current_pen_id. It's
+ * reversible by moving again (no rows are deleted). RLS scopes every write to the
+ * user's barn.
+ */
+export async function moveSortPen(input: {
+  sortPenId: string
+  saleDayId: string
+  barnId: string
+  destinationPenNumber: string
+}): Promise<{ ok: boolean; error?: string; destination?: { id: string; pen_number: string }; moved?: number }> {
+  const supabase = createClient()
+  const number = input.destinationPenNumber.trim()
+  if (!number) return { ok: false, error: 'Enter a destination pen number.' }
+
+  let destId: string
+  try {
+    destId = await upsertPen(supabase, input.barnId, input.saleDayId, number)
+  } catch {
+    return { ok: false, error: 'Could not find or create the destination pen.' }
+  }
+  if (destId === input.sortPenId) return { ok: false, error: 'Pick a destination different from this pen.' }
+
+  const { data: moved, error } = await supabase
+    .from('animal')
+    .update({ current_pen_id: destId })
+    .eq('sale_day_id', input.saleDayId)
+    .eq('current_pen_id', input.sortPenId)
+    .is('deleted_at', null)
+    .select('id')
+  if (error) return { ok: false, error: error.message }
+  return { ok: true, destination: { id: destId, pen_number: number }, moved: moved?.length ?? 0 }
 }
 
 /**
