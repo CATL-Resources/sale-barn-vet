@@ -13,6 +13,7 @@ import { RequiredMark } from '@/components/ui/required-mark'
 import { AnimalAttributes } from './animal-attributes'
 import { OnScreenKeyboard } from './onscreen-keyboard'
 import { FlagBanner, FLAG_RED, FLAG_RED_BG } from './flag'
+import { ConsignorPicker } from './consignor-picker'
 
 const isEid15 = (v: string) => /^\d{15}$/.test(v.trim())
 
@@ -418,6 +419,12 @@ export function CaptureForm({
                 </div>
               </div>
             </div>
+          )}
+
+          {/* Per-cow consignor picker — only on a pen that's mixed for this work.
+              Sticky-last: the pick carries to the next cow until changed. */}
+          {api.isMixed && (
+            <ConsignorPicker lines={api.consignorLines} value={api.assignTo} onPick={api.setAssignTo} />
           )}
 
           {/* identity — SCANNABLE fields in the navy scan bar; typed tags below */}
