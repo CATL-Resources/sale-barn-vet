@@ -4,7 +4,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
-- **work-list:** show mixed pens as one grouped card on the chute Pen List _(2026-06-27, `f0d4312`)_
+- **db:** add the closed-out marker columns to pen (closed_at, closed_by) _(2026-06-27, `264225d`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -60,6 +60,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Show mixed pens as one grouped card on the chute Pen List _(2026-06-27, `4208bda`)_
 - backstop unique index for duplicate EIDs within a work order _(2026-06-26, `b9e9d54`)_
 - Work Orders desktop: show notes and photos per work order _(2026-06-26, `43e86c2`)_
 - Pen List: print the pen card label from a row and mark it printed _(2026-06-26, `307f8af`)_
