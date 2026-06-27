@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { AppHeader } from '@/components/ui/app-header'
-import { fetchHeaderInfo } from '@/lib/app-header-info'
 
-// Full-screen task screens (e.g. chuteside Capture). The one shared header sits
-// on top; the screen's own controls (work type, progress, close-out) stay below.
+// Full-screen task screens (the chuteside Capture). No shared top bar here — the
+// chute needs every row it can get for the scan box and the ID fields, and the
+// screen already has its own header (back to the Pen List, the pen + consignor,
+// and the running count). The barn-name bar stays on the office screens, which
+// live in the other layouts.
 export const dynamic = 'force-dynamic'
 
 export default async function FullLayout({ children }: { children: ReactNode }) {
@@ -17,14 +18,9 @@ export default async function FullLayout({ children }: { children: ReactNode }) 
     redirect('/login')
   }
 
-  const { barnName, subtitle } = await fetchHeaderInfo(supabase)
-
   return (
     <div className="sbv-canvas">
-      <div className="sbv-frame sbv-frame--task">
-        <AppHeader barnName={barnName} subtitle={subtitle} />
-        {children}
-      </div>
+      <div className="sbv-frame sbv-frame--task">{children}</div>
     </div>
   )
 }

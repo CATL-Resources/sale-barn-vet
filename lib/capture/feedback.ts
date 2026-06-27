@@ -1,9 +1,9 @@
 // Multi-sensory "saved" feedback for the chute capture loop: a short beep and a
 // short buzz. Both are best-effort and fire-and-forget — they must never throw
-// and never block the next scan. The big on-screen confirmation is the only
-// guaranteed channel (see components/capture/save-confirm.tsx); sound and buzz
-// are extras that can be silently unavailable (the iOS mute switch silences web
-// audio, iPhones have no Vibration API, some browsers have no Web Audio).
+// and never block the next scan. The big on-screen status box is the only
+// guaranteed channel (the green "Saved" message); sound and buzz are extras that
+// can be silently unavailable (the iOS mute switch silences web audio, iPhones
+// have no Vibration API, some browsers have no Web Audio).
 
 // One AudioContext is shared for the whole capture session. iOS only lets sound
 // play if the context was created and resumed inside a real user gesture, so we
