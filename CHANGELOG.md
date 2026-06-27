@@ -28,7 +28,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
-- work orders board — pill before name, restore photo delete, note under consignor _(2026-06-27, `d0bba1e`)_
 - a required field that's blank now blocks the save (not just EID) _(2026-06-25, `4afa527`)_
 - pen labels clip on the office Work Orders board _(2026-06-24, `d96cb4d`)_
 - duplicate-EID check must not fail silently on a query error _(2026-06-24, `2440e84`)_
@@ -46,7 +45,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Docs
 
-- regenerate changelog _(2026-06-27, `8fbf8f6`)_
 - log the chute flow + sale day fixes and the test-data wipe _(2026-06-20, `6816a18`)_
 - update CHANGELOG for the Work Orders panel + row fixes _(2026-06-20, `e2359d9`)_
 - update CHANGELOG for the Work Orders fixes _(2026-06-20, `561afdb`)_
@@ -61,6 +59,8 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Rebuild the chute Work List to the Option E design _(2026-06-27, `6a9543a`)_
+- Work Orders board: pill before name, restore photo delete, note under consignor _(2026-06-27, `5a33654`)_
 - Capture identity: tap-only 2nd EID, edit-sheet scanning, scannable field grouping (Part B) _(2026-06-27, `f8fc96b`)_
 - Harden chute wand scan ingest (Part A: the assembly engine) _(2026-06-27, `ac95256`)_
 - Office + capture formatting polish (visual only) _(2026-06-27, `a21b2a2`)_
