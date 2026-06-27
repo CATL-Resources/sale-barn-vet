@@ -59,7 +59,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
-- Rebuild the chute Work List to the Option E design _(2026-06-27, `6a9543a`)_
+- Rebuild the chute Work List to the Option E design _(2026-06-27, `aeb795b`)_
 - Work Orders board: pill before name, restore photo delete, note under consignor _(2026-06-27, `5a33654`)_
 - Capture identity: tap-only 2nd EID, edit-sheet scanning, scannable field grouping (Part B) _(2026-06-27, `f8fc96b`)_
 - Harden chute wand scan ingest (Part A: the assembly engine) _(2026-06-27, `ac95256`)_

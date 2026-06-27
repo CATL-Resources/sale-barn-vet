@@ -28,11 +28,20 @@ import {
 export type ToastKind = 'error' | 'warn' | 'success'
 export type ToastMsg = { kind: ToastKind; message: string } | null
 
-// The strong "Saved" confirmation that fires after a good save. `id` rises on
-// every save so the on-screen burst replays even on rapid back-to-back saves;
-// `head` is the batch's running head count to show ("Saved — 24 head"), or null
-// when it isn't available in the save path.
-export type SaveConfirm = { id: number; head: number | null } | null
+// The one capture status message. Every system message on the capture screen —
+// a good save, a duplicate tag, a blank required field, a scan that didn't read —
+// lands in the same big box above the ID fields, colored by how serious it is:
+//   error   -> a hard block, salmon (a duplicate tag)
+//   warning -> something to fix, amber (a required field, a scan to redo)
+//   success -> a good save, green
+// `id` rises on every new message so the box re-shows even on back-to-back saves.
+export type StatusSeverity = 'error' | 'warning' | 'success'
+export type CaptureStatus = { id: number; severity: StatusSeverity; title: string; detail?: string } | null
+
+// How the box picks when two things land close together: a more serious message
+// is never pushed aside by a less serious one still on screen. A good save is the
+// exception — it always shows, because the block it would replace is already gone.
+const STATUS_RANK: Record<StatusSeverity, number> = { success: 0, warning: 1, error: 2 }
 
 export type StartBatchInput = {
   saleDayId: string | null
@@ -156,37 +165,96 @@ export function useCapture(
     return hit ? { eid: value.trim(), time: hit.time, status: hit.status } : null
   }, [])
 
+  // The start-batch screen still uses the small floating note for "pick a
+  // consignor / work type first" — it shows before any pen is open, so it never
+  // reaches the capture screen's status box. Once capture is running, every
+  // message goes through showStatus instead.
   const flash = useCallback((kind: ToastKind, message: string) => {
     setToast({ kind, message })
     if (kind !== 'warn') window.setTimeout(() => setToast(null), 3200)
   }, [])
   const dismissToast = useCallback(() => setToast(null), [])
 
+  // The ONE capture status box (the old duplicate-tag banner, now used for every
+  // message). A mirror ref lets showStatus read the message currently on screen
+  // synchronously, so a fresh message can decide whether it outranks it.
+  const [status, setStatus] = useState<CaptureStatus>(null)
+  const statusRef = useRef<CaptureStatus>(null)
+  const statusId = useRef(0)
+  const statusTimer = useRef<number | null>(null)
+
+  const clearStatus = useCallback(() => {
+    if (statusTimer.current != null) {
+      window.clearTimeout(statusTimer.current)
+      statusTimer.current = null
+    }
+    statusRef.current = null
+    setStatus(null)
+  }, [])
+
+  const showStatus = useCallback((severity: StatusSeverity, title: string, detail?: string) => {
+    // Don't let a less serious message push aside a more serious one that's still
+    // up (a stray scan warning shouldn't hide a live duplicate block). Same or
+    // higher seriousness always takes over.
+    const active = statusRef.current
+    if (active && STATUS_RANK[severity] < STATUS_RANK[active.severity]) return
+    if (statusTimer.current != null) {
+      window.clearTimeout(statusTimer.current)
+      statusTimer.current = null
+    }
+    statusId.current += 1
+    const next: CaptureStatus = { id: statusId.current, severity, title, detail }
+    statusRef.current = next
+    setStatus(next)
+    // A warning or block stays until the next scan or save replaces it; only the
+    // "Saved" message clears itself, so it never lingers over the next cow.
+    if (severity === 'success') {
+      statusTimer.current = window.setTimeout(() => {
+        statusTimer.current = null
+        statusRef.current = null
+        setStatus(null)
+      }, 1300)
+    }
+  }, [])
+
   // The strong, multi-sensory "Saved" confirmation. Fired ONLY after a record has
-  // really landed in the database — never optimistically — and fully
-  // fire-and-forget: it kicks off the visual, the beep, and the buzz, then
-  // returns at once so the next scan is never held up.
-  const [saveConfirm, setSaveConfirm] = useState<SaveConfirm>(null)
-  const saveConfirmId = useRef(0)
-  const saveConfirmTimer = useRef<number | null>(null)
+  // really landed in the database — never optimistically. A finished save is the
+  // last word, so it always shows green (it bypasses the seriousness check) and
+  // also kicks off the beep and the buzz, then returns at once so the next scan is
+  // never held up.
   const confirmSave = useCallback((head: number | null) => {
-    saveConfirmId.current += 1
-    setSaveConfirm({ id: saveConfirmId.current, head })
-    // The visual clears fast — quicker than the 3.2s toast — so it never lags the
-    // next animal. A fresh save resets the timer so back-to-back saves each get a
-    // full burst.
-    if (saveConfirmTimer.current != null) window.clearTimeout(saveConfirmTimer.current)
-    saveConfirmTimer.current = window.setTimeout(() => setSaveConfirm(null), 1150)
+    if (statusTimer.current != null) window.clearTimeout(statusTimer.current)
+    statusId.current += 1
+    const next: CaptureStatus = { id: statusId.current, severity: 'success', title: head != null ? `Saved — ${head} head` : 'Saved' }
+    statusRef.current = next
+    setStatus(next)
+    // The green clears fast so it never lags the next animal; a fresh save resets
+    // the timer so back-to-back saves each get their own burst.
+    statusTimer.current = window.setTimeout(() => {
+      statusTimer.current = null
+      statusRef.current = null
+      setStatus(null)
+    }, 1300)
     // Sound + buzz are best-effort extras: they never throw and never block.
     beepSaved()
     buzzSaved()
   }, [])
   useEffect(
     () => () => {
-      if (saveConfirmTimer.current != null) window.clearTimeout(saveConfirmTimer.current)
+      if (statusTimer.current != null) window.clearTimeout(statusTimer.current)
     },
     [],
   )
+
+  // Mirror the duplicate flag into the status box as a salmon block. The flag is
+  // still the dedupe signal (it also reddens the EID field); this just shows its
+  // message in the one shared place. Clearing the flag is handled where the next
+  // scan or a good save resets the box, so a stale block never lingers.
+  useEffect(() => {
+    if (flag) {
+      showStatus('error', 'Duplicate tag', `${flag.eid} already worked · ${flag.time} · ${flag.status}`)
+    }
+  }, [flag, showStatus])
 
   const patchDraft = useCallback((fields: Partial<AnimalDraft>) => {
     setDraft((d) => ({ ...d, ...fields }))
@@ -404,10 +472,10 @@ export function useCapture(
         )
         patchDraft({ sortPenId: penId })
       } catch (e) {
-        flash('error', errMsg(e, 'Could not make the sort pen'))
+        showStatus('error', 'Could not make the sort pen', errMsg(e, 'Try again'))
       }
     },
-    [supabase, barnId, batch, sortPens.length, patchDraft, flash],
+    [supabase, barnId, batch, sortPens.length, patchDraft, showStatus],
   )
 
   const toggleQuickNote = useCallback(
@@ -525,7 +593,7 @@ export function useCapture(
         confirmSave(nextWorked)
         return true
       } catch (e) {
-        flash('error', errMsg(e, 'Could not save — try again'))
+        showStatus('error', 'Could not save', errMsg(e, 'Try again'))
         return false
       } finally {
         // Release the synchronous guard only once the insert has fully resolved,
@@ -534,7 +602,7 @@ export function useCapture(
         setSaving(false)
       }
     },
-    [batch, bootstrap.barn.official_id_type, barnId, draft, userId, shows, supabase, flash, confirmSave],
+    [batch, bootstrap.barn.official_id_type, barnId, draft, userId, shows, supabase, showStatus, confirmSave],
   )
 
   /**
@@ -549,7 +617,7 @@ export function useCapture(
       // HARD: the official EID is an identifier — no animal saves without a real
       // one, and it has to be a full 15-digit tag (catches a mistyped EID).
       if (eidRequired() && !/^\d{15}$/.test(ev)) {
-        flash('error', ev ? 'EID must be the full 15 digits' : 'Scan or type the EID before saving')
+        showStatus('warning', ev ? 'EID must be the full 15 digits' : 'Scan or type the EID before saving')
         return false
       }
       // HARD: a duplicate official EID already worked in THIS pen_work — refuse,
@@ -575,7 +643,7 @@ export function useCapture(
       // and names the first one missing.
       const missing = missingRequiredLabels(resolved, draft)
       if (missing.length) {
-        flash('error', missing.length === 1 ? `${missing[0]} is required before saving` : `Required before saving: ${missing.join(', ')}`)
+        showStatus('warning', missing.length === 1 ? `${missing[0]} is required before saving` : `Required before saving: ${missing.join(', ')}`)
         return false
       }
       const ok = await buildAndInsert(ev)
@@ -589,7 +657,7 @@ export function useCapture(
       }
       return ok
     },
-    [batch, draft, eidRequired, localDuplicate, buildAndInsert, patchDraft, resolved, flash, penDefaultsForBatch],
+    [batch, draft, eidRequired, localDuplicate, buildAndInsert, patchDraft, resolved, showStatus, penDefaultsForBatch],
   )
 
   // Manual EID entry (typed into the EID box, not scanned). Fill and wait, same
@@ -615,10 +683,11 @@ export function useCapture(
       // A failed check (res.failed) is left to the Save step to surface — the
       // entry pre-check stays advisory and never clears or blocks the field.
       setFlag(null)
+      clearStatus()
       patchDraft({ eid: v })
       setFocusTick((n) => n + 1)
     },
-    [batch, draft.eid, localDuplicate, checkDuplicate, patchDraft],
+    [batch, draft.eid, localDuplicate, checkDuplicate, patchDraft, clearStatus],
   )
 
   /**
@@ -662,7 +731,7 @@ export function useCapture(
       const code = raw.trim()
       if (!code) return
       // A fresh scan clears any leftover message and the duplicate flag.
-      setToast(null)
+      clearStatus()
       setFlag(null)
 
       // The scan router hands us ONE complete tag at a time — it commits the
@@ -677,7 +746,7 @@ export function useCapture(
         // While the 2nd EID is the active scan target the scanner is dedicated to
         // it — reject a back tag rather than route it to the wrong field.
         if (secondEidTarget) {
-          flash('warn', 'The 2nd EID takes a 15-digit EID — rescan with the field untapped')
+          showStatus('warning', 'The 2nd EID takes a 15-digit EID — rescan with the field untapped')
           return
         }
         // Store the back tag in its canonical upper-case form (46MA1234).
@@ -687,7 +756,7 @@ export function useCapture(
       }
 
       if (!isEid(code)) {
-        flash('warn', `Unrecognized scan — rescan (${code})`)
+        showStatus('warning', 'Unrecognized scan — rescan', code)
         return
       }
 
@@ -718,10 +787,10 @@ export function useCapture(
       } else {
         // 15 digits but NOT an official 840 tag, and the second slot isn’t the
         // target — nudge (Warn, never blocks the save).
-        flash('warn', 'That EID doesn’t start with 840 — tap the 2nd EID field to scan a second tag')
+        showStatus('warning', 'That EID doesn’t start with 840 — tap the 2nd EID field to scan a second tag')
       }
     },
-    [batch, secondEidTarget, patchDraft, flash, flagIfDuplicate],
+    [batch, secondEidTarget, patchDraft, showStatus, clearStatus, flagIfDuplicate],
   )
 
   const closeBatch = useCallback(async (): Promise<boolean> => {
@@ -754,7 +823,7 @@ export function useCapture(
         // the current rate card (the work type's rates) + the barn's rates.
         const wt = bootstrap.workTypes.find((w) => w.id === batch.workTypeId)
         if (!wt) {
-          flash('error', 'Could not find the work-type rate to freeze')
+          showStatus('error', 'Could not find the work-type rate to freeze')
           return false
         }
         const { error } = await supabase
@@ -777,15 +846,15 @@ export function useCapture(
       setSorted(0)
       setStageTally({})
       setStep('start')
-      flash('success', 'Batch closed')
+      showStatus('success', 'Batch closed')
       return true
     } catch (e) {
-      flash('error', errMsg(e, 'Could not close the batch'))
+      showStatus('error', 'Could not close the batch', errMsg(e, 'Try again'))
       return false
     } finally {
       setSaving(false)
     }
-  }, [batch, worked, supabase, flash, bootstrap])
+  }, [batch, worked, supabase, showStatus, bootstrap])
 
   // Re-sync the in-batch worked count AND the instant-duplicate set from the
   // live (non-deleted) animals. Called when a batch opens (so a resumed batch
@@ -865,7 +934,8 @@ export function useCapture(
     sortPens,
     saving,
     toast,
-    saveConfirm,
+    status,
+    clearStatus,
     resolved,
     shows,
     required,

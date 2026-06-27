@@ -12,7 +12,6 @@ import { CloseOutSheet } from './close-out-sheet'
 import { AnimalListSheet } from './animal-list-sheet'
 import { AnimalEditSheet, type EditTarget } from './animal-edit-sheet'
 import { CaptureToast } from './toast'
-import { SaveConfirmBurst } from './save-confirm'
 import { OptionPicker, type Option } from './sheets'
 
 export function CaptureScreen({
@@ -92,11 +91,10 @@ export function CaptureScreen({
         />
       )}
 
+      {/* Start-screen notes (pick a consignor / work type) still use the small
+          floating note — they show before any pen is open. Once capture is
+          running, every message goes through the one status box in the form. */}
       <CaptureToast toast={api.toast} onDismiss={api.dismissToast} />
-
-      {/* The strong "Saved" burst. Keyed by the save id so it replays on every
-          save, including rapid back-to-back ones. */}
-      <SaveConfirmBurst key={api.saveConfirm?.id} confirm={api.saveConfirm} />
 
       {closeOutOpen && api.step === 'capture' && <CloseOutSheet api={api} onClose={() => setCloseOutOpen(false)} />}
 

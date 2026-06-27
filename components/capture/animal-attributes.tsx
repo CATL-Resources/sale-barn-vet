@@ -171,10 +171,13 @@ export function AnimalAttributes({
 
   return (
     <>
+      {/* The animal's fields, in a plain white card. No "Fields" header bar over
+          them — each field already shows its own name (Age, Stage, Breed, …), so
+          the extra label was a wasted row on the chute. */}
       {orderedFields.length > 0 && (
-        <SectionCard title="Fields">
+        <div style={{ background: '#FFFFFF', border: '1px solid #E4E4DE', borderRadius: 14, padding: 12 }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>{orderedFields.map((k) => renderField(k))}</div>
-        </SectionCard>
+        </div>
       )}
 
       {shows('quick_notes') && (

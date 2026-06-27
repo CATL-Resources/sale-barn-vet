@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { CaptureApi } from '@/lib/capture/use-capture'
 import { useScanRouter } from '@/lib/capture/use-scan-router'
 import { useOnScreenKeyboard } from '@/lib/capture/use-onscreen-keyboard'
@@ -12,7 +12,8 @@ import { Button } from '@/components/ui/button'
 import { RequiredMark } from '@/components/ui/required-mark'
 import { AnimalAttributes } from './animal-attributes'
 import { OnScreenKeyboard } from './onscreen-keyboard'
-import { FlagBanner, FLAG_RED, FLAG_RED_BG } from './flag'
+import { StatusBanner } from './status-banner'
+import { FLAG_RED, FLAG_RED_BG } from './flag'
 
 const isEid15 = (v: string) => /^\d{15}$/.test(v.trim())
 
@@ -169,7 +170,9 @@ export function CaptureForm({
   }
 
   // --- identity inputs (typed tags) ---
-  const navyInput = (key: 'backTag' | 'visualTag' | 'metalTag', label: string, placeholder: string) => {
+  // `trailing` rides on the same row, to the right of the input — used to tuck
+  // the "+ 2nd EID" pill onto the back-tag row instead of giving it its own line.
+  const navyInput = (key: 'backTag' | 'visualTag' | 'metalTag', label: string, placeholder: string, trailing?: ReactNode) => {
     const fieldKey = key === 'backTag' ? 'back_tag' : key === 'visualTag' ? 'visual_tag' : 'metal_tag'
     // The back-tag field takes only the 8-char shape 46MA1234: upper-case the
     // letters and cap the length as it's typed (or filled by the on-screen
@@ -193,6 +196,7 @@ export function CaptureForm({
             onFocus={() => { bind.onFocus(); setSecondEidTarget(false) }}
             style={{ flex: 1, minWidth: 0, height: 46, padding: '0 13px', borderRadius: 11, background: 'rgba(255,255,255,0.08)', border: `1px solid ${badBackTag ? '#E24B4A' : 'rgba(255,255,255,0.18)'}`, color: '#FFFFFF', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, outline: 'none' }}
           />
+          {trailing}
         </div>
         {badBackTag && (
           <div style={{ marginLeft: 70, marginTop: 4, fontSize: 11, fontWeight: 600, color: '#F3B0B0' }}>
@@ -335,6 +339,48 @@ export function CaptureForm({
   const scannableIds = orderedIdentity.filter((k) => isScannableField(k))
   const typedIds = orderedIdentity.filter((k) => !isScannableField(k))
 
+  // The on-demand second EID. Collapsed, it's just the small "+ 2nd EID" pill,
+  // which we tuck onto the end of the back-tag row to save a whole line. Once it's
+  // opened or filled it becomes its own full input row under the scan fields.
+  const secondEidActive = api.shows('eid') && (secondaryEidOpen || draft.eid2.trim().length > 0)
+  const secondEidPill = api.shows('eid') && !secondEidActive ? (
+    <button
+      type="button"
+      onClick={() => { setSecondaryEidOpen(true); setSecondEidTarget(true) }}
+      style={{ flexShrink: 0, height: 40, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0 13px', borderRadius: 999, background: 'transparent', border: '1px dashed rgba(255,255,255,0.32)', color: '#C9D5EA', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+    >
+      + 2nd EID
+    </button>
+  ) : null
+  // Tap-to-reveal second EID — scannable, but a TAP-ONLY target: the next 15-digit
+  // EID lands here only while it's tapped (shown by the teal ring), then routing
+  // reverts to the primary EID.
+  const secondEidRow = secondEidActive ? (() => {
+    const bind = kbd.bind('eid2', draft.eid2, (v) => patchDraft({ eid2: cleanEid(v) }))
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 9 }}>
+        <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA' }}>2nd EID</div>
+        <div style={{ flex: 1, minWidth: 0, height: 46, display: 'flex', alignItems: 'center', gap: 8, padding: '0 11px', borderRadius: 11, background: 'rgba(255,255,255,0.08)', border: `1px solid ${secondEidTarget ? '#55BAAA' : 'rgba(255,255,255,0.18)'}`, boxShadow: secondEidTarget ? '0 0 0 3px rgba(85,186,170,0.35)' : 'none' }}>
+          <input
+            ref={(el) => { idRefs.current['eid2'] = el }}
+            value={draft.eid2}
+            onChange={(e) => patchDraft({ eid2: cleanEid(e.target.value) })}
+            onKeyDown={swallowEnter}
+            placeholder={secondEidTarget ? 'Scan the second EID' : 'Tap, then scan the 2nd EID'}
+            {...bind}
+            onFocus={() => { bind.onFocus(); setSecondEidTarget(true) }}
+            style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, color: '#FFFFFF', fontVariantNumeric: 'tabular-nums' }}
+          />
+          {secondEidTarget && <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 800, letterSpacing: '0.05em', color: '#7FD3C4' }}>SCANNING</span>}
+          <button type="button" aria-label="Remove second EID" onClick={() => { patchDraft({ eid2: '' }); setSecondaryEidOpen(false); setSecondEidTarget(false) }} style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
+            <XIcon size={15} color="#C9D5EA" sw={2.2} />
+          </button>
+        </div>
+      </div>
+    )
+  })() : null
+  const hasBackTag = scannableIds.includes('back_tag')
+
   return (
     <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
       <ScreenHeader
@@ -394,7 +440,10 @@ export function CaptureForm({
 
       <div className="sbv-scroll">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 11, padding: 12 }}>
-          {flag && <FlagBanner title="Duplicate tag" detail={`${flag.eid} already worked · ${flag.time} · ${flag.status}`} />}
+          {/* The ONE status box for the capture screen — a good save, a duplicate
+              tag, a blank required field, or a scan that didn't read all show
+              here, in the same spot and the same big size, colored by severity. */}
+          <StatusBanner status={api.status} />
 
           {flaggedOn.length > 0 && (
             <div style={{ background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: 14, padding: '13px 15px', display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -420,50 +469,23 @@ export function CaptureForm({
             </div>
           )}
 
-          {/* identity — SCANNABLE fields in the navy scan bar; typed tags below */}
+          {/* identity — SCANNABLE fields in the navy scan bar; typed tags below.
+              No "Identity" label inside the box: the fields speak for themselves
+              and the chute needs the row. The "+ 2nd EID" pill rides on the back
+              tag row to save another. */}
           <div style={{ background: '#0E2646', borderRadius: 14, padding: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#8FA8CC', textTransform: 'uppercase', marginBottom: 11 }}>
-              Identity · {bootstrap.barn.official_id_type} barn
-            </div>
             {scannableIds.map((k) => (
-              <Fragment key={k}>{identityInput(k)}</Fragment>
+              <Fragment key={k}>
+                {k === 'back_tag'
+                  ? navyInput('backTag', 'Back Tag', 'Scan the back tag barcode', secondEidPill)
+                  : identityInput(k)}
+              </Fragment>
             ))}
 
-            {/* Tap-to-reveal second EID — scannable, but a TAP-ONLY target: the
-                next 15-digit EID lands here only while it's tapped (shown by the
-                teal ring), then routing reverts to the primary EID. */}
-            {api.shows('eid') && (secondaryEidOpen || draft.eid2.trim() ? (() => {
-              const bind = kbd.bind('eid2', draft.eid2, (v) => patchDraft({ eid2: cleanEid(v) }))
-              return (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 9 }}>
-                  <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA' }}>2nd EID</div>
-                  <div style={{ flex: 1, minWidth: 0, height: 46, display: 'flex', alignItems: 'center', gap: 8, padding: '0 11px', borderRadius: 11, background: 'rgba(255,255,255,0.08)', border: `1px solid ${secondEidTarget ? '#55BAAA' : 'rgba(255,255,255,0.18)'}`, boxShadow: secondEidTarget ? '0 0 0 3px rgba(85,186,170,0.35)' : 'none' }}>
-                    <input
-                      ref={(el) => { idRefs.current['eid2'] = el }}
-                      value={draft.eid2}
-                      onChange={(e) => patchDraft({ eid2: cleanEid(e.target.value) })}
-                      onKeyDown={swallowEnter}
-                      placeholder={secondEidTarget ? 'Scan the second EID' : 'Tap, then scan the 2nd EID'}
-                      {...bind}
-                      onFocus={() => { bind.onFocus(); setSecondEidTarget(true) }}
-                      style={{ flex: 1, minWidth: 0, border: 'none', outline: 'none', background: 'transparent', fontFamily: 'inherit', fontSize: 15, fontWeight: 700, color: '#FFFFFF', fontVariantNumeric: 'tabular-nums' }}
-                    />
-                    {secondEidTarget && <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 800, letterSpacing: '0.05em', color: '#7FD3C4' }}>SCANNING</span>}
-                    <button type="button" aria-label="Remove second EID" onClick={() => { patchDraft({ eid2: '' }); setSecondaryEidOpen(false); setSecondEidTarget(false) }} style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
-                      <XIcon size={15} color="#C9D5EA" sw={2.2} />
-                    </button>
-                  </div>
-                </div>
-              )
-            })() : (
-              <button
-                type="button"
-                onClick={() => { setSecondaryEidOpen(true); setSecondEidTarget(true) }}
-                style={{ marginTop: 4, height: 36, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '0 14px', borderRadius: 999, background: 'transparent', border: '1px dashed rgba(255,255,255,0.32)', color: '#C9D5EA', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}
-              >
-                + 2nd EID
-              </button>
-            ))}
+            {/* If there's no back-tag row to ride on, the pill keeps its own line. */}
+            {!hasBackTag && secondEidPill && <div style={{ marginTop: 4 }}>{secondEidPill}</div>}
+
+            {secondEidRow}
           </div>
 
           {/* Typed ID tags (visual / metal) — typed by hand, so they sit below the
