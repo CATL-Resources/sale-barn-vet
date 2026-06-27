@@ -122,6 +122,14 @@ export function useCapture(
   const [stageTally, setStageTally] = useState<Record<string, number>>({})
   const [sortPens, setSortPens] = useState<SortPen[]>([])
   const [saving, setSaving] = useState(false)
+  // A SYNCHRONOUS re-entry guard for the save path. The `saving` state (and the
+  // disabled Save button it drives) lag a render, so two save triggers from one
+  // action — a touch and its ghost click, Enter and the button, a wand scan and
+  // an immediate confirm — can both fire ~160ms apart before React re-renders and
+  // both pass a state-based guard, producing a phantom duplicate animal. This ref
+  // flips synchronously, so the second call bails before it can start a second
+  // insert.
+  const savingRef = useRef(false)
   const [toast, setToast] = useState<ToastMsg>(null)
   // Bumped whenever a scan fills an identifier, so the form can move the cursor
   // to the first empty field for manual entry.
@@ -430,7 +438,10 @@ export function useCapture(
   // can roll straight into the next cow.
   const buildAndInsert = useCallback(
     async (eidValue: string): Promise<boolean> => {
-      if (!batch || saving) return false
+      // Re-entry guard FIRST, set synchronously — one user action can only ever
+      // produce one insert, no matter how fast a second trigger arrives.
+      if (!batch || savingRef.current) return false
+      savingRef.current = true
       setSaving(true)
       try {
         const off = bootstrap.barn.official_id_type
@@ -513,10 +524,13 @@ export function useCapture(
         flash('error', errMsg(e, 'Could not save — try again'))
         return false
       } finally {
+        // Release the synchronous guard only once the insert has fully resolved,
+        // so the next save can proceed.
+        savingRef.current = false
         setSaving(false)
       }
     },
-    [batch, saving, bootstrap.barn.official_id_type, barnId, draft, userId, shows, supabase, flash, confirmSave],
+    [batch, bootstrap.barn.official_id_type, barnId, draft, userId, shows, supabase, flash, confirmSave],
   )
 
   /**
