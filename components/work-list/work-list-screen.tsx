@@ -16,7 +16,7 @@ import { emptyDraft, type AnimalDraft, type CaptureBootstrap } from '@/lib/captu
 import { ScreenHeader } from '@/components/ui/screen-header'
 import { HeaderBack } from '@/components/ui/header-back'
 import { SectionCard } from '@/components/ui/section-card'
-import { Button, buttonClass } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
 import { CheckIcon, FlagIcon, CameraIcon } from '@/components/ui/icons'
 import { Modal } from '@/components/ui/modal'
 import { SortPensView } from '@/components/work-list/sort-pens-view'
@@ -73,22 +73,51 @@ function PrinterIcon({ color, size = 14 }: { color: string; size?: number }) {
   )
 }
 
-// Small read-only marks on a card: a teal camera when the job has any photo, a
-// teal flag when it has a note, and a muted printer once its pen card label has
-// been printed (so the cards WITHOUT it are the new, unprinted ones). They're
-// indicators only — tapping anywhere on the card opens the job popup.
-const INDICATOR_LABEL = { photo: 'Has a photo', note: 'Has a note', printed: 'Label printed' } as const
-function IndicatorTag({ kind }: { kind: 'photo' | 'note' | 'printed' }) {
-  const printed = kind === 'printed'
-  const tint = printed ? colors.textMuted : colors.teal
+// --- Option E pen-card pieces -------------------------------------------------
+
+// The three card states and their dot + text colors (Option E palette).
+type CardStatus = 'not_started' | 'in_progress' | 'done'
+const OE_STATUS: Record<CardStatus, { label: string; dot: string; text: string }> = {
+  not_started: { label: 'Not Started', dot: '#C2C2CA', text: '#717182' },
+  in_progress: { label: 'In Progress', dot: '#C8861A', text: '#8A5A12' },
+  done: { label: 'Done', dot: '#2E9486', text: '#1F6F64' },
+}
+
+// Lucide sliders-horizontal — the field-defaults and Group control glyph.
+function SlidersIcon({ color, size = 15 }: { color: string; size?: number }) {
   return (
-    <span
-      aria-label={INDICATOR_LABEL[kind]}
-      title={INDICATOR_LABEL[kind]}
-      style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: 8, background: printed ? '#F3F3F0' : colors.tealPillBg, border: `1px solid ${printed ? colors.border : colors.teal}`, color: tint }}
-    >
-      {kind === 'photo' ? <CameraIcon size={14} /> : kind === 'note' ? <FlagIcon size={13} strokeWidth={2.4} style={{ color: colors.teal }} /> : <PrinterIcon size={14} color={tint} />}
-    </span>
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0 }}>
+      <line x1="21" x2="14" y1="4" y2="4" /><line x1="10" x2="3" y1="4" y2="4" />
+      <line x1="21" x2="12" y1="12" y2="12" /><line x1="8" x2="3" y1="12" y2="12" />
+      <line x1="21" x2="16" y1="20" y2="20" /><line x1="12" x2="3" y1="20" y2="20" />
+      <line x1="14" x2="14" y1="2" y2="6" /><line x1="8" x2="8" y1="10" y2="14" /><line x1="16" x2="16" y1="18" y2="22" />
+    </svg>
+  )
+}
+
+// Lucide chevron-right — the chute rail glyph.
+function ChevronRightGlyph({ color, size = 18 }: { color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0 }}>
+      <path d="M9 18l6-6-6-6" />
+    </svg>
+  )
+}
+
+// Small outline glyphs for the attachment marks on a card (Option E: 13px,
+// stroke #9A9AA6) — an image when the pen has a photo, a file when it has a note.
+function ImageGlyph({ size = 13 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#9A9AA6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-label="Has a photo" role="img" style={{ flexShrink: 0 }}>
+      <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="9" cy="9" r="2" /><path d="m21 15-3.5-3.5a2 2 0 0 0-2.8 0L5 21" />
+    </svg>
+  )
+}
+function FileTextGlyph({ size = 13 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#9A9AA6" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-label="Has a note" role="img" style={{ flexShrink: 0 }}>
+      <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v5h5" /><path d="M8 13h8" /><path d="M8 17h8" /><path d="M8 9h2" />
+    </svg>
   )
 }
 
@@ -97,123 +126,6 @@ function StatusPill({ status }: { status: ListStatus }) {
   return (
     <span style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 6, height: 26, padding: '0 11px', borderRadius: 999, background: s.bg, border: `1px solid ${s.border}`, fontSize: 12, fontWeight: 700, color: s.color }}>
       <span style={{ width: 7, height: 7, borderRadius: 999, background: s.dot }} />{STATUS_LABEL[status as WorkStatus]}
-    </span>
-  )
-}
-
-// A Pen List filter / group chip. Phone-comfortable tap target. The count is
-// optional — the group toggles (By Pen / By Work Type) don't carry one.
-function FilterChip({ active, label, count, onClick }: { active: boolean; label: string; count?: number; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={active}
-      style={{
-        height: 40,
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 7,
-        padding: '0 16px',
-        borderRadius: 999,
-        cursor: 'pointer',
-        fontFamily: 'inherit',
-        fontSize: 14,
-        fontWeight: 700,
-        background: active ? colors.navy : '#fff',
-        border: `1px solid ${active ? colors.navy : colors.border}`,
-        color: active ? '#fff' : colors.textPrimary,
-      }}
-    >
-      {label}
-      {count != null ? <span style={{ fontSize: 12, fontWeight: 800, color: active ? '#fff' : colors.textMuted, fontVariantNumeric: 'tabular-nums' }}>{count}</span> : null}
-    </button>
-  )
-}
-
-// A small up-caret for the "Staged" notation.
-function CaretUp({ color, size = 11 }: { color: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden style={{ flexShrink: 0 }}>
-      <path d="M6 15l6-6 6 6" stroke={color} strokeWidth={2.8} strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-// A small gear for the "Set Default" notation.
-function GearIcon({ color, size = 16 }: { color: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden style={{ flexShrink: 0 }}>
-      <circle cx="12" cy="12" r="3" stroke={color} strokeWidth={2} />
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
-}
-
-// The yard-crew "Staged" marker — a small TEAL control in the actions row (no
-// purple anywhere on this screen). It's a role="button" span with its own tap
-// zone. Tap toggles it; the behavior, the To Grab filter, and auto-clear are all
-// unchanged. When staged it fills with a brighter, more saturated teal-green so a
-// staged pen reads at a glance across the yard; the off state is unchanged.
-function StagedChip({ up, busy, onToggle }: { up: boolean; busy: boolean; onToggle: () => void }) {
-  return (
-    <span
-      role="button"
-      tabIndex={0}
-      aria-pressed={up}
-      aria-label={up ? 'Staged — tap to clear' : 'Mark this pen staged'}
-      onClick={(e) => { e.stopPropagation(); if (!busy) onToggle() }}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); if (!busy) onToggle() } }}
-      style={{
-        flexShrink: 0,
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 5,
-        height: 40,
-        padding: '0 14px',
-        borderRadius: 999,
-        cursor: busy ? 'default' : 'pointer',
-        opacity: busy ? 0.6 : 1,
-        background: up ? colors.tealBright : colors.tealPillBg,
-        border: `1px solid ${up ? colors.tealBright : colors.teal}`,
-        color: up ? '#fff' : colors.teal,
-        fontSize: 13,
-        fontWeight: 700,
-      }}
-    >
-      {up ? <CheckIcon size={12} strokeWidth={3} style={{ color: '#fff' }} /> : <CaretUp color={colors.teal} />}
-      Staged
-    </span>
-  )
-}
-
-// The "Set Default" notation — a small gear, sized like the Staged chip. Tinted
-// teal when this pen already has defaults set. Its own tap zone inside the card.
-function SetDefaultChip({ hasDefaults, onOpen }: { hasDefaults: boolean; onOpen: () => void }) {
-  const tint = hasDefaults ? colors.teal : colors.textMuted
-  return (
-    <span
-      role="button"
-      tabIndex={0}
-      aria-label={hasDefaults ? 'Edit this pen’s default fields' : 'Set default fields for this pen'}
-      onClick={(e) => { e.stopPropagation(); onOpen() }}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); onOpen() } }}
-      style={{
-        flexShrink: 0,
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 40,
-        height: 40,
-        borderRadius: 10,
-        cursor: 'pointer',
-        background: hasDefaults ? colors.tealPillBg : '#fff',
-        border: `1px solid ${hasDefaults ? colors.teal : colors.border}`,
-        color: tint,
-      }}
-    >
-      <GearIcon color={tint} size={18} />
     </span>
   )
 }
@@ -250,10 +162,8 @@ export function WorkListScreen({
   const [, startUp] = useTransition()
   // The "To Grab" view: only pens still needing work that aren't staged yet.
   const [toGrab, setToGrab] = useState(false)
-  // How the list is grouped (a flat pen-sorted list, or one section per work
-  // type) and whether fully-worked ("done") jobs are hidden.
+  // How the list is grouped: a flat pen-sorted list, or one section per work type.
   const [groupBy, setGroupBy] = useState<'pen' | 'workType'>('pen')
-  const [hideDone, setHideDone] = useState(false)
   // Per-pen capture defaults, kept locally so the gear's "has defaults" tint and
   // the editor's pre-fill update instantly after a save. Keyed by pen.
   const [defaultsState, setDefaultsState] = useState<Record<string, PenFieldDefaults>>(defaultsByPenId)
@@ -437,22 +347,17 @@ export function WorkListScreen({
   const headLeft = rows.reduce((a, r) => a + r.headLeft, 0)
 
   // "Done" = worked to the full head count but the office hasn't closed it out
-  // yet (truly finished jobs are already dropped before this screen). The
-  // Hide-done filter takes these out of the way.
+  // yet (truly finished jobs are already dropped before this screen). Drives the
+  // card's Done status and the muted "Review" rail.
   const isDone = (r: Row) => r.headLeft === 0 && r.worked > 0
-  const doneCount = rows.filter(isDone).length
 
   // To Grab = still has work (every row here does) AND not up. A pen worked to
   // complete leaves on its own because it's no longer in the list at all.
   const toGrabCount = rows.filter((r) => !penUp(r.pw.pen?.id)).length
 
-  // Apply the two filters (To Grab view + Hide done), then group: either one
-  // flat pen-sorted list, or a section per work type (each pen-sorted).
-  const filtered = rows.filter((r) => {
-    if (toGrab && penUp(r.pw.pen?.id)) return false
-    if (hideDone && isDone(r)) return false
-    return true
-  })
+  // Apply the To Grab view, then group: one flat pen-sorted list, or a section
+  // per work type (each pen-sorted).
+  const filtered = rows.filter((r) => !(toGrab && penUp(r.pw.pen?.id)))
 
   const byPen = (a: Row, b: Row) => {
     const ap = a.pw.pen?.pen_number ?? ''
@@ -496,66 +401,102 @@ export function WorkListScreen({
   const headText = (r: { worked: number; expected: number; status: ListStatus }) =>
     r.status === 'in_progress' ? `${r.worked} of ${r.expected} head` : `${r.expected} head`
 
-  const renderCard = (r: Row) => (
-    <div
-      key={r.pw.id}
-      role="button"
-      tabIndex={0}
-      className="wl-card"
-      onClick={() => setSelected(r.pw)}
-      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(r.pw) } }}
-    >
-      {/* Row 1 — identity */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 19, fontWeight: 800, color: colors.navy, letterSpacing: '-0.01em' }}>{penLabel(r.pw)}</span>
-        <span style={{ fontSize: 14, fontWeight: 700, color: colors.teal, minWidth: 0 }}>{r.name}</span>
-        {r.isBuyer ? <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: colors.navy, background: colors.gold, borderRadius: 999, padding: '2px 8px' }}>Buyer #{buyerNo(r.pw) ?? '—'}</span> : null}
-        <div style={{ flex: 1 }} />
-        {photoPens[r.pw.id] ? <IndicatorTag kind="photo" /> : null}
-        {noteByPwId[r.pw.id] ? <IndicatorTag kind="note" /> : null}
-        {printedByPwId[r.pw.id] ? <IndicatorTag kind="printed" /> : null}
-        <StatusPill status={r.status} />
-      </div>
-
-      {/* meta — work type + the tap-to-see-animals head count */}
-      <div style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted }}>
-        {r.pw.workType?.name ?? 'Work'} · {r.worked > 0 ? (
-          <span role="button" tabIndex={0} aria-label="Show the animals worked" onClick={(e) => { e.stopPropagation(); setAnimalsFor(r.pw) }} style={{ color: colors.teal, fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 2, cursor: 'pointer' }}>{headText(r)}</span>
-        ) : headText(r)}
-      </div>
-
-      {/* Row 2 — actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-        {r.pw.pen?.id ? (
-          <StagedChip up={penUp(r.pw.pen.id)} busy={!!upBusy[r.pw.pen.id]} onToggle={() => toggleUp(r.pw.pen!.id)} />
-        ) : null}
-        {r.pw.pen?.id && bootstrap ? (
-          <SetDefaultChip hasDefaults={!!defaultsState[r.pw.pen.id]} onOpen={() => openDefaults(r.pw)} />
-        ) : null}
-        {/* Print this job's pen card label, then mark it printed. */}
-        <span
+  // Option E pen card: three columns — gradient pen anchor, info, and the gold
+  // chute rail. The body (anchor + info) opens pen details; the rail opens chute
+  // capture; the stage/print/field-defaults controls each stop the tap so they
+  // never trigger the body or the rail.
+  const renderCard = (r: Row) => {
+    const ds: CardStatus = r.worked === 0 ? 'not_started' : isDone(r) ? 'done' : 'in_progress'
+    const s = OE_STATUS[ds]
+    const penId = r.pw.pen?.id ?? null
+    const up = penUp(penId)
+    const busy = !!(penId && upBusy[penId])
+    const printed = !!printedByPwId[r.pw.id]
+    return (
+      <div key={r.pw.id} className="wl-oe-card">
+        {/* Body — pen anchor + info — opens pen details. */}
+        <div
           role="button"
           tabIndex={0}
-          aria-label={printedByPwId[r.pw.id] ? 'Reprint pen card' : 'Print pen card'}
-          onClick={(e) => { e.stopPropagation(); printCard(r.pw) }}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); printCard(r.pw) } }}
-          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', height: 40, padding: '0 16px', borderRadius: 999, cursor: 'pointer', background: '#fff', border: `1px solid ${colors.border}`, color: colors.navy, fontSize: 13, fontWeight: 700 }}
+          aria-label={`${penLabel(r.pw)} details`}
+          onClick={() => setSelected(r.pw)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(r.pw) } }}
+          style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'stretch', cursor: 'pointer' }}
         >
-          {printedByPwId[r.pw.id] ? 'Reprint' : 'Print'}
-        </span>
-        <span
-          role="button"
-          tabIndex={0}
-          aria-label={r.status === 'in_progress' ? 'Resume' : 'Open'}
+          {/* Column 1 — pen anchor */}
+          <div style={{ width: 62, flexShrink: 0, borderRight: '1px solid #08203A', background: 'linear-gradient(158deg, #14264A 0%, #103E43 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', color: '#93B9B4' }}>PEN</span>
+            <span className="tnum" style={{ fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1 }}>{r.pw.pen?.pen_number ?? '—'}</span>
+          </div>
+          {/* Column 2 — info */}
+          <div style={{ flex: 1, minWidth: 0, padding: '13px 14px', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ minWidth: 0, fontSize: 14, fontWeight: 700, color: '#2E9486', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}{r.isBuyer ? ` · Buyer #${buyerNo(r.pw) ?? '—'}` : ''}</span>
+              <span style={{ marginLeft: 'auto', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap' }}>
+                <span style={{ width: 7, height: 7, borderRadius: 999, background: s.dot }} />
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: s.text }}>{s.label}</span>
+              </span>
+            </div>
+            <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span className="tnum" style={{ minWidth: 0, fontSize: 12.5, fontWeight: 600, color: '#717182', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {r.pw.workType?.name ?? 'Work'} · {r.worked > 0 ? (
+                  <span role="button" tabIndex={0} aria-label="Show the animals worked" onClick={(e) => { e.stopPropagation(); setAnimalsFor(r.pw) }} style={{ color: '#2E9486', fontWeight: 700, textDecoration: 'underline', textUnderlineOffset: 2, cursor: 'pointer' }}>{headText(r)}</span>
+                ) : headText(r)}
+              </span>
+              <span style={{ marginLeft: 'auto', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                {photoPens[r.pw.id] ? <ImageGlyph /> : null}
+                {noteByPwId[r.pw.id] ? <FileTextGlyph /> : null}
+              </span>
+            </div>
+            <div style={{ marginTop: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+              {penId ? (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  aria-pressed={up}
+                  aria-label={up ? 'Staged — tap to clear' : 'Mark this pen staged'}
+                  onClick={(e) => { e.stopPropagation(); if (!busy) toggleUp(penId) }}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); if (!busy) toggleUp(penId) } }}
+                  style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, height: 32, padding: '0 13px 0 11px', borderRadius: 999, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.6 : 1, background: up ? '#2E9486' : '#fff', border: up ? 'none' : '1px solid #A9D9D2', color: up ? '#fff' : '#2E9486', fontSize: 12, fontWeight: 700 }}
+                >
+                  <CheckIcon size={14} strokeWidth={3} style={{ color: up ? '#fff' : '#2E9486' }} />{up ? 'Staged' : 'Stage'}
+                </span>
+              ) : null}
+              <span style={{ flex: 1 }} />
+              <button
+                type="button"
+                aria-label={printed ? 'Reprint pen card' : 'Print pen card'}
+                onClick={(e) => { e.stopPropagation(); printCard(r.pw) }}
+                style={{ flexShrink: 0, width: 32, height: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: 'none', cursor: 'pointer', background: printed ? '#EAF4F2' : 'transparent' }}
+              >
+                <PrinterIcon size={15} color={printed ? '#2E9486' : '#7C8196'} />
+              </button>
+              {penId && bootstrap ? (
+                <button
+                  type="button"
+                  aria-label="Field defaults for this pen"
+                  onClick={(e) => { e.stopPropagation(); openDefaults(r.pw) }}
+                  style={{ flexShrink: 0, width: 32, height: 32, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: 999, border: 'none', cursor: 'pointer', background: defaultsState[penId] ? '#EFEFEA' : 'transparent' }}
+                >
+                  <SlidersIcon size={15} color={defaultsState[penId] ? '#2E9486' : '#7C8196'} />
+                </button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+        {/* Column 3 — chute rail. Gold when actionable; muted "Review" when done. */}
+        <button
+          type="button"
+          aria-label={ds === 'done' ? 'Review at the chute' : ds === 'in_progress' ? 'Resume at the chute' : 'Open at the chute'}
           onClick={(e) => { e.stopPropagation(); go(r.pw) }}
-          className={buttonClass(r.status === 'in_progress' ? 'outline' : 'primary', false, 'wl-rowaction')}
-          style={{ flexShrink: 0, height: 40, gap: 7, padding: '0 18px', borderRadius: 9, fontSize: 14, cursor: going ? 'default' : 'pointer', opacity: going ? 0.6 : 1, marginLeft: 'auto' }}
+          disabled={going}
+          style={{ width: 44, flexShrink: 0, alignSelf: 'stretch', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderLeft: ds === 'done' ? '1px solid #E4E4DE' : 'none', cursor: going ? 'default' : 'pointer', background: ds === 'done' ? '#EFEFEA' : colors.gold }}
         >
-          {r.status === 'in_progress' ? 'Resume' : 'Open'} ›
-        </span>
+          <ChevronRightGlyph size={18} color={colors.navy} />
+        </button>
       </div>
-    </div>
-  )
+    )
+  }
 
   // In the By Pen view, fold a pen's jobs into ONE "Mixed" card when that pen
   // holds more than one distinct owner (animals from two customers share it).
@@ -592,50 +533,79 @@ export function WorkListScreen({
   // the work orders already say and changes no head or billing. Tapping it opens
   // the roster; the pen-level Staged chip stays on the card (staging is per pen).
   const renderMixedCard = (g: MixedGroup) => {
-    const owners: { key: string; name: string; head: number; worked: number }[] = []
-    const byOwner = new Map<string, (typeof owners)[number]>()
-    for (const r of g.rows) {
-      const key = ownerKey(r.pw) ?? r.pw.id
-      const o = byOwner.get(key)
-      if (o) { o.head += r.expected; o.worked += r.worked }
-      else { const rec = { key, name: r.name, head: r.expected, worked: r.worked }; byOwner.set(key, rec); owners.push(rec) }
-    }
+    const ownerKeys = new Set(g.rows.map((r) => ownerKey(r.pw) ?? r.pw.id))
+    const ownerCount = ownerKeys.size
     const totalHead = g.rows.reduce((a, r) => a + r.expected, 0)
     const totalWorked = g.rows.reduce((a, r) => a + r.worked, 0)
     const headStr = totalWorked > 0 ? `${totalWorked} of ${totalHead} head` : `${totalHead} head`
+    const workTypes = new Set(g.rows.map((r) => r.pw.workType?.name).filter(Boolean) as string[])
+    const wtLabel = workTypes.size === 1 ? [...workTypes][0] : `${workTypes.size} work types`
+    // Pen status overall: done only if every job is done; in progress if any
+    // animal worked; else not started.
+    const allDone = g.rows.every((r) => r.worked > 0 && r.worked >= r.expected)
+    const anyWorked = g.rows.some((r) => r.worked > 0)
+    const ds: CardStatus = allDone ? 'done' : anyWorked ? 'in_progress' : 'not_started'
+    const s = OE_STATUS[ds]
+    const up = penUp(g.penId)
+    const busy = !!upBusy[g.penId]
+    const anyPhoto = g.rows.some((r) => photoPens[r.pw.id])
+    const anyNote = g.rows.some((r) => noteByPwId[r.pw.id])
     return (
-      <div
-        key={`mixed:${g.penId}`}
-        role="button"
-        tabIndex={0}
-        className="wl-card"
-        onClick={() => setMixedRoster(g)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMixedRoster(g) } }}
-      >
-        {/* Row 1 — pen + the Mixed marker + total head */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 19, fontWeight: 800, color: colors.navy, letterSpacing: '-0.01em' }}>Pen {g.penNumber}</span>
-          <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: colors.gold, background: colors.navy, borderRadius: 999, padding: '3px 10px' }}>Mixed</span>
-          <span style={{ fontSize: 13, fontWeight: 700, color: colors.textMuted }}>{owners.length} owners</span>
-          <div style={{ flex: 1 }} />
-          <span style={{ fontSize: 13, fontWeight: 700, color: colors.textMuted, whiteSpace: 'nowrap' }}>{headStr}</span>
-        </div>
-
-        {/* Owner breakdown — each customer sharing the pen, with their head. */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-          {owners.map((o) => (
-            <div key={o.key} style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: colors.teal, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.name}</span>
-              <span style={{ flexShrink: 0, fontSize: 13, fontWeight: 600, color: colors.textMuted, fontVariantNumeric: 'tabular-nums' }}>{o.worked > 0 ? `${o.worked} of ${o.head}` : o.head} head</span>
+      <div key={`mixed:${g.penId}`} className="wl-oe-card">
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label={`Pen ${g.penNumber} — mixed pen, ${ownerCount} owners`}
+          onClick={() => setMixedRoster(g)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setMixedRoster(g) } }}
+          style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'stretch', cursor: 'pointer' }}
+        >
+          {/* Column 1 — pen anchor */}
+          <div style={{ width: 62, flexShrink: 0, borderRight: '1px solid #08203A', background: 'linear-gradient(158deg, #14264A 0%, #103E43 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
+            <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', color: '#93B9B4' }}>PEN</span>
+            <span className="tnum" style={{ fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em', lineHeight: 1 }}>{g.penNumber}</span>
+          </div>
+          {/* Column 2 — info */}
+          <div style={{ flex: 1, minWidth: 0, padding: '13px 14px', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ minWidth: 0, fontSize: 14, fontWeight: 700, color: '#2E9486', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Mixed · {ownerCount} owners</span>
+              <span style={{ marginLeft: 'auto', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap' }}>
+                <span style={{ width: 7, height: 7, borderRadius: 999, background: s.dot }} />
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: s.text }}>{s.label}</span>
+              </span>
             </div>
-          ))}
+            <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span className="tnum" style={{ minWidth: 0, fontSize: 12.5, fontWeight: 600, color: '#717182', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{wtLabel} · {headStr}</span>
+              <span style={{ marginLeft: 'auto', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                {anyPhoto ? <ImageGlyph /> : null}
+                {anyNote ? <FileTextGlyph /> : null}
+              </span>
+            </div>
+            <div style={{ marginTop: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span
+                role="button"
+                tabIndex={0}
+                aria-pressed={up}
+                aria-label={up ? 'Staged — tap to clear' : 'Mark this pen staged'}
+                onClick={(e) => { e.stopPropagation(); if (!busy) toggleUp(g.penId) }}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.stopPropagation(); if (!busy) toggleUp(g.penId) } }}
+                style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, height: 32, padding: '0 13px 0 11px', borderRadius: 999, cursor: busy ? 'default' : 'pointer', opacity: busy ? 0.6 : 1, background: up ? '#2E9486' : '#fff', border: up ? 'none' : '1px solid #A9D9D2', color: up ? '#fff' : '#2E9486', fontSize: 12, fontWeight: 700 }}
+              >
+                <CheckIcon size={14} strokeWidth={3} style={{ color: up ? '#fff' : '#2E9486' }} />{up ? 'Staged' : 'Stage'}
+              </span>
+              <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 700, color: colors.textMuted, whiteSpace: 'nowrap' }}>View owners</span>
+            </div>
+          </div>
         </div>
-
-        {/* Actions — stage the whole pen (staging is per pen), and open the roster. */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <StagedChip up={penUp(g.penId)} busy={!!upBusy[g.penId]} onToggle={() => toggleUp(g.penId)} />
-          <span style={{ marginLeft: 'auto', fontSize: 14, fontWeight: 700, color: colors.navy }}>View {owners.length} owners ›</span>
-        </div>
+        {/* Column 3 — rail opens the owner roster (the pen's review). */}
+        <button
+          type="button"
+          aria-label={`Review pen ${g.penNumber} owners`}
+          onClick={(e) => { e.stopPropagation(); setMixedRoster(g) }}
+          style={{ width: 44, flexShrink: 0, alignSelf: 'stretch', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', borderLeft: ds === 'done' ? '1px solid #E4E4DE' : 'none', cursor: 'pointer', background: ds === 'done' ? '#EFEFEA' : colors.gold }}
+        >
+          <ChevronRightGlyph size={18} color={colors.navy} />
+        </button>
       </div>
     )
   }
@@ -654,22 +624,34 @@ export function WorkListScreen({
       />
 
       <div className="wl-wrap">
-      {/* CONTROLS — the view filter (All / To Grab / Hide done) and how the list
-          is grouped (by pen or by work type). */}
+      {/* FILTER BAR — a segmented All / To Grab control plus a Group toggle that
+          re-sections the list (By Pen / By Work). */}
       {rows.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <FilterChip active={!toGrab} label="All" count={toWork} onClick={() => setToGrab(false)} />
-            <FilterChip active={toGrab} label="To Grab" count={toGrabCount} onClick={() => setToGrab(true)} />
-            {doneCount > 0 || hideDone ? (
-              <FilterChip active={hideDone} label="Hide done" count={doneCount} onClick={() => setHideDone((v) => !v)} />
-            ) : null}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ flex: 1, display: 'flex', background: '#ECECE5', borderRadius: 10, padding: 3 }}>
+            {([['all', 'All', toWork], ['grab', 'To Grab', toGrabCount]] as const).map(([key, label, count]) => {
+              const active = key === 'all' ? !toGrab : toGrab
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setToGrab(key === 'grab')}
+                  aria-pressed={active}
+                  style={{ flex: 1, height: 32, borderRadius: 8, border: 'none', cursor: 'pointer', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: active ? colors.navy : 'transparent', color: active ? '#fff' : '#5A6072', fontSize: 13.5, fontWeight: 700 }}
+                >
+                  {label}<span className="tnum" style={{ fontSize: 12, fontWeight: 700, opacity: 0.65 }}>{count}</span>
+                </button>
+              )
+            })}
           </div>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-            <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', color: colors.textMuted, marginRight: 2 }}>Group</span>
-            <FilterChip active={groupBy === 'pen'} label="By Pen" onClick={() => setGroupBy('pen')} />
-            <FilterChip active={groupBy === 'workType'} label="By Work Type" onClick={() => setGroupBy('workType')} />
-          </div>
+          <button
+            type="button"
+            onClick={() => setGroupBy((g) => (g === 'pen' ? 'workType' : 'pen'))}
+            aria-label={groupBy === 'pen' ? 'Grouped by pen — switch to by work type' : 'Grouped by work type — switch to by pen'}
+            style={{ flexShrink: 0, height: 38, display: 'inline-flex', alignItems: 'center', gap: 10, padding: '0 13px', borderRadius: 10, background: '#fff', border: '1px solid #D8D8D0', cursor: 'pointer', fontFamily: 'inherit', fontSize: 12.5, fontWeight: 700, color: colors.navy }}
+          >
+            <SlidersIcon size={15} color="#4A5172" />{groupBy === 'pen' ? 'By Pen' : 'By Work'}
+          </button>
         </div>
       ) : null}
 
@@ -699,13 +681,11 @@ export function WorkListScreen({
         </div>
       ) : filtered.length === 0 ? (
         <div style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 14, padding: '40px 20px', textAlign: 'center' }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: colors.navy }}>{toGrab ? 'Every Pen Is Up' : hideDone ? 'All Done Here' : 'Nothing to Show'}</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: colors.navy }}>{toGrab ? 'Every Pen Is Up' : 'Nothing to Show'}</div>
           <div style={{ fontSize: 14, color: colors.textMuted, marginTop: 6 }}>
             {toGrab
               ? 'Nothing left to grab — every pen still needing work has been brought up.'
-              : hideDone
-                ? 'Every remaining job is fully worked. Turn off “Hide done” to see them.'
-                : 'No pens match the current view.'}
+              : 'No pens match the current view.'}
           </div>
         </div>
       ) : (
@@ -776,7 +756,7 @@ export function WorkListScreen({
         />
       ) : null}
 
-      {/* SET DEFAULTS — the per-pen editor (same fields the work type captures) */}
+      {/* FIELD DEFAULTS — the per-pen editor (same fields the work type captures) */}
       {editing && bootstrap ? (
         <PenDefaultsEditor
           bootstrap={bootstrap}
@@ -905,7 +885,7 @@ function PenDefaultsEditor({
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button type="button" onClick={onClose} aria-label="Back" style={{ width: 34, height: 34, flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', color: '#fff', fontSize: 22 }}>‹</button>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: '-0.01em' }}>Set Defaults · {penLabel}</div>
+            <div style={{ fontSize: 21, fontWeight: 800, letterSpacing: '-0.01em' }}>Field Defaults · {penLabel}</div>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#55BAAA', marginTop: 1 }}>{workTypeName} · pre-fills every animal in this pen</div>
           </div>
         </div>
