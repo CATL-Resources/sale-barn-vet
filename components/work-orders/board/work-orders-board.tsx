@@ -1,8 +1,9 @@
 'use client'
 
 import { colors } from '@/components/ui/tokens'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { ScreenHeader } from '@/components/ui/screen-header'
 import { HeaderBack } from '@/components/ui/header-back'
 import { PlusIcon, SearchIcon, TrashIcon } from '@/components/ui/icons'
@@ -64,7 +65,12 @@ export function WorkOrdersBoard({
   const [sortBy, setSortBy] = useState<SortKey>('pen')
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<PenWorkFull | null>(null)
-  const [notesOpen, setNotesOpen] = useState<Record<string, boolean>>({})
+  // Which work orders have photos in the pen-photos bucket (read-only here), and
+  // which one's photos the viewer is open for. There is NO photo table — photos
+  // live only in storage under {barn_id}/{pen_work_id}/, so we list that bucket.
+  const supabase = useMemo(() => createClient(), [])
+  const [photoPens, setPhotoPens] = useState<Record<string, boolean>>({})
+  const [viewer, setViewer] = useState<PenWorkFull | null>(null)
   const [rowMenu, setRowMenu] = useState<{ pw: PenWorkFull; x: number; y: number } | null>(null)
   const [animalList, setAnimalList] = useState<{ penWorkId: string; title: string } | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -106,6 +112,25 @@ export function WorkOrdersBoard({
     const penSet = new Set(penWorks.map((pw) => pw.pen?.pen_number).filter(Boolean))
     return { ...c, head, pens: penSet.size }
   }, [penWorks])
+
+  // List the barn's pen-photos folders once — one folder per work order that has
+  // photos, named by its pen_work id. Drives the per-row "Photos" indicator. The
+  // bucket is private; the viewer signs URLs on open.
+  useEffect(() => {
+    let alive = true
+    supabase.storage
+      .from('pen-photos')
+      .list(barn.id, { limit: 1000 })
+      .then(({ data }) => {
+        if (!alive || !data) return
+        const next: Record<string, boolean> = {}
+        for (const e of data) if (e.id === null) next[e.name] = true // folder entries only
+        setPhotoPens(next)
+      })
+    return () => {
+      alive = false
+    }
+  }, [supabase, barn.id])
 
   function openNew() { setEditing(null); setFormOpen(true) }
   function openEdit(pw: PenWorkFull) { setEditing(pw); setFormOpen(true) }
@@ -189,7 +214,6 @@ export function WorkOrdersBoard({
                 const st = STATUS_STYLE[r.status]
                 const worked = r.status === 'not_started' ? '—' : r.status === 'in_progress' ? `${r.pw.head_worked ?? 0} of ${r.pw.head_expected ?? 0}` : String(r.pw.head_worked ?? 0)
                 const workedColor = r.status === 'not_started' ? '#C2C2CA' : r.status === 'in_progress' ? '#B45309' : colors.textPrimary
-                const nOpen = !!notesOpen[r.pw.id]
                 return (
                   <div key={r.pw.id} style={{ background: i % 2 === 1 ? '#FAFBFC' : '#fff', borderBottom: i < rows.length - 1 ? `1px solid ${colors.rowDivider}` : 'none' }}>
                     <div onClick={() => openEdit(r.pw)} style={{ display: 'grid', gridTemplateColumns: GRID, alignItems: 'stretch', minHeight: 46, padding: '0 18px', cursor: 'pointer' }}>
@@ -199,9 +223,9 @@ export function WorkOrdersBoard({
                         <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap', color: r.isBuyer ? '#946A00' : colors.navy, background: r.isBuyer ? '#FBEFC2' : '#E7ECF5', border: `1px solid ${r.isBuyer ? '#EBD489' : '#CBD5E8'}` }}>{r.isBuyer ? `Buyer #${r.pw.buyer_number_text ?? '—'}` : 'Seller'}</span>
                         {r.custNo ? <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 600, color: colors.textPlaceholder, whiteSpace: 'nowrap' }}>#{r.custNo}</span> : null}
                         <div style={{ flex: 1 }} />
-                        {r.pw.notes ? (
-                          <button type="button" onClick={(e) => { e.stopPropagation(); setNotesOpen((p) => ({ ...p, [r.pw.id]: !p[r.pw.id] })) }} aria-label="Notes"
-                            style={{ flexShrink: 0, width: 26, height: 26, borderRadius: 7, cursor: 'pointer', background: nOpen ? colors.navy : '#FDF1DC', border: `1px solid ${nOpen ? colors.navy : '#F1D9A8'}`, color: nOpen ? '#fff' : '#B45309', fontSize: 13 }}>✎</button>
+                        {photoPens[r.pw.id] ? (
+                          <button type="button" onClick={(e) => { e.stopPropagation(); setViewer(r.pw) }} aria-label="View photos"
+                            style={{ flexShrink: 0, height: 24, padding: '0 11px', borderRadius: 999, cursor: 'pointer', background: colors.tealPillBg, border: `1px solid ${colors.teal}`, color: colors.tealDeep, fontSize: 11, fontWeight: 800, whiteSpace: 'nowrap' }}>Photos</button>
                         ) : null}
                       </div>
                       <Cell pad wrap color={r.pw.workType ? colors.textPrimary : colors.textPlaceholder} weight={600} size={13}>{r.pw.workType?.name ?? '—'}</Cell>
@@ -215,13 +239,10 @@ export function WorkOrdersBoard({
                           style={{ width: 32, height: 32, borderRadius: 7, background: rowMenu?.pw.id === r.pw.id ? '#EEF1F6' : '#fff', border: `1px solid ${colors.border}`, color: colors.navy, fontSize: 17, fontWeight: 800, lineHeight: 1, cursor: 'pointer', flexShrink: 0 }}>⋯</button>
                       </div>
                     </div>
-                    {nOpen && r.pw.notes ? (
-                      <div style={{ display: 'flex', gap: 10, padding: '2px 18px 13px 18px' }}>
-                        <span style={{ color: '#B45309', flexShrink: 0 }}>✎</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: colors.textPlaceholder, marginBottom: 3 }}>Notes</div>
-                          <div style={{ fontSize: 13, fontWeight: 500, color: colors.textPrimary, lineHeight: 1.45 }}>{r.pw.notes}</div>
-                        </div>
+                    {r.pw.notes ? (
+                      <div style={{ padding: '0 18px 12px 18px' }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: colors.textPlaceholder, marginBottom: 3 }}>Notes</div>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: colors.textPrimary, lineHeight: 1.45 }}>{r.pw.notes}</div>
                       </div>
                     ) : null}
                   </div>
@@ -335,6 +356,10 @@ export function WorkOrdersBoard({
       {animalList ? (
         <AnimalListModal penWorkId={animalList.penWorkId} title={animalList.title} onClose={() => setAnimalList(null)} />
       ) : null}
+
+      {viewer ? (
+        <PhotoViewer pw={viewer} barnId={barn.id} supabase={supabase} onClose={() => setViewer(null)} />
+      ) : null}
     </div>
   )
 }
@@ -364,5 +389,98 @@ function HeadCell({ children, pad, end, center }: { children?: React.ReactNode; 
 function Cell({ children, pad, end, ellipsis, wrap, color = colors.textPrimary, weight = 600, size = 14 }: { children: React.ReactNode; pad?: boolean; end?: boolean; ellipsis?: boolean; wrap?: boolean; color?: string; weight?: number; size?: number }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: end ? 'flex-end' : 'flex-start', padding: wrap ? '7px 12px' : '0 12px', borderRight: '1px solid #EFF0F4', fontSize: size, fontWeight: weight, color, lineHeight: wrap ? 1.25 : undefined, wordBreak: wrap ? 'break-word' : undefined, whiteSpace: ellipsis ? 'nowrap' : undefined, overflow: ellipsis ? 'hidden' : undefined, textOverflow: ellipsis ? 'ellipsis' : undefined }}>{children}</div>
+  )
+}
+
+// Read-only photo viewer for a work order. Photos live only in the private
+// pen-photos bucket under {barn_id}/{pen_work_id}/; we list that prefix and sign
+// each object for display. A large current image plus a thumbnail strip — no
+// upload, no delete on this screen.
+function PhotoViewer({ pw, barnId, supabase, onClose }: { pw: PenWorkFull; barnId: string; supabase: ReturnType<typeof createClient>; onClose: () => void }) {
+  const [photos, setPhotos] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+  const [failed, setFailed] = useState(false)
+  const [idx, setIdx] = useState(0)
+
+  useEffect(() => {
+    let alive = true
+    setLoading(true)
+    setFailed(false)
+    void (async () => {
+      const { data, error } = await supabase.storage
+        .from('pen-photos')
+        .list(`${barnId}/${pw.id}`, { limit: 100, sortBy: { column: 'name', order: 'asc' } })
+      if (!alive) return
+      if (error || !data) {
+        setFailed(true)
+        setLoading(false)
+        return
+      }
+      const files = data.filter((e) => e.id !== null) // real files, not nested folders
+      if (!files.length) {
+        setPhotos([])
+        setLoading(false)
+        return
+      }
+      const paths = files.map((f) => `${barnId}/${pw.id}/${f.name}`)
+      const { data: signed } = await supabase.storage.from('pen-photos').createSignedUrls(paths, 3600)
+      if (!alive) return
+      setPhotos((signed ?? []).map((s) => s.signedUrl).filter((u): u is string => !!u))
+      setLoading(false)
+    })()
+    return () => {
+      alive = false
+    }
+  }, [supabase, barnId, pw.id])
+
+  const name = (pw.buyer_party_id ? pw.buyer : pw.seller)?.name ?? '—'
+  const title = `${pw.pen?.pen_number ? `Pen ${pw.pen.pen_number}` : 'No pen'} · ${name}`
+  const cur = photos.length ? Math.min(idx, photos.length - 1) : 0
+
+  return (
+    <>
+      <div onClick={onClose} aria-hidden style={{ position: 'fixed', inset: 0, zIndex: 92, background: 'rgba(8,18,40,0.55)' }} />
+      <div role="dialog" aria-label={`Photos for ${title}`} style={{ position: 'fixed', zIndex: 93, top: '5vh', left: '50%', transform: 'translateX(-50%)', width: 'min(900px, 94vw)', maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: '#fff', borderRadius: 14, overflow: 'hidden', boxShadow: '0 24px 60px rgba(8,18,40,0.4)' }}>
+        <div style={{ background: colors.navy, padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{title}</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#8FA8CC', marginTop: 1 }}>Photos{photos.length ? ` · ${photos.length}` : ''}</div>
+          </div>
+          <button type="button" onClick={onClose} style={{ height: 32, padding: '0 14px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.08)', color: '#fff', cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700 }}>Close</button>
+        </div>
+        <div style={{ padding: 16, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {loading ? (
+            <div style={{ padding: 40, textAlign: 'center', fontSize: 14, color: colors.textMuted }}>Loading photos…</div>
+          ) : failed ? (
+            <div style={{ padding: 40, textAlign: 'center', fontSize: 14, color: colors.danger }}>Couldn’t load photos — try again.</div>
+          ) : photos.length === 0 ? (
+            <div style={{ padding: 40, textAlign: 'center', fontSize: 14, color: colors.textMuted }}>No photos.</div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 240, maxHeight: '56vh', borderRadius: 10, background: '#0A1B33', overflow: 'hidden' }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={photos[cur]} alt={`Photo ${cur + 1}`} decoding="async" loading="lazy" style={{ maxWidth: '100%', maxHeight: '56vh', objectFit: 'contain' }} />
+              </div>
+              {photos.length > 1 ? (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {photos.map((u, i) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      key={i}
+                      src={u}
+                      alt={`Thumbnail ${i + 1}`}
+                      onClick={() => setIdx(i)}
+                      decoding="async"
+                      loading="lazy"
+                      style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 8, cursor: 'pointer', border: `2px solid ${i === cur ? colors.teal : colors.border}` }}
+                    />
+                  ))}
+                </div>
+              ) : null}
+            </>
+          )}
+        </div>
+      </div>
+    </>
   )
 }
