@@ -144,10 +144,18 @@ export async function reopenSortPen(
  * in the sort pen has its current_pen_id pointed at the destination — the whole
  * pen moves together, no splitting.
  *
+ * The destination pen is then marked closed (the same closed_at / closed_by stamp
+ * a manual close-out uses). Without this, the destination would hold cattle and so
+ * pop straight back up as a NEW open sort pen asking to be closed out and moved
+ * again — an endless loop. Marking it closed lands it in the Closed list as a
+ * finished pen that shows where the cattle went; it can still be reopened or moved
+ * again. (A pen's closed marker is sort-pen-only — it never touches the Pen List,
+ * work orders, head counts, or billing.)
+ *
  * This is an internal pen-to-pen move only. It changes nothing about billing: no
- * pen_work, no head counts, no frozen charges — only animal.current_pen_id. It's
- * reversible by moving again (no rows are deleted). RLS scopes every write to the
- * user's barn.
+ * pen_work, no head counts, no frozen charges — only animal.current_pen_id and the
+ * destination's closed marker. It's reversible by reopening or moving again (no
+ * rows are deleted). RLS scopes every write to the user's barn.
  */
 export async function moveSortPen(input: {
   sortPenId: string
@@ -156,6 +164,9 @@ export async function moveSortPen(input: {
   destinationPenNumber: string
 }): Promise<{ ok: boolean; error?: string; destination?: { id: string; pen_number: string }; moved?: number }> {
   const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
   const number = input.destinationPenNumber.trim()
   if (!number) return { ok: false, error: 'Enter a destination pen number.' }
 
@@ -175,6 +186,18 @@ export async function moveSortPen(input: {
     .is('deleted_at', null)
     .select('id')
   if (error) return { ok: false, error: error.message }
+
+  // Mark the destination done so it doesn't reappear as a fresh open sort pen.
+  // The cattle are already moved (the part that matters), so a failure here is not
+  // fatal — the pen can be closed by hand — but it should succeed under the same
+  // barn RLS that just let the move through.
+  await supabase
+    .from('pen')
+    .update({ closed_at: new Date().toISOString(), closed_by: user?.id ?? null })
+    .eq('id', destId)
+    .eq('barn_id', input.barnId)
+    .is('deleted_at', null)
+
   return { ok: true, destination: { id: destId, pen_number: number }, moved: moved?.length ?? 0 }
 }
 

@@ -45,8 +45,6 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Docs
 
-- regenerate changelog after merging main _(2026-06-27, `b7d2d41`)_
-- regenerate changelog _(2026-06-27, `7de327e`)_
 - log the chute flow + sale day fixes and the test-data wipe _(2026-06-20, `6816a18`)_
 - update CHANGELOG for the Work Orders panel + row fixes _(2026-06-20, `e2359d9`)_
 - update CHANGELOG for the Work Orders fixes _(2026-06-20, `561afdb`)_
@@ -61,8 +59,8 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Mixed-pen owner assignment at the chute: assign per cow, not up front _(2026-06-27, `a3f0eb6`)_
 - Capture screen: one status box, and tighter layout _(2026-06-27, `21b8ba0`)_
-- Mixed-pen owner assignment at the chute: assign per cow, not up front _(2026-06-27, `236b410`)_
 - Rebuild the chute Work List to the Option E design _(2026-06-27, `aeb795b`)_
 - Work Orders board: pill before name, restore photo delete, note under consignor _(2026-06-27, `5a33654`)_
 - Capture identity: tap-only 2nd EID, edit-sheet scanning, scannable field grouping (Part B) _(2026-06-27, `f8fc96b`)_
