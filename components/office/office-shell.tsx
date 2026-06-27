@@ -102,14 +102,14 @@ export function OfficeShell({
   return (
     <div className="office-shell">
       <aside className="office-sidebar" style={{ background: 'var(--surface-sidebar)', color: '#fff' }}>
-        {/* Brand */}
-        <div style={{ padding: '16px 16px 12px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        {/* Brand — taps Home, with the shared gold halo on hover/focus. */}
+        <Link href="/" aria-label="Home" className="sbv-brandhome" style={{ margin: '8px 9px 4px', padding: '8px 7px', display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', color: 'inherit' }}>
           <span style={{ width: 30, height: 30, borderRadius: 8, background: colors.gold, color: colors.navy, fontWeight: 900, fontSize: 13, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>SB</span>
           <span style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
             <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: '-0.01em' }}>Sale Barn <span style={{ color: colors.gold }}>Vet</span></span>
             <span style={{ fontSize: 11, fontWeight: 600, color: colors.navySubText, marginTop: 2 }}>Office</span>
           </span>
-        </div>
+        </Link>
 
         <nav style={{ paddingTop: 4 }}>
           <NavItem href={day} icon="dashboard" label="Sale Dashboard" active={on('/day')} />
@@ -156,7 +156,7 @@ export function OfficeShell({
               ))}
             </select>
           </label>
-          <span style={{ flexShrink: 0, fontSize: 14, fontWeight: 800, letterSpacing: '-0.01em', color: '#fff' }}>Sale Barn <span style={{ color: colors.gold }}>Vet</span></span>
+          <Link href="/" aria-label="Home" className="sbv-brandhome" style={{ flexShrink: 0, fontSize: 14, fontWeight: 800, letterSpacing: '-0.01em', color: '#fff', textDecoration: 'none' }}>Sale Barn <span style={{ color: colors.gold }}>Vet</span></Link>
         </header>
 
         <main className="office-content">

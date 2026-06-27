@@ -110,19 +110,6 @@ export function HomeScreen({
 
   const statusLine = current ? (currentOpen ? 'Sale Day In Progress' : 'Most Recent Sale') : 'No Sale Days Yet'
 
-  // Quick-link chip on the navy hero. A real link, but it stops the card's own
-  // tap so the chip and the card can go to different places.
-  const chip = (href: string, label: string) => (
-    <Link
-      href={href}
-      onClick={(e) => e.stopPropagation()}
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 34, padding: '0 13px', borderRadius: 999, background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.22)', color: '#FFFFFF', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}
-    >
-      {label}
-      <ChevronRightIcon size={13} strokeWidth={2.4} style={{ color: '#8FA8CC' }} />
-    </Link>
-  )
-
   return (
     <div style={{ background: 'var(--page)', minHeight: '100%' }}>
       {/* The barn name + status now live in the shared app header; the Hub goes
@@ -134,7 +121,7 @@ export function HomeScreen({
             <SectionLabel>Current Sale</SectionLabel>
             <div
               className="sbv-navy-surface"
-              style={{ borderRadius: 16, padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}
+              style={{ borderRadius: 16, padding: 16, display: 'flex', flexDirection: 'column', gap: 11 }}
             >
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                 <div style={{ minWidth: 0 }}>
@@ -144,21 +131,41 @@ export function HomeScreen({
                 <StatusPill open={currentOpen} />
               </div>
 
+              {/* Two stat tiles: Head, then a combined Orders + Pens tile on the
+                  navy/indigo Orders gradient holding two labeled values. Orders
+                  reads complete-of-total like the head — complete = orders - open,
+                  both already shown here, so no count is recomputed. */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {[
-                  { value: `${currentMetrics.headWorked} / ${currentMetrics.headExpected}`, label: 'HD Worked', variant: 'highlight' as StatVariant },
-                  { value: String(currentMetrics.pensInUse), label: 'Pens', variant: 'default' as StatVariant },
-                  { value: `${currentMetrics.orders}`, label: `Orders · ${currentMetrics.openOrders} Open`, variant: 'orders' as StatVariant },
-                ].map((s) => (
-                  <div key={s.label} style={{ flex: '1 1 72px', minWidth: 72 }}>
-                    <GradientStat value={s.value} label={s.label} variant={s.variant} />
+                <div style={{ flex: '1 1 120px', minWidth: 120 }}>
+                  <GradientStat value={`${currentMetrics.headWorked} / ${currentMetrics.headExpected}`} label="HD Worked" variant="highlight" />
+                </div>
+                <div style={{ flex: '1.6 1 190px', minWidth: 190 }}>
+                  <div className="sbv-stat-tile" style={{ background: STAT_GRADIENTS.orders, border: '1px solid rgba(255,255,255,0.08)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.10)', display: 'flex', alignItems: 'stretch', gap: 11 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="tnum" style={{ fontSize: 19, fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.02em', lineHeight: 1 }}>{currentMetrics.orders - currentMetrics.openOrders} of {currentMetrics.orders}</div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.85)', lineHeight: 1.2, marginTop: 5 }}>Orders · {currentMetrics.openOrders} open</div>
+                    </div>
+                    <div style={{ width: 1, alignSelf: 'stretch', background: 'rgba(255,255,255,0.16)', flexShrink: 0 }} />
+                    <div style={{ flexShrink: 0, textAlign: 'right' }}>
+                      <div className="tnum" style={{ fontSize: 19, fontWeight: 800, color: '#FFFFFF', letterSpacing: '-0.02em', lineHeight: 1 }}>{currentMetrics.pensInUse}</div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.85)', lineHeight: 1.2, marginTop: 5 }}>Pens</div>
+                    </div>
                   </div>
-                ))}
+                </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
-                <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>{chip(`/work-orders/${current.id}`, 'Work Orders')}</div>
-                <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>{chip(`/work-list/${current.id}`, 'Pen List')}</div>
+              {/* Two nav pills, pushed to opposite edges and given distinct
+                  on-brand colors (Work Orders teal, Pen List warn-orange) with navy
+                  text. They carry no counts. */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 2 }}>
+                <Link href={`/work-orders/${current.id}`} onClick={(e) => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 36, padding: '0 15px', borderRadius: 999, background: '#55BAAA', border: '1px solid #3FA89A', color: '#0E2646', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, textDecoration: 'none' }}>
+                  Work Orders
+                  <ChevronRightIcon size={13} strokeWidth={2.6} style={{ color: '#0E2646' }} />
+                </Link>
+                <Link href={`/work-list/${current.id}`} onClick={(e) => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 36, padding: '0 15px', borderRadius: 999, background: '#F59E0B', border: '1px solid #D9870A', color: '#0E2646', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, textDecoration: 'none' }}>
+                  Pen List
+                  <ChevronRightIcon size={13} strokeWidth={2.6} style={{ color: '#0E2646' }} />
+                </Link>
               </div>
             </div>
           </section>
