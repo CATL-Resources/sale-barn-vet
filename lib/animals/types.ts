@@ -24,6 +24,11 @@ export type AnimalRow = {
   fetalSex: string
   quickNotes: string
   notes: string
+  // Which sale day this head belonged to (ISO date) and the exact moment it was
+  // recorded, in the barn's local time. These travel with every row so a big
+  // export always shows which set each animal came from.
+  saleDate: string
+  recordedAt: string
 }
 
 export type ColKey = Exclude<keyof AnimalRow, 'id'>
@@ -37,6 +42,10 @@ export type ColumnDef = { key: ColKey; label: string; filter: FilterKind; sort: 
 
 // Column order is the on-screen order and the copy/export order.
 export const COLUMNS: ColumnDef[] = [
+  // Sale Date leads so a glance (or the first export column) tells you which set
+  // a row belongs to; Recorded (date + time) sits at the end with the other
+  // reference fields.
+  { key: 'saleDate', label: 'Sale Date', filter: 'category', sort: 'text' },
   { key: 'eid', label: 'EID', filter: 'text', sort: 'natural' },
   { key: 'backTag', label: 'Back Tag', filter: 'text', sort: 'natural' },
   { key: 'visualTag', label: 'Visual Tag', filter: 'text', sort: 'natural' },
@@ -57,14 +66,18 @@ export const COLUMNS: ColumnDef[] = [
   { key: 'fetalSex', label: 'Fetal Sex', filter: 'category', sort: 'text' },
   { key: 'quickNotes', label: 'Quick Notes', filter: 'text', sort: 'text' },
   { key: 'notes', label: 'Notes', filter: 'text', sort: 'text' },
+  { key: 'recordedAt', label: 'Recorded', filter: 'text', sort: 'text' },
 ]
 
-// Tag / ID columns must be written as TEXT in the XLSX export so a 15-digit EID
-// never turns into scientific notation.
-export const TEXT_FORMAT_COLS: ColKey[] = ['eid', 'backTag', 'visualTag', 'metalTag', 'secondaryEid', 'buyerNo']
+// Columns the XLSX export must write as TEXT so Excel keeps the exact string: a
+// 15-digit EID never turns into scientific notation, and the dates never get
+// silently re-serialized into Excel's own date format.
+export const TEXT_FORMAT_COLS: ColKey[] = ['saleDate', 'eid', 'backTag', 'visualTag', 'metalTag', 'secondaryEid', 'buyerNo', 'recordedAt']
 
-// The fields the "Group by" control offers (one or two of these).
+// The fields the "Group by" control offers (one or two of these). Sale Day is
+// here so you can group a multi-day pull back into its sets.
 export const GROUP_FIELDS: { key: ColKey; label: string }[] = [
+  { key: 'saleDate', label: 'Sale Date' },
   { key: 'sortPen', label: 'Sort Pen' },
   { key: 'buyer', label: 'Buyer' },
   { key: 'seller', label: 'Seller' },
