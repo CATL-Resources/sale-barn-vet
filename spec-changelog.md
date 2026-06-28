@@ -1,5 +1,21 @@
 # Sale Barn Vet — Spec Changelog
 
+## 2026-06-28 — Animals report shows every tag; delete animals from the office
+- FIXED a real "missing EID" bug in the Animals report. The report pulled all of a
+  day's tags in one request, but Supabase caps a single response at ~1000 rows. A
+  busy day already runs past that (Jun 26 = 553 animals / 1039 tags), so the tags
+  past the cut were silently dropped and those animals showed a blank EID — which
+  is what made some drug-free bulls look like they had no tag. The tags were in the
+  database all along. The report now pulls animals and tags in pages, so every row
+  comes back no matter the count. (No data was wrong; only the read was short.)
+- Added DELETE animals from the office, on the Animals report. Select the rows and
+  Delete; it asks first. It's a soft delete (recoverable) and also drops the
+  animal's tags, so removed animals stop showing and stop counting as duplicates.
+  On a still-open work order the worked-head count drops to match; a finished
+  order's billed count is frozen and is left alone. This fills the gap where the
+  only delete was chuteside and was locked once an order was finished — which is
+  why the Heart Tail Ranch test animals couldn't be cleared out.
+
 ## 2026-06-14 — Product created (initial spec, sale-barn training session)
 - Established Sale Barn Vet as a standalone product (own repo/DB/site). Rationale in project-memory.md.
 - Defined the spine that replaces the predefined-group model: Sale Day (billing container) + Seller/Buyer (cross-day handles) + Animal+Identifier(s) (the thread across the split).

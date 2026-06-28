@@ -2,16 +2,21 @@
 
 // The Animals report: every animal worked in the selected sale day, in a dense
 // office table you can filter on any column, sort, group (one or two fields),
-// select, copy, and export to Excel. Read-only — nothing here changes billing;
-// the Sort Pen is display only.
+// select, copy, and export to Excel. The one thing it changes is deletion:
+// selected animals can be removed (a soft delete that also drops their tags and,
+// on open orders, the worked-head count). Everything else is display only — the
+// Sort Pen, the totals, the billing.
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { colors } from '@/components/ui/tokens'
 import { ScreenHeader } from '@/components/ui/screen-header'
 import { HeaderBack } from '@/components/ui/header-back'
+import { Modal } from '@/components/ui/modal'
 import { COLUMNS, GROUP_FIELDS, type AnimalRow, type ColKey, type ColumnDef } from '@/lib/animals/types'
 import { naturalCompare, textCompare } from '@/lib/animals/natural-sort'
 import { buildTsv, exportXlsx } from '@/lib/animals/export'
+import { deleteAnimals } from '@/app/(office)/animals/actions'
 
 const APP_VERSION = '0.1.0'
 
@@ -66,6 +71,11 @@ export function AnimalsReport({
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [openFilter, setOpenFilter] = useState<ColKey | null>(null)
   const [flash, setFlash] = useState<string | null>(null)
+  // Delete: a confirm step, plus the in-flight flag and any error to show.
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteErr, setDeleteErr] = useState<string | null>(null)
+  const router = useRouter()
 
   function note(msg: string) {
     setFlash(msg)
@@ -211,6 +221,30 @@ export function AnimalsReport({
     }
   }
 
+  // Delete acts ONLY on the explicitly selected rows (never the whole filtered
+  // set — too easy to wipe a day by accident). The two-step confirm guards it
+  // further. On success we clear the selection and re-pull the page so the gone
+  // rows drop out.
+  async function onDelete() {
+    const ids = [...selected]
+    if (ids.length === 0) return
+    setDeleting(true)
+    setDeleteErr(null)
+    try {
+      const res = await deleteAnimals(ids)
+      if (!res.ok) {
+        setDeleteErr(res.error)
+        return
+      }
+      setConfirmDelete(false)
+      setSelected(new Set())
+      note(`Deleted ${res.deleted} animal${res.deleted === 1 ? '' : 's'}`)
+      router.refresh()
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   // Select-all-in-view toggles the whole filtered set.
   const allInView = sorted.length > 0 && sorted.every((r) => selected.has(r.id))
   function toggleAll() {
@@ -308,6 +342,11 @@ export function AnimalsReport({
           <button type="button" onClick={() => void onExport()} disabled={exportRows.length === 0} style={{ height: 36, padding: '0 14px', borderRadius: 9, cursor: exportRows.length ? 'pointer' : 'default', opacity: exportRows.length ? 1 : 0.5, fontFamily: 'inherit', fontSize: 13, fontWeight: 800, background: colors.gold, border: `1px solid ${colors.gold}`, color: colors.navy }}>
             Export to Excel{selected.size ? ` (${selected.size})` : ''}
           </button>
+          {selected.size > 0 && (
+            <button type="button" onClick={() => { setDeleteErr(null); setConfirmDelete(true) }} style={{ height: 36, padding: '0 14px', borderRadius: 9, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, background: '#fff', border: '1px solid #E2B4B4', color: '#B42318' }}>
+              Delete ({selected.size})
+            </button>
+          )}
         </div>
 
         {/* Table */}
@@ -381,6 +420,30 @@ export function AnimalsReport({
           </div>
         )}
       </div>
+
+      {confirmDelete && (
+        <Modal size="sm" onClose={() => { if (!deleting) setConfirmDelete(false) }}>
+          <div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color: colors.navy }}>
+              Delete {selected.size} animal{selected.size === 1 ? '' : 's'}?
+            </div>
+            <div style={{ fontSize: 14, color: colors.textMuted, lineHeight: 1.4 }}>
+              This removes the selected record{selected.size === 1 ? '' : 's'} and their tags from this barn.
+              On work orders that are still open, the worked-head count drops to match. A finished order&apos;s
+              billed head count is frozen and stays as it is.
+            </div>
+            {deleteErr && <div style={{ fontSize: 13, fontWeight: 700, color: '#B42318' }}>{deleteErr}</div>}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 4 }}>
+              <button type="button" disabled={deleting} onClick={() => setConfirmDelete(false)} style={{ height: 40, padding: '0 16px', borderRadius: 9, cursor: deleting ? 'default' : 'pointer', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, background: '#fff', border: `1px solid ${colors.border}`, color: colors.navy }}>
+                Cancel
+              </button>
+              <button type="button" disabled={deleting} onClick={() => void onDelete()} style={{ height: 40, padding: '0 18px', borderRadius: 9, cursor: deleting ? 'default' : 'pointer', opacity: deleting ? 0.7 : 1, fontFamily: 'inherit', fontSize: 14, fontWeight: 800, background: '#B42318', border: '1px solid #B42318', color: '#fff' }}>
+                {deleting ? 'Deleting…' : `Delete ${selected.size}`}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
     </>
   )
 
