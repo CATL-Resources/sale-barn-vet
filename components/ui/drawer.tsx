@@ -9,7 +9,7 @@ import { signOut } from '@/app/login/actions'
 // screen); /day picks the current sale and sends you to its dashboard.
 // (No Chute/Office switch here; that placement is a separate decision.)
 const NAV = [
-  { label: 'Home', href: '/' },
+  { label: 'Vet Barn', href: '/' },
   { label: 'Sale Dashboard', href: '/day' },
   { label: 'Barn Settings', href: '/settings' },
 ]
