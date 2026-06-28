@@ -2,12 +2,13 @@
 
 // The Animals report: every animal worked in the selected sale day, in a dense
 // office table you can filter on any column, sort, group (one or two fields),
-// select, copy, and export to Excel. The one thing it changes is deletion:
+// show or hide columns (remembered per device), select, copy, and export to
+// Excel. The one thing it changes is deletion:
 // selected animals can be removed (a soft delete that also drops their tags and,
 // on open orders, the worked-head count). Everything else is display only — the
 // Sort Pen, the totals, the billing.
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { colors } from '@/components/ui/tokens'
 import { ScreenHeader } from '@/components/ui/screen-header'
@@ -19,6 +20,8 @@ import { buildTsv, exportXlsx } from '@/lib/animals/export'
 import { deleteAnimals } from '@/app/(office)/animals/actions'
 
 const APP_VERSION = '0.1.0'
+// Where the per-device column layout for this report is remembered.
+const COLS_STORAGE_KEY = 'sbv.animals.hiddenCols'
 
 function longDate(iso: string) {
   return new Date(`${iso}T00:00:00`).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
@@ -58,6 +61,29 @@ export function AnimalsReport({
     [hasSecondaryEid],
   )
   const colByKey = useMemo(() => new Map(columns.map((c) => [c.key, c])), [columns])
+
+  // Which columns are hidden, by key. Remembered per device per report, so the
+  // layout you set comes back next time. The table, Copy, and the Excel export
+  // all show exactly the columns left on — hide a column and it leaves all three.
+  const [hidden, setHidden] = useState<Set<string>>(new Set())
+  const [colsOpen, setColsOpen] = useState(false)
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(COLS_STORAGE_KEY)
+      if (raw) setHidden(new Set(JSON.parse(raw) as string[]))
+    } catch {
+      /* ignore unreadable storage */
+    }
+  }, [])
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(COLS_STORAGE_KEY, JSON.stringify([...hidden]))
+    } catch {
+      /* ignore unwritable storage */
+    }
+  }, [hidden])
+  // The columns actually rendered/exported: available set minus the hidden ones.
+  const visibleColumns = useMemo(() => columns.filter((c) => !hidden.has(c.key)), [columns, hidden])
 
   const [catFilters, setCatFilters] = useState<Record<string, string[]>>({})
   const [textFilters, setTextFilters] = useState<Record<string, string>>({})
@@ -191,7 +217,7 @@ export function AnimalsReport({
   async function onCopy() {
     if (exportRows.length === 0) return
     try {
-      await navigator.clipboard.writeText(buildTsv(exportRows, columns))
+      await navigator.clipboard.writeText(buildTsv(exportRows, visibleColumns))
       note(`Copied ${exportRows.length} row${exportRows.length === 1 ? '' : 's'}`)
     } catch {
       note('Copy failed — select the table by hand')
@@ -203,7 +229,7 @@ export function AnimalsReport({
     try {
       await exportXlsx(
         exportRows,
-        columns,
+        visibleColumns,
         {
           appVersion: APP_VERSION,
           barnName,
@@ -281,7 +307,19 @@ export function AnimalsReport({
     })
   }
 
-  const colCount = columns.length + 1 // + the checkbox column
+  const colCount = visibleColumns.length + 1 // + the checkbox column
+
+  function toggleColumn(key: ColKey) {
+    setHidden((h) => {
+      const next = new Set(h)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+  function showAllColumns() {
+    setHidden(new Set())
+  }
 
   // The export's scope label + filename: the hub's scope text when embedded, else
   // the single sale day.
@@ -336,6 +374,20 @@ export function AnimalsReport({
             </button>
           )}
           {flash && <span style={{ fontSize: 13, fontWeight: 700, color: colors.teal }}>✓ {flash}</span>}
+          <div style={{ position: 'relative' }}>
+            <button type="button" onClick={() => setColsOpen((o) => !o)} aria-pressed={colsOpen} style={{ height: 36, padding: '0 14px', borderRadius: 9, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, background: hidden.size ? colors.navy : '#fff', border: `1px solid ${hidden.size ? colors.navy : colors.border}`, color: hidden.size ? '#fff' : colors.navy }}>
+              Columns ({visibleColumns.length}/{columns.length})
+            </button>
+            {colsOpen && (
+              <ColumnsPanel
+                columns={columns}
+                hidden={hidden}
+                onToggle={toggleColumn}
+                onShowAll={showAllColumns}
+                onClose={() => setColsOpen(false)}
+              />
+            )}
+          </div>
           <button type="button" onClick={onCopy} disabled={exportRows.length === 0} style={{ height: 36, padding: '0 14px', borderRadius: 9, cursor: exportRows.length ? 'pointer' : 'default', opacity: exportRows.length ? 1 : 0.5, fontFamily: 'inherit', fontSize: 13, fontWeight: 700, background: '#fff', border: `1px solid ${colors.border}`, color: colors.navy }}>
             Copy{selected.size ? ` (${selected.size})` : ''}
           </button>
@@ -363,7 +415,7 @@ export function AnimalsReport({
                   <th style={{ position: 'sticky', top: 0, zIndex: 3, background: colors.cardHeader, borderBottom: `1px solid ${colors.cardHeaderBorder}`, padding: '8px 10px', width: 34 }}>
                     <input type="checkbox" aria-label="Select all in view" checked={allInView} ref={(el) => { if (el) el.indeterminate = !allInView && selected.size > 0 }} onChange={toggleAll} />
                   </th>
-                  {columns.map((c) => {
+                  {visibleColumns.map((c) => {
                     const isSorted = sort?.key === c.key
                     const hasFilter = (catFilters[c.key]?.length ?? 0) > 0 || !!(textFilters[c.key]?.trim())
                     return (
@@ -397,7 +449,7 @@ export function AnimalsReport({
                       <GroupBlock
                         key={g.id}
                         group={g}
-                        columns={columns}
+                        columns={visibleColumns}
                         colCount={colCount}
                         collapsed={collapsed.has(g.id)}
                         onToggle={() => toggleCollapsed(g.id)}
@@ -406,7 +458,7 @@ export function AnimalsReport({
                       />
                     ))
                   : sorted.map((r, i) => (
-                      <Row key={r.id} row={r} columns={columns} zebra={i % 2 === 1} selected={selected.has(r.id)} onToggle={() => toggleRow(r.id)} />
+                      <Row key={r.id} row={r} columns={visibleColumns} zebra={i % 2 === 1} selected={selected.has(r.id)} onToggle={() => toggleRow(r.id)} />
                     ))}
                 {sorted.length === 0 && (
                   <tr>
@@ -512,6 +564,40 @@ function GroupBlock({ group, columns, colCount, collapsed, onToggle, selected, o
       {!collapsed && group.rows.map((r, i) => (
         <Row key={r.id} row={r} columns={columns} zebra={i % 2 === 1} selected={selected.has(r.id)} onToggle={() => onToggleRow(r.id)} />
       ))}
+    </>
+  )
+}
+
+// The Columns panel: tick a column on to show it, off to hide it. The count and
+// the "Show all" reset live in the header. Hiding a column drops it from the
+// table, Copy, and the Excel export all at once.
+function ColumnsPanel({ columns, hidden, onToggle, onShowAll, onClose }: { columns: ColumnDef[]; hidden: Set<string>; onToggle: (key: ColKey) => void; onShowAll: () => void; onClose: () => void }) {
+  const shownCount = columns.filter((c) => !hidden.has(c.key)).length
+  return (
+    <>
+      {/* click-away backdrop */}
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 40 }} aria-hidden />
+      <div style={{ position: 'absolute', top: '100%', right: 0, zIndex: 41, marginTop: 2, width: 240, background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 10, boxShadow: '0 12px 30px rgba(14,38,70,0.18)', padding: 10, textTransform: 'none' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <span style={{ fontSize: 12, fontWeight: 800, color: colors.navy }}>{shownCount} of {columns.length} shown</span>
+          <button type="button" onClick={onShowAll} disabled={hidden.size === 0} style={{ ...popBtn, color: hidden.size === 0 ? colors.textFaint : colors.teal, cursor: hidden.size === 0 ? 'default' : 'pointer' }}>Show all</button>
+        </div>
+        <div style={{ maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {columns.map((c) => {
+            const on = !hidden.has(c.key)
+            const lastOne = on && shownCount === 1 // never let them hide the final column
+            return (
+              <label key={c.key} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 4px', cursor: lastOne ? 'default' : 'pointer', fontSize: 13, fontWeight: 600, color: lastOne ? colors.textMuted : colors.textPrimary, borderRadius: 6 }}>
+                <input type="checkbox" checked={on} disabled={lastOne} onChange={() => onToggle(c.key)} />
+                <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.label}</span>
+              </label>
+            )
+          })}
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+          <button type="button" onClick={onClose} style={{ ...popBtn, color: colors.teal }}>Done</button>
+        </div>
+      </div>
     </>
   )
 }
