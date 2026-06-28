@@ -64,6 +64,7 @@ export async function fetchAnimalRows(
   if (saleDayIds.length === 0) return { rows: [], hasSecondaryEid: false }
   type AnimalRowRaw = {
     id: string
+    sale_day_id: string | null
     pen_work_id: string | null
     animal_type_id: string | null
     breed: string | null
@@ -83,7 +84,7 @@ export async function fetchAnimalRows(
     supabase
       .from('animal')
       .select(
-        'id, pen_work_id, animal_type_id, breed, color, age_value, age_designation, preg_status, preg_timing, fetal_sex, quick_notes, notes, pen, current_pen_id, created_at',
+        'id, sale_day_id, pen_work_id, animal_type_id, breed, color, age_value, age_designation, preg_status, preg_timing, fetal_sex, quick_notes, notes, pen, current_pen_id, created_at',
       )
       .in('sale_day_id', saleDayIds)
       .is('deleted_at', null)
@@ -177,8 +178,32 @@ export async function fetchAnimalRows(
     for (const p of pens) penNumber.set(p.id, str(p.pen_number))
   }
 
+  // Sale date per sale day (the scope is at most a handful of days).
+  const saleDateById = new Map<string, string>()
+  {
+    type DayRow = { id: string; sale_date: string }
+    const days = await fetchByIds<DayRow>(saleDayIds, (batch) =>
+      supabase.from('sale_day').select('id, sale_date').in('id', batch).returns<DayRow[]>(),
+    )
+    for (const d of days) saleDateById.set(d.id, str(d.sale_date))
+  }
+
   const workTypeName = new Map(workTypes.map((w) => [w.id, str(w.name)]))
   const animalTypeName = new Map(animalTypes.map((t) => [t.id, str(t.name)]))
+
+  // "Recorded" stamp in the barn's local time (St. Onge is Mountain time), built
+  // once and reused. sv-SE formats as "YYYY-MM-DD HH:mm", which reads cleanly and
+  // also sorts in true time order as plain text.
+  const stampFmt = new Intl.DateTimeFormat('sv-SE', {
+    timeZone: 'America/Denver',
+    dateStyle: 'short',
+    timeStyle: 'short',
+  })
+  const recordedStamp = (iso: string): string => {
+    if (!iso) return ''
+    const d = new Date(iso)
+    return Number.isNaN(d.getTime()) ? '' : stampFmt.format(d)
+  }
 
   let hasSecondaryEid = false
   const rows: AnimalRow[] = list.map((a) => {
@@ -213,6 +238,8 @@ export async function fetchAnimalRows(
       fetalSex: str(a.fetal_sex),
       quickNotes,
       notes: str(a.notes),
+      saleDate: (a.sale_day_id && saleDateById.get(a.sale_day_id)) || '',
+      recordedAt: recordedStamp(a.created_at),
     }
   })
 

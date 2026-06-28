@@ -1,5 +1,15 @@
 # Sale Barn Vet — Spec Changelog
 
+## 2026-06-28 — Sale Date + Recorded time on every animal row
+- The Animals report and its Excel export now carry two columns that were always
+  in the data but never shown: SALE DATE (which sale day the head belonged to) and
+  RECORDED (the exact date + time it was worked, in the barn's local time). So a
+  big multi-day export now makes plain which set each animal came from.
+- Sale Date leads the table and is a new "Group by" option, so a multi-day pull
+  can be grouped straight back into its sets. Both columns are written as text in
+  the export, so Excel keeps them exactly as shown. No database change — the sale
+  day and the recorded timestamp were already stored on every animal.
+
 ## 2026-06-28 — Animals report shows every tag; delete animals from the office
 - FIXED a real "missing EID" bug in the Animals report. The report pulled all of a
   day's tags in one request, but Supabase caps a single response at ~1000 rows. A
