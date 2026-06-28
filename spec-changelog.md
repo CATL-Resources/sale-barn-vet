@@ -1,5 +1,14 @@
 # Sale Barn Vet — Spec Changelog
 
+## 2026-06-28 — Show / hide columns on the Animals report
+- A new "Columns" button opens a panel that lists every column with a checkbox and
+  a running "N of M shown" count. Tick a column off to hide it, on to show it;
+  "Show all" resets. You can't hide the last remaining column.
+- Hidden columns leave the table, the Copy output, and the Excel export together —
+  so what you see is exactly what you get. Your layout is remembered per device per
+  report, so it comes back next time. (Named, barn-wide saved views build on this
+  next.)
+
 ## 2026-06-28 — Sale Date + Recorded time on every animal row
 - The Animals report and its Excel export now carry two columns that were always
   in the data but never shown: SALE DATE (which sale day the head belonged to) and
