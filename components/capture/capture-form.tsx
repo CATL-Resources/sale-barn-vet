@@ -85,6 +85,9 @@ export function CaptureForm({
   } = api
   const eidRef = useRef<HTMLInputElement>(null)
   const idRefs = useRef<Record<string, HTMLInputElement | null>>({})
+  // The scrolling form area — used to jump back to the top (the scan field) after
+  // a good save, no matter how far down the operator had scrolled.
+  const scrollRef = useRef<HTMLDivElement>(null)
   const [eidType, setEidType] = useState('')
   // The navy banner collapses to a compact pills-only row so the form (and the
   // Save button) gets the vertical space. Default collapsed; the choice is
@@ -191,7 +194,15 @@ export function CaptureForm({
     const ok = await saveNext(override)
     if (ok) {
       setEidType('')
-      eidRef.current?.focus()
+      // Jump back to the scan field for the next animal — every time, not just
+      // when the browser happens to scroll the re-focused input into view. We
+      // wait one frame so the cleared form has re-rendered (the empty scan input
+      // is mounted again and eidRef points at it), then scroll the form to the
+      // top and focus it without a second, fighting scroll.
+      requestAnimationFrame(() => {
+        scrollRef.current?.scrollTo({ top: 0 })
+        eidRef.current?.focus({ preventScroll: true })
+      })
     }
   }
 
@@ -505,12 +516,19 @@ export function CaptureForm({
         </>
       )}
 
-      <div className="sbv-scroll">
+      <div className="sbv-scroll" ref={scrollRef}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 11, padding: 12 }}>
           {/* The ONE status box for the capture screen — a good save, a duplicate
               tag, a blank required field, or a scan that didn't read all show
-              here, in the same spot and the same big size, colored by severity. */}
-          <StatusBanner status={api.status} />
+              here. It's pinned to the top of the form (sticky) so it stays in view
+              no matter how far down the operator has scrolled — the save result is
+              never off-screen. Inside the scroll area it sits clear of the header
+              above and the save bar / keyboard below. */}
+          {api.status && (
+            <div style={{ position: 'sticky', top: 0, zIndex: 5, filter: 'drop-shadow(0 4px 10px rgba(8,18,40,0.22))' }}>
+              <StatusBanner status={api.status} />
+            </div>
+          )}
 
           {flaggedOn.length > 0 && (
             <div style={{ background: '#FEF3C7', border: '1px solid #F59E0B', borderRadius: 14, padding: '13px 15px', display: 'flex', alignItems: 'center', gap: 12 }}>
