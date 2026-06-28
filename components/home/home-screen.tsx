@@ -121,7 +121,7 @@ export function HomeScreen({
             <SectionLabel>Current Sale</SectionLabel>
             <div
               className="sbv-navy-surface"
-              style={{ borderRadius: 16, padding: 16, display: 'flex', flexDirection: 'column', gap: 11 }}
+              style={{ borderRadius: 16, padding: 20, display: 'flex', flexDirection: 'column', gap: 11 }}
             >
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                 <div style={{ minWidth: 0 }}>
@@ -154,17 +154,18 @@ export function HomeScreen({
                 </div>
               </div>
 
-              {/* Two nav pills, pushed to opposite edges and given distinct
-                  on-brand colors (Work Orders teal, Pen List warn-orange) with navy
-                  text. They carry no counts. */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 2 }}>
-                <Link href={`/work-orders/${current.id}`} onClick={(e) => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 36, padding: '0 15px', borderRadius: 999, background: '#55BAAA', border: '1px solid #3FA89A', color: '#0E2646', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, textDecoration: 'none' }}>
+              {/* Two nav pills, pushed to opposite edges. Navy fill so the white
+                  label reads with strong contrast; each keeps its on-brand color as
+                  the outline (Work Orders teal, Pen List amber) so they stay apart
+                  on the navy card and don't blend in. They carry no counts. */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginTop: 9 }}>
+                <Link href={`/work-orders/${current.id}`} onClick={(e) => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 36, padding: '0 15px', borderRadius: 999, background: colors.navy, border: `1px solid ${colors.teal}`, color: '#FFFFFF', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, textDecoration: 'none' }}>
                   Work Orders
-                  <ChevronRightIcon size={13} strokeWidth={2.6} style={{ color: '#0E2646' }} />
+                  <ChevronRightIcon size={13} strokeWidth={2.6} style={{ color: '#FFFFFF' }} />
                 </Link>
-                <Link href={`/work-list/${current.id}`} onClick={(e) => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 36, padding: '0 15px', borderRadius: 999, background: '#F59E0B', border: '1px solid #D9870A', color: '#0E2646', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, textDecoration: 'none' }}>
+                <Link href={`/work-list/${current.id}`} onClick={(e) => e.stopPropagation()} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, height: 36, padding: '0 15px', borderRadius: 999, background: colors.navy, border: `1px solid ${colors.warning}`, color: '#FFFFFF', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, textDecoration: 'none' }}>
                   Pen List
-                  <ChevronRightIcon size={13} strokeWidth={2.6} style={{ color: '#0E2646' }} />
+                  <ChevronRightIcon size={13} strokeWidth={2.6} style={{ color: '#FFFFFF' }} />
                 </Link>
               </div>
             </div>

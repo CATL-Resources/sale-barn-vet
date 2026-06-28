@@ -59,6 +59,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- collapsible banner (pills), inline 2nd-EID, required-field emphasis _(2026-06-27, `bf86f20`)_
 - Sort pens: moving a pen's cattle no longer spawns a new open pen _(2026-06-27, `72dc7a5`)_
 - Mixed-pen owner assignment at the chute: assign per cow, not up front _(2026-06-27, `a3f0eb6`)_
 - Capture screen: one status box, and tighter layout _(2026-06-27, `21b8ba0`)_
