@@ -222,7 +222,7 @@ export function useCapture(
         statusTimer.current = null
         statusRef.current = null
         setStatus(null)
-      }, 1300)
+      }, 2000)
     }
   }, [])
 
@@ -237,13 +237,14 @@ export function useCapture(
     const next: CaptureStatus = { id: statusId.current, severity: 'success', title: head != null ? `Saved — ${head} head` : 'Saved' }
     statusRef.current = next
     setStatus(next)
-    // The green clears fast so it never lags the next animal; a fresh save resets
-    // the timer so back-to-back saves each get their own burst.
+    // The green clears itself after a short beat (about two seconds) so it never
+    // lags the next animal; a fresh save resets the timer so back-to-back saves
+    // each get their own burst.
     statusTimer.current = window.setTimeout(() => {
       statusTimer.current = null
       statusRef.current = null
       setStatus(null)
-    }, 1300)
+    }, 2000)
     // Sound + buzz are best-effort extras: they never throw and never block.
     beepSaved()
     buzzSaved()
@@ -673,7 +674,7 @@ export function useCapture(
       // HARD: the official EID is an identifier — no animal saves without a real
       // one, and it has to be a full 15-digit tag (catches a mistyped EID).
       if (eidRequired() && !/^\d{15}$/.test(ev)) {
-        showStatus('warning', ev ? 'EID must be the full 15 digits' : 'Scan or type the EID before saving')
+        showStatus('error', ev ? 'EID must be the full 15 digits' : 'Scan or type the EID before saving')
         return false
       }
       // HARD: a duplicate official EID already worked in THIS pen_work — refuse,
@@ -699,7 +700,7 @@ export function useCapture(
       // and names the first one missing.
       const missing = missingRequiredLabels(resolved, draft)
       if (missing.length) {
-        showStatus('warning', missing.length === 1 ? `${missing[0]} is required before saving` : `Required before saving: ${missing.join(', ')}`)
+        showStatus('error', missing.length === 1 ? `${missing[0]} is required before saving` : `Required before saving: ${missing.join(', ')}`)
         return false
       }
       const ok = await buildAndInsert(ev)
