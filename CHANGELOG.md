@@ -4,6 +4,8 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## New
 
+- **animals:** show/hide columns with a Columns panel _(2026-06-28, `ec1588e`)_
+- **animals:** show Sale Date and Recorded time on every row _(2026-06-28, `d58376f`)_
 - **work-list:** "pens to work" wording; tap the head count to see the animals _(2026-06-21, `fc6b007`)_
 - one shared header on every screen (replaces per-screen headers) _(2026-06-21, `7b83863`)_
 - **capture:** 15-digit EID check, star marker, full number with bold tail, on-demand 2nd EID _(2026-06-21, `4a09610`)_
@@ -28,6 +30,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Fixes
 
+- **animals:** show every EID tag; add office delete _(2026-06-28, `7404c3a`)_
 - a required field that's blank now blocks the save (not just EID) _(2026-06-25, `4afa527`)_
 - pen labels clip on the office Work Orders board _(2026-06-24, `d96cb4d`)_
 - duplicate-EID check must not fail silently on a query error _(2026-06-24, `2440e84`)_
@@ -59,6 +62,9 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Mobile Work Orders: condensed pen cards + Vet Barn label _(2026-06-28, `8de837b`)_
+- Current Sale card: Work Orders / Pen List labels, white pill text, more spacing above pills, larger card _(2026-06-28, `37c1c7d`)_
+- pinned Save & next banner + reliable scroll-to-scan on success _(2026-06-28, `0ba2b83`)_
 - collapsible banner (pills), inline 2nd-EID, required-field emphasis _(2026-06-27, `bf86f20`)_
 - Sort pens: moving a pen's cattle no longer spawns a new open pen _(2026-06-27, `72dc7a5`)_
 - Mixed-pen owner assignment at the chute: assign per cow, not up front _(2026-06-27, `a3f0eb6`)_
