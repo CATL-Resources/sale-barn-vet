@@ -154,6 +154,12 @@ export function AnimalEditSheet({
         setErr(ev ? 'EID must be the full 15 digits' : 'Scan or type the EID')
         return
       }
+      // HARD: the official EID is an 840 tag — a 15-digit non-840 number (e.g. a
+      // 900-series secondary tag) doesn't belong in the official slot.
+      if (eidOfficial && ev && !ev.startsWith('840')) {
+        setErr('The official EID must start with 840')
+        return
+      }
       // HARD: a duplicate EID already in THIS pen_work — refuse, flag, clear it.
       // A lookup error (dup.failed) is NOT treated as all-clear: it's logged by
       // findDuplicateEid and we save anyway (never block), rather than silently
@@ -241,6 +247,14 @@ export function AnimalEditSheet({
     if (!batch) return
     const v = value.trim()
     if (!/^\d{15}$/.test(v)) return
+    // The official EID is an 840 tag. A 15-digit non-840 number belongs in the
+    // 2nd-EID slot, not here — refuse it and clear the field, the same as a
+    // duplicate, so a bad value can't be left in the official slot and saved.
+    if (eidOfficial && !v.startsWith('840')) {
+      setErr('The official EID must start with 840 — use the 2nd EID for a 900-series tag')
+      patch({ eid: '' })
+      return
+    }
     const dup = await findDuplicateEid(supabase, {
       barnId: bootstrap.barn.id,
       penWorkId: batch.penWorkId,

@@ -677,6 +677,13 @@ export function useCapture(
         showStatus('error', ev ? 'EID must be the full 15 digits' : 'Scan or type the EID before saving')
         return false
       }
+      // HARD: the official EID is an 840 tag. A 15-digit number that doesn't start
+      // with 840 (e.g. a 900-series secondary tag) is not the official ID and does
+      // not belong in this slot — the 2nd-EID slot takes those.
+      if (officialIdKeys.has('eid') && ev && !ev.startsWith('840')) {
+        showStatus('error', 'The official EID must start with 840')
+        return false
+      }
       // HARD: a duplicate official EID already worked in THIS pen_work — refuse,
       // raise the flag, and CLEAR the entered value so it isn't left in the field.
       // (The same EID under a different work order is fine and flows through.)
@@ -714,17 +721,25 @@ export function useCapture(
       }
       return ok
     },
-    [batch, draft, eidRequired, localDuplicate, buildAndInsert, patchDraft, resolved, showStatus, penDefaultsForBatch],
+    [batch, draft, eidRequired, officialIdKeys, localDuplicate, buildAndInsert, patchDraft, resolved, showStatus, penDefaultsForBatch],
   )
 
   // Manual EID entry (typed into the EID box, not scanned). Fill and wait, same
-  // hard refuse on a duplicate. Shape isn't checked here — the operator typed it
-  // straight into the EID field on purpose.
+  // hard refuse on a duplicate, and the same 840 rule a scan uses — the official
+  // EID is an 840 tag, so a 15-digit non-840 number is nudged to the 2nd-EID slot
+  // instead of sitting in the official slot.
   const commitEid = useCallback(
     async (value: string): Promise<void> => {
       if (!batch) return
       const v = value.trim()
       if (!v || v === draft.eid.trim()) return
+      // The official EID must start with 840. Refuse a 15-digit non-840 number
+      // here (don't commit it), the same as a non-840 scan does.
+      if (officialIdKeys.has('eid') && /^\d{15}$/.test(v) && !v.startsWith('840')) {
+        showStatus('warning', 'That EID doesn’t start with 840 — tap the 2nd EID field to scan a second tag')
+        patchDraft({ eid: '' })
+        return
+      }
       const local = localDuplicate(v)
       if (local) {
         setFlag(local)
@@ -744,7 +759,7 @@ export function useCapture(
       patchDraft({ eid: v })
       setFocusTick((n) => n + 1)
     },
-    [batch, draft.eid, localDuplicate, checkDuplicate, patchDraft, clearStatus],
+    [batch, draft.eid, officialIdKeys, localDuplicate, checkDuplicate, patchDraft, clearStatus, showStatus],
   )
 
   /**
