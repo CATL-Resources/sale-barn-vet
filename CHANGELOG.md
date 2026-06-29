@@ -62,6 +62,7 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Back buttons read "Vet Barn" to match the menu _(2026-06-28, `005f3fe`)_
 - Mobile Work Orders: condensed pen cards + Vet Barn label _(2026-06-28, `8de837b`)_
 - Current Sale card: Work Orders / Pen List labels, white pill text, more spacing above pills, larger card _(2026-06-28, `37c1c7d`)_
 - pinned Save & next banner + reliable scroll-to-scan on success _(2026-06-28, `0ba2b83`)_
