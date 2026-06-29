@@ -1,97 +1,111 @@
-# Sale Barn Vet — to-do & status
+# Sale Barn Vet — to-do and status
 
 Plain-language running list of what's built and what's next. Keep it in everyday
 words (see `CLAUDE.md`).
 
-_Last updated: 2026-06-19_
+_Last updated: 2026-06-29_
 
 ## The short version
 
-The chuteside **Capture** screen is live, the **Settings** and office
-**Work-Orders** screens exist, and the full **customer list is now loaded** into
-the database. No screen reads that customer list yet — that's the most obvious
-next step. Before a real sale day, a short safety list (access rules, backups,
-alerts) still needs doing.
+The chuteside Capture screen, the office Work Orders screen and Sale Dashboard,
+the Reports hub (Animals, Billing, Customer, Sale Summary), Settings, and Login
+are all live. The full customer list is loaded, and the office can now search it
+and edit a customer's addresses. The biggest gaps before real customer use: the
+Buyers and Sellers pages are still placeholders, the "add a customer" box doesn't
+use the search yet, new customers get no number, and there's no screen that makes
+the day's paperwork (CVIs / change-of-ownership). A short safety list (access
+rules, backups, alerts) still needs doing before the first real sale day.
 
-## ✅ Done
+## Known bug to fix first
 
-- **Customer list loaded** — 19,570 customers (each with a customer number) and
-  17,946 addresses, merged in PR #22. The loader can be re-run anytime
-  (`npm run import:customers`) and won't make duplicates.
-- **Chute capture screen is live** — one animal at a time into a batch (a batch
-  is one pen + one job + one consignor). The screen builds itself from the barn
-  settings; sort sends animals to a shared, all-day pen; nothing hard-blocks the
-  vet; saving writes to the live tables.
-- **Settings screen** — built on St. Onge's real config.
-- **Office Work-Orders screen** — built on the "pen_work" model.
-- **Login** — built.
+- [ ] **The 840 check on the chute EID isn't holding for typed entry.** A real
+  official EID is 15 digits and starts with 840. Scanning already refuses a
+  non-840 tag into the main slot, but a 15-digit number that does NOT start with
+  840 is accepted when typed and saved. Hold the official EID to the full 840
+  shape the same way scanning does, while still letting a 900-series second tag go
+  in the second-EID slot. (Save path — needs a real-device check.)
 
-## 📋 Next
+## Done — built since the last update (cross these off)
 
-### 1. Loose ends from the customer load (quick)
+- **Capture polish and hardening.** One shared status box for every message
+  (save / duplicate / required field / unreadable scan), pinned to the top so the
+  result is never off-screen; reliable jump back to the scan field after a save;
+  a collapsible header; the "+ 2nd EID" trigger on the EID row; required-field
+  accents (amber until filled, green once filled); and scan-ingest hardening for
+  the wand.
+- **Mixed pens at the chute.** The owner is picked per cow (no forced up-front
+  choice), with a Hold slot for unknown owners and close-the-whole-pen-at-once.
+- **Sort pens.** A per-day view showing each pen's head and owner mix, with close
+  / reopen, and move a pen's cattle to a destination (which no longer spawns a
+  new open pen to deal with).
+- **Office Work Orders.** The board, the condensed per-pen mobile cards, search
+  and sort, the "..." actions (edit / animal list / print label / delete), and
+  photos.
+- **Billing and reconciliation.** Customer rollups by work type at the frozen
+  price, plus special charges.
+- **Reports hub.** Animals (filter / sort / group, hide columns remembered per
+  device, select-and-delete, Excel / copy), Billing, Customer, and Sale Summary.
+- **Customer list in use (office).** Search the loaded customers by name or
+  number; show and edit a customer's many addresses.
+- **"Month bred" is fully configurable** in Settings (all 12 months available).
+- **Customer list loaded** — about 19,570 customers (each with a number) and
+  17,946 addresses; the loader can be re-run anytime without making duplicates.
+- **Chute Capture, Settings, Office Work Orders, Login** — all live.
 
-- [ ] **Use the customer list in the app.** Nothing reads it today. Build a
-  customer lookup/picker and turn the "Coming Soon" **Buyers** and **Sellers**
-  pages into real lists backed by the loaded customers.
-- [ ] **Show and edit each customer's addresses.** The load stores many
-  addresses per customer (in `party_location`) and copies the default one into
-  the old single-address field. New screens should read and write
-  `party_location` from now on.
-- [ ] **Give new customers a number automatically.** Existing customers got
-  their numbers from the file, but adding a customer in the app has no numbering
-  yet. Decide the rule and wire it into the add-customer path.
+## Next — to open the doors to real customers
 
-### 2. Before the first real sale day (safety — do these)
+- [ ] **Buyers and Sellers pages.** Turn the "Coming Soon" placeholders into real
+  lists backed by the loaded customers.
+- [ ] **Customer picker when adding a consignor or buyer.** The search works on
+  the server, but the add box still only free-types a name — wire the search in
+  so you pick an existing customer instead of making a duplicate.
+- [ ] **Give a brand-new customer a number automatically** (today an added
+  customer has no number). Decide the rule and wire it in.
+- [ ] **Document generation.** A screen that makes the day's CVIs and
+  change-of-ownership paper from the work. (Today you can export the Animals
+  report to Excel and copy for GVL, but there's no document build.)
+- [ ] **Barn Settings editing.** The screen shows the config; confirm edits
+  actually save (it's view-only for now — editing is a separate build).
 
-- [ ] **Check the per-barn access rules are real**, not wide-open test ones —
-  review each table's policy. (Most important.)
-- [ ] **Turn on database backups** (Supabase point-in-time recovery; Pro plan).
-- [ ] **Add error alerts** on the website (Sentry or similar).
-- [ ] **Add an uptime check** (UptimeRobot free tier is fine).
-- [ ] **Make a staging copy of the database** to test changes before they hit the
-  real one (Supabase branch).
+## Before the first real sale day (safety — do these)
+
+- [ ] **Check the per-table access rules are real**, not wide-open test ones
+  (most important).
+- [ ] **Turn on database backups** (point-in-time) and a **staging copy** to test
+  changes before they hit the real one.
+- [ ] **Add error alerts** (Sentry) and an **uptime check** (UptimeRobot).
 - [ ] **Lock the `main` branch** so changes only land through a reviewed PR.
-- [ ] **Protect / rate-limit any server endpoints.**
+- [ ] **Rate-limit / protect any server endpoints.**
+- [ ] **Keep the GVL token server-side only** when that integration lands.
 
-### 3. Capture & office features (next build work)
+## Longer horizon (not urgent)
 
-- [ ] **Real chuteside test** on a phone/tablet — run a few pretend animals
-  through and note anything slow or wrong.
-- [ ] **Office screen to review and bill the batches** the chute makes (prices,
-  charges, totals — left out on purpose so far).
-- [ ] **Keep the running count after a page refresh** (today it resets; saved
-  animals are safe).
-- [ ] **See who's in a shared sort pen, broken down by seller.**
-- [ ] **Confirm the "Month bred" choices** — currently Sep–Dec; decide if it
-  should be all 12 months.
-- [ ] **Settings: confirm the barn can flip field on/off switches itself** (the
-  screen exists; check it actually saves changes, not just shows them).
+- [ ] **Vendors report** — the fifth report view (a placeholder now).
+- [ ] **Named, barn-wide saved column views** for the Animals report.
+- [ ] **Per-day buyer numbers** (the allocation logic).
+- [ ] **Receiving-by-phone module** (the `origin` field already exists for it).
+- [ ] **GVL token integration** (server-side eCVI push) to replace the manual
+  Chrome fill.
+- [ ] **Live updates** for several office users on the same sale day.
+- [ ] **Decide the offline rule** (what wins when an offline device's edits
+  collide) before building offline support.
+- [ ] **One-way push to a master DB** (HerdWork) for shared CVI history.
 
-## ❓ Open questions for the team
+## Open questions for the team
 
-- [ ] Was it right to flip St. Onge's saved settings, or should the screen just
-  bake in their field list?
-- [ ] What happens to a sort pen at the end of the day — who closes it out, and
-  where?
 - [ ] What's the rule for numbering a brand-new customer?
-
-## 🔭 Longer horizon (not urgent)
-
-- [ ] Per-day buyer numbers for customers (the allocation logic).
-- [ ] Link generated documents to the work events when the document screen is
-  built.
-- [ ] Live updates for several office users on the same sale day.
-- [ ] Decide the offline rule (what wins when an offline device's edits collide)
-  before building offline support.
-- [ ] Keep the GVL token server-side only when that integration lands.
+- [ ] Should "Month bred" stay flexible per barn, or be fixed?
+- [ ] At the very end of the day, who closes out a sort pen, and where? (Close /
+  reopen / move now exist; confirm the end-of-day owner of that step.)
 
 ## Handy facts
 
 - Repo: `chandyolson/sale-barn-vet` · App: Next.js + Supabase · Site:
   salebarnvet.com
 - Supabase project id: `odrcpdnzhnyiofokokum` (us-west-1)
-- Customer data lives in `party` (19,570 rows, each with a `customer_number`) and
-  `party_location` (17,946 addresses). Re-run loader: `npm run import:customers`.
+- Customer data lives in `party` (~19,570 rows, each with a `customer_number`)
+  and `party_location` (~17,946 addresses). Re-run loader:
+  `npm run import:customers`.
 - The core model is "pen_work" = one pen + one job + one owner + the head worked,
   with the price frozen on that event. Consignor/buyer totals are rollups (views)
   over pen_work.
