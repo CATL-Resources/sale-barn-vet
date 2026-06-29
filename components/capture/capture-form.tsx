@@ -6,7 +6,7 @@ import { useScanRouter } from '@/lib/capture/use-scan-router'
 import { useOnScreenKeyboard } from '@/lib/capture/use-onscreen-keyboard'
 import { isBackTag } from '@/lib/capture/scan-format'
 import { isScannableField } from '@/lib/capture/fields'
-import { ChevronLeft, ChevronUp, ChevronDown, ScanIcon, SortIcon, CloseOutIcon, FlagIcon, CheckIcon, XIcon, KeyboardIcon } from './icons'
+import { ChevronLeft, ChevronUp, ChevronDown, SortIcon, CloseOutIcon, FlagIcon, CheckIcon, XIcon, KeyboardIcon } from './icons'
 import { ScreenHeader } from '@/components/ui/screen-header'
 import { Button } from '@/components/ui/button'
 import { RequiredMark, RequiredAccent } from '@/components/ui/required-mark'
@@ -330,16 +330,17 @@ export function CaptureForm({
 
   // The EID field — the rich scan/typed-tag block. Rendered in its config slot
   // among the identity fields below. The required accent (amber empty, green once
-  // a full EID is in) sits between the label and the box; the "+ 2nd EID" pill
-  // rides at the end of the row.
+  // a full EID is in) leads the row at the left edge so it doesn't eat into the
+  // number's width; the "+ 2nd EID" pill rides at the end of the row. No scan icon
+  // inside the box — the placeholder and "READER ON" already say it's a scan field,
+  // and the room goes to showing the whole EID on a phone.
   const eidBlock = (
     <div style={{ marginBottom: 9 }}>
       {active ? (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <RequiredMark />}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {eidRequired() && <RequiredAccent filled={isEid15(draft.eid)} />}
+          <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <RequiredMark />}</div>
           <div style={{ flex: 1, minWidth: 0, minHeight: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '6px 13px', borderRadius: 11, background: isEid15(draft.eid) ? '#E1F5EE' : '#FEF3C7', border: `1px solid ${isEid15(draft.eid) ? '#55BAAA' : '#F2C879'}` }}>
-            <ScanIcon size={19} color={isEid15(draft.eid) ? '#55BAAA' : '#B45309'} />
             <EidNumber v={draft.eid} head={isEid15(draft.eid) ? '#55BAAA' : '#92580C'} tail={isEid15(draft.eid) ? '#0E2646' : '#7A4A06'} />
             {!isEid15(draft.eid) && <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: '#B45309', fontVariantNumeric: 'tabular-nums' }}>{draft.eid.replace(/\D/g, '').length}/15</span>}
             <button type="button" aria-label="Clear EID" onClick={() => patchDraft({ eid: '' })} style={{ flexShrink: 0, background: 'transparent', border: 'none', cursor: 'pointer', padding: 2, display: 'flex' }}>
@@ -349,11 +350,10 @@ export function CaptureForm({
           {secondEidPill}
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <RequiredMark />}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {eidRequired() && <RequiredAccent filled={isEid15(draft.eid)} />}
+          <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <RequiredMark />}</div>
           <div style={{ flex: 1, minWidth: 0, height: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '0 13px', borderRadius: 11, background: flag ? FLAG_RED_BG : '#FFFFFF', border: flag ? `2px solid ${FLAG_RED}` : '2px solid #55BAAA', boxShadow: flag ? 'none' : '0 0 0 3px rgba(85,186,170,0.35)' }}>
-            <ScanIcon size={19} color={flag ? FLAG_RED : '#55BAAA'} />
             {scanInput('Scan or type EID', false)}
             {eidType.trim() && !isEid15(eidType) ? (
               <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: '#B45309', fontVariantNumeric: 'tabular-nums' }}>{eidType.replace(/\D/g, '').length}/15</span>
