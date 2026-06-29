@@ -105,6 +105,27 @@ export function WorkOrdersBoard({
     })
   }, [penWorks, query, sortBy])
 
+  // For the phone cards: group the (already-sorted) rows by pen so a pen's work
+  // orders sit together under one slim strip. First-appearance order, so the Sort
+  // control still drives which pen leads and the block order within it. totalHead
+  // is the sum of the SAME per-work-order Head (head_expected) shown on each line.
+  const penGroups = useMemo(() => {
+    const groups: { key: string; penLabel: string; totalHead: number; rows: typeof rows }[] = []
+    const index = new Map<string, number>()
+    for (const r of rows) {
+      const key = r.pw.pen?.id ?? `nopen-${r.pw.id}`
+      let gi = index.get(key)
+      if (gi == null) {
+        gi = groups.length
+        index.set(key, gi)
+        groups.push({ key, penLabel: r.pw.pen?.pen_number ? `Pen ${r.pw.pen.pen_number}` : 'No pen', totalHead: 0, rows: [] })
+      }
+      groups[gi].rows.push(r)
+      groups[gi].totalHead += r.pw.head_expected ?? 0
+    }
+    return groups
+  }, [rows])
+
   const counts = useMemo(() => {
     const c = { not_started: 0, in_progress: 0, complete: 0 }
     for (const pw of penWorks) c[deriveStatus(pw)]++
@@ -158,7 +179,7 @@ export function WorkOrdersBoard({
     <div style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
       {/* Slim screen sub-header with the one back chevron (to Home); the shared
           app header above carries the barn name + wordmark. */}
-      <ScreenHeader title="Work Orders" subtitle={longDate(saleDay.sale_date)} back={<HeaderBack href="/" label="Home" />} />
+      <ScreenHeader title="Work Orders" subtitle={longDate(saleDay.sale_date)} back={<HeaderBack href="/" label="Vet Barn" />} />
 
       <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 'var(--content-max)', width: '100%', margin: '0 auto' }}>
         {/* TOOLBAR — one line: search + a compact "+" to add a work order. The
@@ -261,56 +282,53 @@ export function WorkOrdersBoard({
               </div>
             </div>
 
-            {/* PHONE : one order per stacked card with labeled rows — legible
-                without sideways scroll, no cramped columns. */}
+            {/* PHONE : pens stacked as cards. A slim navy strip per pen (pen label
+                + the pen's total head), then one compact two-line block per work
+                order beneath it — so several pens fit without sideways scroll. */}
             <div className="wo-cards">
-              {rows.map((r) => {
-                const st = STATUS_STYLE[r.status]
-                const worked = r.status === 'not_started' ? '—' : r.status === 'in_progress' ? `${r.pw.head_worked ?? 0} of ${r.pw.head_expected ?? 0}` : String(r.pw.head_worked ?? 0)
-                // Worked != head (expected): flag the WORKED number warn orange + bold.
-                // Only when a worked number actually shows (not the "—" of not started).
-                const workedMismatch = r.status !== 'not_started' && (r.pw.head_worked ?? 0) !== (r.pw.head_expected ?? 0)
-                const workedColor = workedMismatch ? '#F59E0B' : r.status === 'not_started' ? '#C2C2CA' : r.status === 'in_progress' ? '#B45309' : colors.textPrimary
-                return (
-                  <div key={r.pw.id} onClick={() => openEdit(r.pw)} className="press-card" style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden', cursor: 'pointer', display: 'flex', flexDirection: 'column' }}>
-                    {/* Navy band header with a thin gold line — the pen number is the
-                        prominent label so different pens read apart at a glance. */}
-                    <div style={{ background: '#0E2646', borderBottom: '3px solid #F3D12A', padding: '11px 14px' }}>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: '#fff', letterSpacing: '-0.01em' }}>{r.pw.pen?.pen_number ? `Pen ${r.pw.pen.pen_number}` : 'No pen'}</div>
-                    </div>
-                    {/* body */}
-                    <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 11 }}>
-                    {/* consignor / buyer */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '2px 8px', color: '#0E2646', background: r.isBuyer ? '#F3D12A' : '#55BAAA', border: `1px solid ${r.isBuyer ? '#E0BE1F' : '#3FA89A'}` }}>{r.isBuyer ? `Buyer #${r.pw.buyer_number_text ?? '—'}` : 'Seller'}</span>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: colors.textPrimary }}>{r.name}</span>
-                      {r.custNo ? <span style={{ fontSize: 11, fontWeight: 600, color: colors.textPlaceholder }}>#{r.custNo}</span> : null}
-                    </div>
-                    {/* labeled rows */}
-                    <div style={{ borderTop: `1px solid ${colors.rowDivider}` }}>
-                      <CardRow label="Work type" value={<span style={{ color: r.pw.workType ? colors.textPrimary : colors.textPlaceholder }}>{r.pw.workType?.name ?? 'No work type'}</span>} />
-                      <CardRow label="Head" value={<span style={{ color: colors.teal }}>{r.pw.head_expected ?? 0}</span>} />
-                      <CardRow label="Worked" value={<span style={{ color: workedColor, fontWeight: workedMismatch ? 800 : undefined }}>{worked}</span>} />
-                      <CardRow
-                        label="Status"
-                        last
-                        value={
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, height: 24, padding: '0 10px', borderRadius: 999, background: st.bg, border: `1px solid ${st.border}`, fontSize: 12, fontWeight: 700, color: st.color, whiteSpace: 'nowrap' }}>
-                            <span style={{ width: 7, height: 7, borderRadius: 999, background: st.dot }} />{STATUS_LABEL[r.status]}
-                          </span>
-                        }
-                      />
-                    </div>
-                    {r.pw.notes ? <div style={{ fontSize: 13, fontWeight: 500, color: colors.textPrimary, background: '#FDF7EA', border: '1px solid #F1D9A8', borderRadius: 9, padding: '8px 10px', lineHeight: 1.45 }}>{r.pw.notes}</div> : null}
-                    {/* per-card actions — the more-actions menu (edit / animal list / print / delete) */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                      <button type="button" onClick={(e) => openRowMenu(e, r.pw)} aria-label="More actions" style={{ width: 44, height: 44, borderRadius: 9, background: '#fff', border: `1px solid ${colors.border}`, color: colors.navy, fontSize: 18, fontWeight: 800, lineHeight: 1, cursor: 'pointer', flexShrink: 0 }}>⋯</button>
-                    </div>
-                    </div>
+              {penGroups.map((group) => (
+                <div key={group.key} style={{ background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 12, overflow: 'hidden' }}>
+                  {/* Slim navy strip with the thin gold accent: pen label left, the
+                      pen's total expected head (sum of the lines' Head) right. */}
+                  <div style={{ background: '#0E2646', borderBottom: '3px solid #F3D12A', padding: '6px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: '#fff', letterSpacing: '-0.01em' }}>{group.penLabel}</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: colors.teal, fontVariantNumeric: 'tabular-nums' }}>{group.totalHead} head</span>
                   </div>
-                )
-              })}
-              {rows.length === 0 ? <div style={{ padding: '24px 8px', fontSize: 14, color: colors.textMuted, textAlign: 'center' }}>No work orders match “{query}”.</div> : null}
+                  {group.rows.map((r, idx) => {
+                    const st = STATUS_STYLE[r.status]
+                    const worked = r.status === 'not_started' ? '—' : r.status === 'in_progress' ? `${r.pw.head_worked ?? 0} of ${r.pw.head_expected ?? 0}` : String(r.pw.head_worked ?? 0)
+                    // Worked != head (expected): flag the WORKED number warn orange + bold.
+                    // Only when a worked number actually shows (not the "—" of not started).
+                    const workedMismatch = r.status !== 'not_started' && (r.pw.head_worked ?? 0) !== (r.pw.head_expected ?? 0)
+                    const workedColor = workedMismatch ? '#F59E0B' : r.status === 'not_started' ? '#C2C2CA' : r.status === 'in_progress' ? '#B45309' : colors.textPrimary
+                    return (
+                      <div key={r.pw.id} onClick={() => openEdit(r.pw)} className="press-card" style={{ cursor: 'pointer', padding: '9px 12px 10px', borderTop: idx === 0 ? 'none' : `1px solid ${colors.rowDivider}`, display: 'flex', flexDirection: 'column', gap: 7 }}>
+                        {/* Row 1: seller/buyer pill + name (ellipsis) + #id + the menu */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, borderRadius: 999, padding: '2px 8px', whiteSpace: 'nowrap', color: '#0E2646', background: r.isBuyer ? '#F3D12A' : '#55BAAA', border: `1px solid ${r.isBuyer ? '#E0BE1F' : '#3FA89A'}` }}>{r.isBuyer ? `Buyer #${r.pw.buyer_number_text ?? '—'}` : 'Seller'}</span>
+                          <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 6 }}>
+                            <span style={{ fontSize: 14, fontWeight: 700, color: colors.textPrimary, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</span>
+                            {r.custNo ? <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 600, color: colors.textPlaceholder }}>#{r.custNo}</span> : null}
+                          </div>
+                          <button type="button" onClick={(e) => openRowMenu(e, r.pw)} aria-label="More actions" style={{ flexShrink: 0, width: 34, height: 34, borderRadius: 8, background: rowMenu?.pw.id === r.pw.id ? '#EEF1F6' : '#fff', border: `1px solid ${colors.border}`, color: colors.navy, fontSize: 17, fontWeight: 800, lineHeight: 1, cursor: 'pointer' }}>⋯</button>
+                        </div>
+                        {/* Row 2: work type, head, worked, status on one compact line */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 600, color: colors.textMuted }}>
+                          <span style={{ color: r.pw.workType ? colors.textPrimary : colors.textPlaceholder, fontWeight: 700 }}>{r.pw.workType?.name ?? 'No work type'}</span>
+                          <Sep />
+                          <span>Head <span style={{ color: colors.teal, fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>{r.pw.head_expected ?? 0}</span></span>
+                          <Sep />
+                          <span>Worked <span style={{ color: workedColor, fontWeight: workedMismatch ? 800 : 700, fontVariantNumeric: 'tabular-nums' }}>{worked}</span></span>
+                          <Sep />
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, color: st.color, fontWeight: 700 }}><span style={{ width: 7, height: 7, borderRadius: 999, background: st.dot }} />{STATUS_LABEL[r.status]}</span>
+                        </div>
+                        {r.pw.notes ? <div style={{ fontSize: 12, fontWeight: 500, color: colors.textPrimary, background: '#FDF7EA', border: '1px solid #F1D9A8', borderRadius: 8, padding: '6px 9px', lineHeight: 1.4 }}>{r.pw.notes}</div> : null}
+                      </div>
+                    )
+                  })}
+                </div>
+              ))}
+              {penGroups.length === 0 ? <div style={{ padding: '24px 8px', fontSize: 14, color: colors.textMuted, textAlign: 'center' }}>No work orders match “{query}”.</div> : null}
             </div>
           </>
         )}
@@ -389,14 +407,9 @@ function SummaryCount({ dot, n, label }: { dot: string; n: number; label: string
   )
 }
 
-// One labeled line in a phone order card: muted label on the left, value on the right.
-function CardRow({ label, value, last }: { label: string; value: React.ReactNode; last?: boolean }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 38, padding: '7px 0', borderBottom: last ? 'none' : `1px solid ${colors.rowDivider}` }}>
-      <span style={{ fontSize: 13, fontWeight: 600, color: colors.textMuted }}>{label}</span>
-      <span style={{ fontSize: 14, fontWeight: 700, color: colors.textPrimary, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{value}</span>
-    </div>
-  )
+// The middot separator between items on a phone card's compact work-order line.
+function Sep() {
+  return <span style={{ color: colors.textPlaceholder }}>·</span>
 }
 
 function HeadCell({ children, pad, end, center }: { children?: React.ReactNode; pad?: boolean; end?: boolean; center?: boolean }) {
