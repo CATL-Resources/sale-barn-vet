@@ -206,6 +206,15 @@ export function CaptureForm({
     }
   }
 
+  // Every ID row (EID, back tag, 2nd EID, typed tags) leads with the required
+  // accent at the LEFT edge, then a fixed-width label, then the input — so the
+  // input boxes all line up and the field stretches as far left as it can. When a
+  // field isn't required, a thin spacer holds the accent's place so the inputs
+  // still line up. ID_LABEL_W is shared so the EID and the Tag boxes match.
+  const ID_LABEL_W = 54
+  const idAccent = (isReq: boolean, filled: boolean) =>
+    isReq ? <RequiredAccent filled={filled} /> : <span aria-hidden style={{ width: 4, flexShrink: 0 }} />
+
   // --- identity inputs (typed tags) ---
   const navyInput = (key: 'backTag' | 'visualTag' | 'metalTag', label: string, placeholder: string) => {
     const fieldKey = key === 'backTag' ? 'back_tag' : key === 'visualTag' ? 'visual_tag' : 'metal_tag'
@@ -219,8 +228,9 @@ export function CaptureForm({
     const bind = kbd.bind(fieldKey, draft[key], (val) => patchDraft({ [key]: clean(val) } as Partial<typeof draft>))
     return (
       <div style={{ marginBottom: 9 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>{label}{required(fieldKey) && <RequiredMark />}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {idAccent(required(fieldKey), draft[key].trim().length > 0)}
+          <div style={{ width: ID_LABEL_W, flexShrink: 0, fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>{label}{required(fieldKey) && <RequiredMark />}</div>
           <input
             ref={(el) => { idRefs.current[key] = el }}
             value={draft[key]}
@@ -233,7 +243,7 @@ export function CaptureForm({
           />
         </div>
         {badBackTag && (
-          <div style={{ marginLeft: 70, marginTop: 4, fontSize: 11, fontWeight: 600, color: '#F3B0B0' }}>
+          <div style={{ marginLeft: ID_LABEL_W + 20, marginTop: 4, fontSize: 11, fontWeight: 600, color: '#F3B0B0' }}>
             Back tag format is 46MA1234 — two numbers, two letters, four numbers.
           </div>
         )}
@@ -306,8 +316,9 @@ export function CaptureForm({
   const secondEidRow = secondEidActive ? (() => {
     const bind = kbd.bind('eid2', draft.eid2, (v) => patchDraft({ eid2: cleanEid(v) }))
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 9 }}>
-        <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA' }}>2nd EID</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 9 }}>
+        {idAccent(false, false)}
+        <div style={{ width: ID_LABEL_W, flexShrink: 0, fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', color: '#C9D5EA' }}>2nd EID</div>
         <div style={{ flex: 1, minWidth: 0, height: 46, display: 'flex', alignItems: 'center', gap: 8, padding: '0 11px', borderRadius: 11, background: 'rgba(255,255,255,0.08)', border: `1px solid ${secondEidTarget ? '#55BAAA' : 'rgba(255,255,255,0.18)'}`, boxShadow: secondEidTarget ? '0 0 0 3px rgba(85,186,170,0.35)' : 'none' }}>
           <input
             ref={(el) => { idRefs.current['eid2'] = el }}
@@ -338,8 +349,8 @@ export function CaptureForm({
     <div style={{ marginBottom: 9 }}>
       {active ? (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {eidRequired() && <RequiredAccent filled={isEid15(draft.eid)} />}
-          <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <RequiredMark />}</div>
+          {idAccent(eidRequired(), isEid15(draft.eid))}
+          <div style={{ width: ID_LABEL_W, flexShrink: 0, fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <RequiredMark />}</div>
           <div style={{ flex: 1, minWidth: 0, minHeight: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '6px 13px', borderRadius: 11, background: isEid15(draft.eid) ? '#E1F5EE' : '#FEF3C7', border: `1px solid ${isEid15(draft.eid) ? '#55BAAA' : '#F2C879'}` }}>
             <EidNumber v={draft.eid} head={isEid15(draft.eid) ? '#55BAAA' : '#92580C'} tail={isEid15(draft.eid) ? '#0E2646' : '#7A4A06'} />
             {!isEid15(draft.eid) && <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, color: '#B45309', fontVariantNumeric: 'tabular-nums' }}>{draft.eid.replace(/\D/g, '').length}/15</span>}
@@ -351,8 +362,8 @@ export function CaptureForm({
         </div>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {eidRequired() && <RequiredAccent filled={isEid15(draft.eid)} />}
-          <div style={{ width: 60, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <RequiredMark />}</div>
+          {idAccent(eidRequired(), isEid15(draft.eid))}
+          <div style={{ width: ID_LABEL_W, flexShrink: 0, fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', color: '#C9D5EA', display: 'flex', alignItems: 'center', gap: 3 }}>EID{eidRequired() && <RequiredMark />}</div>
           <div style={{ flex: 1, minWidth: 0, height: 50, display: 'flex', alignItems: 'center', gap: 9, padding: '0 13px', borderRadius: 11, background: flag ? FLAG_RED_BG : '#FFFFFF', border: flag ? `2px solid ${FLAG_RED}` : '2px solid #55BAAA', boxShadow: flag ? 'none' : '0 0 0 3px rgba(85,186,170,0.35)' }}>
             {scanInput('Scan or type EID', false)}
             {eidType.trim() && !isEid15(eidType) ? (
@@ -396,9 +407,9 @@ export function CaptureForm({
     const { prop, label, ph } = meta
     const bind = kbd.bind(key, draft[prop], (val) => patchDraft({ [prop]: val } as Partial<typeof draft>))
     return (
-      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 64, flexShrink: 0, fontSize: 13, fontWeight: 700, color: '#475569', display: 'flex', alignItems: 'center', gap: 3 }}>{label}{required(key) && <RequiredMark />}</div>
-        {required(key) && <RequiredAccent filled={!!draft[prop].trim()} />}
+      <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {idAccent(required(key), !!draft[prop].trim())}
+        <div style={{ width: ID_LABEL_W, flexShrink: 0, fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', color: '#475569', display: 'flex', alignItems: 'center', gap: 3 }}>{label}{required(key) && <RequiredMark />}</div>
         <input
           ref={(el) => { idRefs.current[prop] = el }}
           value={draft[prop]}
@@ -575,7 +586,7 @@ export function CaptureForm({
           {/* Typed ID tags (visual / metal) — typed by hand, so they sit below the
               navy scan bar with the other typed fields. */}
           {typedIds.length > 0 && (
-            <div style={{ background: '#FFFFFF', border: '1px solid #E4E4DE', borderRadius: 14, padding: 12, display: 'flex', flexDirection: 'column', gap: 9 }}>
+            <div style={{ background: '#FFFFFF', border: '1px solid #E4E4DE', borderRadius: 14, padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 9 }}>
               {typedIds.map((k) => typedTagInput(k))}
             </div>
           )}
