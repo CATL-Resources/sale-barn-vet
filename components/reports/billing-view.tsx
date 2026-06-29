@@ -44,6 +44,20 @@ type CustomerRow = {
   total: number
 }
 
+// One row per pen_work — the line-level detail under the customer rollup. Buyer
+// number and pen live on the line (a customer's work can span many pens), so
+// they belong here, not on the summed customer row. Money is the same line total
+// the rollup is built from; nothing here recomputes a charge.
+type LineRow = {
+  key: string
+  customer: string
+  buyerNo: string // blank on seller lines — they have no buyer number
+  pen: string
+  workType: string
+  head: number
+  total: number
+}
+
 export function BillingView({
   penWorks,
   barn,
@@ -65,10 +79,11 @@ export function BillingView({
 
   // Per-customer rollup. A line's customer is the buyer (post-sale) or the seller
   // (pre-sale) — whoever the work order bills.
-  const { customers, byWorkType, totals } = useMemo(() => {
+  const { customers, byWorkType, lines, totals } = useMemo(() => {
     const byCustomer = new Map<string, CustomerRow>()
     const wt = new Map<string, { workType: string; charges: number; head: number; billed: number }>()
     const charges: LineBuckets['charge'][] = []
+    const lineRows: LineRow[] = []
 
     for (const pw of penWorks) {
       const b = lineBuckets(pw, barn)
@@ -94,13 +109,35 @@ export function BillingView({
       wcur.head += b.head
       wcur.billed += b.total
       wt.set(wtName, wcur)
+
+      // The line-level row. Buyer number prefers the snapshot text recorded on
+      // the line, falling back to the joined buyer_number record; seller lines
+      // have no buyer number, so leave it blank.
+      lineRows.push({
+        key: pw.id,
+        customer: name,
+        buyerNo: isBuyer ? pw.buyer_number_text ?? pw.buyerNumber?.number ?? '' : '',
+        pen: pw.pen?.pen_number ?? '',
+        workType: wtName,
+        head: b.head,
+        total: b.total,
+      })
     }
 
     const roll = sumRollup(charges)
     const penSet = new Set(penWorks.map((pw) => pw.pen?.pen_number).filter(Boolean))
+    // Lines sort by customer, then by pen (natural order so "2" sorts before
+    // "10"), then by work type — the order an office eye scans them in.
+    lineRows.sort(
+      (a, b) =>
+        a.customer.localeCompare(b.customer) ||
+        a.pen.localeCompare(b.pen, undefined, { numeric: true }) ||
+        a.workType.localeCompare(b.workType),
+    )
     return {
       customers: [...byCustomer.values()].sort((a, b) => a.customer.localeCompare(b.customer)),
       byWorkType: [...wt.values()].sort((a, b) => a.workType.localeCompare(b.workType)),
+      lines: lineRows,
       totals: {
         head: roll.headWorked,
         billed: roll.lineCharge,
@@ -113,6 +150,18 @@ export function BillingView({
   const q = search.trim().toLowerCase()
   const shownCustomers = q ? customers.filter((c) => c.customer.toLowerCase().includes(q)) : customers
   const shownWorkTypes = q ? byWorkType.filter((w) => w.workType.toLowerCase().includes(q)) : byWorkType
+  // The line table matches on everything shown on the line — customer name,
+  // buyer number, pen, and work type — so typing a buyer number narrows to that
+  // buyer's lines.
+  const shownLines = q
+    ? lines.filter(
+        (l) =>
+          l.customer.toLowerCase().includes(q) ||
+          l.buyerNo.toLowerCase().includes(q) ||
+          l.pen.toLowerCase().includes(q) ||
+          l.workType.toLowerCase().includes(q),
+      )
+    : lines
 
   // The export is the by-customer billing table (the filtered set), each bucket
   // its own column, plus a grand-total row so the file reconciles on its own.
@@ -212,6 +261,50 @@ export function BillingView({
                 <Td right strong navy>{formatUsd(shownCustomers.reduce((a, c) => a + c.sol, 0))}</Td>
                 <Td right strong navy>{formatUsd(shownCustomers.reduce((a, c) => a + c.subtotal, 0))}</Td>
                 <Td right strong navy>{formatUsd(shownCustomers.reduce((a, c) => a + c.total, 0))}</Td>
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </Card>
+
+      {/* By line — one row per pen worked, with the buyer number and pen that
+          the customer rollup sums away. */}
+      <Card title="By line">
+        <table style={tableStyle}>
+          <thead>
+            <tr>
+              <Th>Customer</Th>
+              <Th>Buyer #</Th>
+              <Th>Pen</Th>
+              <Th>Work Type</Th>
+              <Th right>Head</Th>
+              <Th right>Total</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {shownLines.map((l, i) => (
+              <tr key={l.key} style={{ background: i % 2 ? colors.hoverBg : '#fff' }}>
+                <Td strong>{l.customer}</Td>
+                <Td>{l.buyerNo || '—'}</Td>
+                <Td>{l.pen || '—'}</Td>
+                <Td>{l.workType}</Td>
+                <Td right>{l.head}</Td>
+                <Td right strong navy>{formatUsd(l.total)}</Td>
+              </tr>
+            ))}
+            {shownLines.length === 0 && (
+              <tr><td colSpan={6} style={emptyCell}>No billing lines in this scope{q ? ' for that search' : ''}.</td></tr>
+            )}
+          </tbody>
+          {shownLines.length > 0 && (
+            <tfoot>
+              <tr>
+                <Td strong navy>Total</Td>
+                <Td> </Td>
+                <Td> </Td>
+                <Td> </Td>
+                <Td right strong navy>{shownLines.reduce((a, l) => a + l.head, 0)}</Td>
+                <Td right strong navy>{formatUsd(shownLines.reduce((a, l) => a + l.total, 0))}</Td>
               </tr>
             </tfoot>
           )}
