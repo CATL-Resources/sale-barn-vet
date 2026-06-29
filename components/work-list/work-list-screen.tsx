@@ -615,7 +615,7 @@ export function WorkListScreen({
       {/* HEADER — one tight navy block: title + date on the left, the pen/head
           summary on a single condensed line to the right. Same on phone and tablet. */}
       <ScreenHeader
-        title="Work List"
+        title="Pen List"
         subtitle={shortDate(saleDay.sale_date)}
         back={<HeaderBack href="/" label="Vet Barn" />}
         right={

@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 export async function generateMetadata({ params }: { params: { saleDay: string } }): Promise<Metadata> {
   const supabase = createClient()
   const pageData = await fetchPageData(supabase, params.saleDay)
-  return { title: pageData ? `Work list — ${pageData.barn.name}` : 'Work list' }
+  return { title: pageData ? `Pen list — ${pageData.barn.name}` : 'Pen list' }
 }
 
 export default async function WorkListPage({ params }: { params: { saleDay: string } }) {
