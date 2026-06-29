@@ -16,17 +16,14 @@ use the search yet, new customers get no number, and there's no screen that make
 the day's paperwork (CVIs / change-of-ownership). A short safety list (access
 rules, backups, alerts) still needs doing before the first real sale day.
 
-## Known bug to fix first
-
-- [ ] **The 840 check on the chute EID isn't holding for typed entry.** A real
-  official EID is 15 digits and starts with 840. Scanning already refuses a
-  non-840 tag into the main slot, but a 15-digit number that does NOT start with
-  840 is accepted when typed and saved. Hold the official EID to the full 840
-  shape the same way scanning does, while still letting a 900-series second tag go
-  in the second-EID slot. (Save path — needs a real-device check.)
-
 ## Done — built since the last update (cross these off)
 
+- **The 840 check on the chute EID now holds for typed entry too.** A real
+  official EID is 15 digits and starts with 840. Before, a 15-digit number that
+  did NOT start with 840 could be typed and saved into the main slot. Now typing
+  is held to the full 840 shape the same way scanning is — on both the Capture
+  screen and the animal edit sheet — while a 900-series second tag still goes in
+  the second-EID slot.
 - **Capture polish and hardening.** One shared status box for every message
   (save / duplicate / required field / unreadable scan), pinned to the top so the
   result is never off-screen; reliable jump back to the scan field after a save;
