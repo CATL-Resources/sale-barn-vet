@@ -29,9 +29,16 @@ export type AnimalRow = {
   // export always shows which set each animal came from.
   saleDate: string
   recordedAt: string
+  // Not shown as columns: used by the load-building pool. buyerLoadId is the
+  // animal's current load (or ''); hasBuyer is true when the animal already has a
+  // buyer number (so it's out of the pool).
+  buyerLoadId: string
+  hasBuyer: boolean
 }
 
-export type ColKey = Exclude<keyof AnimalRow, 'id'>
+// Column keys are the displayed/filterable/sortable fields only — never the
+// pool-helper fields above (one of which isn't even a string).
+export type ColKey = Exclude<keyof AnimalRow, 'id' | 'buyerLoadId' | 'hasBuyer'>
 
 // 'category' columns get a multi-select filter; 'text' columns a contains box.
 export type FilterKind = 'category' | 'text'

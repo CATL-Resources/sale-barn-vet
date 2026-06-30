@@ -78,13 +78,14 @@ export async function fetchAnimalRows(
     notes: string | null
     pen: string | null
     current_pen_id: string | null
+    buyer_load_id: string | null
     created_at: string
   }
   const list = await fetchAllPaged<AnimalRowRaw>((from, to) =>
     supabase
       .from('animal')
       .select(
-        'id, sale_day_id, pen_work_id, animal_type_id, breed, color, age_value, age_designation, preg_status, preg_timing, fetal_sex, quick_notes, notes, pen, current_pen_id, created_at',
+        'id, sale_day_id, pen_work_id, animal_type_id, breed, color, age_value, age_designation, preg_status, preg_timing, fetal_sex, quick_notes, notes, pen, current_pen_id, buyer_load_id, created_at',
       )
       .in('sale_day_id', saleDayIds)
       .is('deleted_at', null)
@@ -123,8 +124,10 @@ export async function fetchAnimalRows(
     }
   }
 
-  // The animal's pen_work: seller / buyer / buyer # / work type.
-  type Pw = { sellerPartyId: string | null; buyerPartyId: string | null; buyerNo: string; workTypeId: string | null }
+  // The animal's pen_work: seller / buyer / buyer # / work type. buyerNumberId
+  // marks a recorded buyer number (vs a free-typed one) — used to tell whether an
+  // animal already has a buyer number for the load-building pool.
+  type Pw = { sellerPartyId: string | null; buyerPartyId: string | null; buyerNo: string; buyerNumberId: string | null; workTypeId: string | null }
   const pwById = new Map<string, Pw>()
   const penWorkIds = [...new Set(list.map((a) => a.pen_work_id).filter((x): x is string => !!x))]
   if (penWorkIds.length) {
@@ -133,12 +136,13 @@ export async function fetchAnimalRows(
       seller_party_id: string | null
       buyer_party_id: string | null
       buyer_number_text: string | null
+      buyer_number_id: string | null
       work_type_id: string | null
     }
     const pws = await fetchByIds<PwRow>(penWorkIds, (batch) =>
       supabase
         .from('pen_work')
-        .select('id, seller_party_id, buyer_party_id, buyer_number_text, work_type_id')
+        .select('id, seller_party_id, buyer_party_id, buyer_number_text, buyer_number_id, work_type_id')
         .in('id', batch)
         .returns<PwRow[]>(),
     )
@@ -147,6 +151,7 @@ export async function fetchAnimalRows(
         sellerPartyId: pw.seller_party_id,
         buyerPartyId: pw.buyer_party_id,
         buyerNo: str(pw.buyer_number_text),
+        buyerNumberId: pw.buyer_number_id,
         workTypeId: pw.work_type_id,
       })
     }
@@ -240,6 +245,11 @@ export async function fetchAnimalRows(
       notes: str(a.notes),
       saleDate: (a.sale_day_id && saleDateById.get(a.sale_day_id)) || '',
       recordedAt: recordedStamp(a.created_at),
+      buyerLoadId: str(a.buyer_load_id),
+      // "Has a buyer number" — and so is NOT in the load-building pool — if the
+      // capture pen_work carries a buyer number (recorded or free-typed) or the
+      // animal is already on a load.
+      hasBuyer: !!(pw?.buyerNumberId || pw?.buyerNo || a.buyer_load_id),
     }
   })
 
