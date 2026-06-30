@@ -71,6 +71,7 @@ export type Database = {
           animal_type_id: string | null
           barn_id: string
           breed: string | null
+          buyer_load_id: string | null
           color: string | null
           created_at: string
           created_by: string | null
@@ -94,6 +95,7 @@ export type Database = {
           animal_type_id?: string | null
           barn_id: string
           breed?: string | null
+          buyer_load_id?: string | null
           color?: string | null
           created_at?: string
           created_by?: string | null
@@ -117,6 +119,7 @@ export type Database = {
           animal_type_id?: string | null
           barn_id?: string
           breed?: string | null
+          buyer_load_id?: string | null
           color?: string | null
           created_at?: string
           created_by?: string | null
@@ -147,6 +150,13 @@ export type Database = {
             columns: ["barn_id"]
             isOneToOne: false
             referencedRelation: "barn"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "animal_buyer_load_id_fkey"
+            columns: ["buyer_load_id"]
+            isOneToOne: false
+            referencedRelation: "buyer_load"
             referencedColumns: ["id"]
           },
           {
@@ -374,6 +384,92 @@ export type Database = {
           },
         ]
       }
+      buyer_load: {
+        Row: {
+          barn_id: string
+          buyer_number_id: string | null
+          buyer_number_text: string | null
+          buyer_party_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          destination_address: string | null
+          destination_name: string | null
+          destination_state: string | null
+          expected_head: number | null
+          id: string
+          notes: string | null
+          sale_day_id: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          barn_id: string
+          buyer_number_id?: string | null
+          buyer_number_text?: string | null
+          buyer_party_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          destination_address?: string | null
+          destination_name?: string | null
+          destination_state?: string | null
+          expected_head?: number | null
+          id?: string
+          notes?: string | null
+          sale_day_id: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          barn_id?: string
+          buyer_number_id?: string | null
+          buyer_number_text?: string | null
+          buyer_party_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          destination_address?: string | null
+          destination_name?: string | null
+          destination_state?: string | null
+          expected_head?: number | null
+          id?: string
+          notes?: string | null
+          sale_day_id?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "buyer_load_barn_id_fkey"
+            columns: ["barn_id"]
+            isOneToOne: false
+            referencedRelation: "barn"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buyer_load_buyer_number_id_fkey"
+            columns: ["buyer_number_id"]
+            isOneToOne: false
+            referencedRelation: "buyer_number"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buyer_load_buyer_party_id_fkey"
+            columns: ["buyer_party_id"]
+            isOneToOne: false
+            referencedRelation: "party"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "buyer_load_sale_day_id_fkey"
+            columns: ["sale_day_id"]
+            isOneToOne: false
+            referencedRelation: "sale_day"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       buyer_number: {
         Row: {
           barn_id: string
@@ -546,6 +642,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           is_official: boolean
+          pen_work_id: string | null
           type: string
           updated_at: string
           value: string
@@ -559,6 +656,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_official?: boolean
+          pen_work_id?: string | null
           type: string
           updated_at?: string
           value: string
@@ -572,6 +670,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           is_official?: boolean
+          pen_work_id?: string | null
           type?: string
           updated_at?: string
           value?: string
@@ -673,7 +772,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
-          barn_id?: string
+          barn_id: string
           city?: string | null
           country?: string | null
           created_at?: string
@@ -793,6 +892,7 @@ export type Database = {
           barn_id: string
           created_at: string
           field_defaults: Json
+          field_overrides: Json
           id: string
           is_up: boolean
           pen_id: string
@@ -804,6 +904,7 @@ export type Database = {
           barn_id: string
           created_at?: string
           field_defaults?: Json
+          field_overrides?: Json
           id?: string
           is_up?: boolean
           pen_id: string
@@ -815,6 +916,7 @@ export type Database = {
           barn_id?: string
           created_at?: string
           field_defaults?: Json
+          field_overrides?: Json
           id?: string
           is_up?: boolean
           pen_id?: string
@@ -871,6 +973,7 @@ export type Database = {
           health_complete: boolean
           id: string
           is_hold: boolean
+          label_printed_at: string | null
           line_status: string
           notes: string | null
           origin: string
@@ -879,6 +982,7 @@ export type Database = {
           sale_day_id: string
           seller_party_id: string | null
           sol_total: number | null
+          special_label: string | null
           total_customer_charge: number | null
           updated_at: string
           version: number
@@ -910,6 +1014,7 @@ export type Database = {
           health_complete?: boolean
           id?: string
           is_hold?: boolean
+          label_printed_at?: string | null
           line_status?: string
           notes?: string | null
           origin?: string
@@ -918,6 +1023,7 @@ export type Database = {
           sale_day_id: string
           seller_party_id?: string | null
           sol_total?: number | null
+          special_label?: string | null
           total_customer_charge?: number | null
           updated_at?: string
           version?: number
@@ -949,6 +1055,7 @@ export type Database = {
           health_complete?: boolean
           id?: string
           is_hold?: boolean
+          label_printed_at?: string | null
           line_status?: string
           notes?: string | null
           origin?: string
@@ -957,6 +1064,7 @@ export type Database = {
           sale_day_id?: string
           seller_party_id?: string | null
           sol_total?: number | null
+          special_label?: string | null
           total_customer_charge?: number | null
           updated_at?: string
           version?: number
@@ -1321,6 +1429,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "special_charge_pen_work_id_fkey"
+            columns: ["pen_work_id"]
+            isOneToOne: false
+            referencedRelation: "pen_work"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "special_charge_sale_day_id_fkey"
             columns: ["sale_day_id"]
             isOneToOne: false
@@ -1338,6 +1453,7 @@ export type Database = {
           deleted_at: string | null
           id: string
           includes_preg_check: boolean
+          is_custom_price: boolean
           name: string
           sol_charge: number
           updated_at: string
@@ -1352,6 +1468,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           includes_preg_check?: boolean
+          is_custom_price?: boolean
           name: string
           sol_charge?: number
           updated_at?: string
@@ -1366,6 +1483,7 @@ export type Database = {
           deleted_at?: string | null
           id?: string
           includes_preg_check?: boolean
+          is_custom_price?: boolean
           name?: string
           sol_charge?: number
           updated_at?: string
@@ -1458,7 +1576,8 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       [_ in never]: never
