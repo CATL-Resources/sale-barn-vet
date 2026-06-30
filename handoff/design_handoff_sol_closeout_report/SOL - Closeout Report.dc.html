@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&amp;family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: #ECEBE5; font-family: 'Inter', sans-serif; font-variant-numeric: tabular-nums; }
+    .pb { page-break-before: always; }
+    @media print {
+      html, body { background: #fff; }
+      .no-print { display: none !important; }
+      .paper { box-shadow: none !important; border: none !important; border-radius: 0 !important; margin: 0 !important; width: 100% !important; padding: 0 !important; }
+      @page { size: letter portrait; margin: 0.5in; }
+    }
+  </style>
+</helmet>
+
+<div style="max-width: 904px; margin: 0 auto; padding: 26px 18px 70px;">
+
+  <!-- ============ FLOW STRIP (screen only) ============ -->
+  <div class="no-print">
+    <div style="font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #6B7280; margin: 0 2px 8px;">Sale Day Closeout</div>
+    <div style="display: flex; align-items: stretch; flex-wrap: wrap; background: #0E2646; border-radius: 14px; padding: 13px 10px; gap: 2px;">
+      <div style="display: flex; align-items: center; gap: 9px; padding: 6px 12px; color: #fff;">
+        <span style="width: 22px; height: 22px; border-radius: 999px; background: rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex: 0 0 auto;">1</span>
+        <div><div style="font-size: 13px; font-weight: 700; line-height: 1.15;">Sale Day</div><div style="font-size: 11px; color: #9FB4D4; font-weight: 600;">pick the day</div></div>
+      </div>
+      <div style="align-self: center; color: #5C7398; font-size: 16px; padding: 0 2px;">→</div>
+      <div style="display: flex; align-items: center; gap: 9px; padding: 6px 12px; color: #fff;">
+        <span style="width: 22px; height: 22px; border-radius: 999px; background: rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex: 0 0 auto;">2</span>
+        <div><div style="font-size: 13px; font-weight: 700; line-height: 1.15;">Reports</div><div style="font-size: 11px; color: #9FB4D4; font-weight: 600;">Billing tab</div></div>
+      </div>
+      <div style="align-self: center; color: #5C7398; font-size: 16px; padding: 0 2px;">→</div>
+      <div style="display: flex; align-items: center; gap: 9px; padding: 6px 12px; color: #fff;">
+        <span style="width: 22px; height: 22px; border-radius: 999px; background: rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex: 0 0 auto;">3</span>
+        <div><div style="font-size: 13px; font-weight: 700; line-height: 1.15;">Sale Day Closeout</div><div style="font-size: 11px; color: #9FB4D4; font-weight: 600;">buyer &amp; seller</div></div>
+      </div>
+      <div style="align-self: center; color: #5C7398; font-size: 16px; padding: 0 2px;">→</div>
+      <div style="display: flex; align-items: center; gap: 9px; padding: 6px 12px; color: #fff;">
+        <span style="width: 22px; height: 22px; border-radius: 999px; background: rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex: 0 0 auto;">4</span>
+        <div>
+          <div style="font-size: 13px; font-weight: 700; line-height: 1.15; margin-bottom: 4px;">Choose form</div>
+          <div style="display: inline-flex; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,0.25);">
+            <button onClick="{{ setSummary }}" style="font-family: inherit; font-size: 11px; font-weight: 800; padding: 4px 10px; border: none; cursor: pointer; background: {{ sumSeg.bg }}; color: {{ sumSeg.color }};">Summary</button>
+            <button onClick="{{ setItemized }}" style="font-family: inherit; font-size: 11px; font-weight: 800; padding: 4px 10px; border: none; cursor: pointer; background: {{ itemSeg.bg }}; color: {{ itemSeg.color }};">Itemized</button>
+          </div>
+        </div>
+      </div>
+      <div style="align-self: center; color: #5C7398; font-size: 16px; padding: 0 2px;">→</div>
+      <div style="display: flex; align-items: center; gap: 9px; padding: 6px 12px; color: #fff;">
+        <span style="width: 22px; height: 22px; border-radius: 999px; background: rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex: 0 0 auto;">5</span>
+        <div>
+          <div style="font-size: 13px; font-weight: 700; line-height: 1.15; margin-bottom: 4px;">Download</div>
+          <button onClick="{{ print }}" style="font-family: inherit; background: #F3D12A; color: #0E2646; font-size: 12px; font-weight: 800; border: none; border-radius: 8px; padding: 5px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px;" style-active="background: #E3C01F"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0E2646" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>PDF</button>
+        </div>
+      </div>
+    </div>
+    <p style="font-size: 12px; color: #6B7280; margin: 8px 2px 24px; line-height: 1.5;">One report, two forms off the same numbers: <b style="color:#0E2646;">Summary</b> = one line per customer · <b style="color:#0E2646;">Itemized</b> = summary page, then every work line. Same grand total either way.</p>
+  </div>
+
+  <!-- ===================== SUMMARY ===================== -->
+  <sc-if value="{{ isSummary }}" hint-placeholder-val="{{ true }}">
+  <div class="paper" style="background: #fff; border: 1px solid #D4D4D0; border-radius: 10px; box-shadow: 0 14px 34px rgba(8,20,42,0.10); padding: 34px 36px 26px;">
+
+    <!-- letterhead -->
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0E2646; padding-bottom: 14px;">
+      <div>
+        <div style="font-family: 'Alfa Slab One', serif; font-size: 30px; line-height: 0.95; color: #0E2646; letter-spacing: -0.01em;">St. Onge Livestock</div>
+        <div style="font-size: 11.5px; color: #6B7280; line-height: 1.4; margin-top: 6px;">PO Box 290, St. Onge, SD 57779 · 1-800-249-1995</div>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-size: 17px; font-weight: 800; color: #0E2646; letter-spacing: -0.01em;">Sale Day Closeout</div>
+        <div style="font-size: 13px; font-weight: 700; color: #3A4658; margin-top: 2px;">Friday, June 26, 2026</div>
+        <div style="font-size: 10px; color: #9AA1AC; margin-top: 6px;">Generated Jun 28, 2026 10:42 AM · Sale Barn Vet v0.1.0</div>
+      </div>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px;">
+      <!-- sellers card -->
+      <div style="border: 1px solid #D4D4D0; border-radius: 10px; overflow: hidden;">
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #0E2646; padding: 9px 14px;">
+          <span style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #fff;">Sellers</span>
+          <span style="font-size: 11px; font-weight: 800; color: #0E2646; background: #55BAAA; border-radius: 999px; padding: 2px 9px;">4 consignors</span>
+        </div>
+        <div style="padding: 14px 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+            <div>
+              <div style="font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #9AA1AC;">Total billed</div>
+              <div style="font-size: 26px; font-weight: 800; color: #0E2646; font-family: 'JetBrains Mono', monospace; letter-spacing: -0.01em; line-height: 1.1;">$885.99</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #9AA1AC;">Head</div>
+              <div style="font-size: 20px; font-weight: 800; color: #0E2646; font-family: 'JetBrains Mono', monospace;">64</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 13px; border-top: 1px solid #EFEFEA; padding-top: 11px;">
+            <div style="flex: 1;"><div style="font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #9AA1AC;">Vet</div><div style="font-size: 13.5px; font-weight: 700; color: #222; font-family: 'JetBrains Mono', monospace; margin-top: 2px;">$780.46</div></div>
+            <div style="flex: 1;"><div style="font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #9AA1AC;">Admin</div><div style="font-size: 13.5px; font-weight: 700; color: #222; font-family: 'JetBrains Mono', monospace; margin-top: 2px;">$39.03</div></div>
+            <div style="flex: 1;"><div style="font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #9AA1AC;">SOL</div><div style="font-size: 13.5px; font-weight: 700; color: #222; font-family: 'JetBrains Mono', monospace; margin-top: 2px;">$66.50</div></div>
+          </div>
+        </div>
+      </div>
+      <!-- buyers card -->
+      <div style="border: 1px solid #D4D4D0; border-radius: 10px; overflow: hidden;">
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #0E2646; padding: 9px 14px;">
+          <span style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #fff;">Buyers</span>
+          <span style="font-size: 11px; font-weight: 800; color: #0E2646; background: #F3D12A; border-radius: 999px; padding: 2px 9px;">5 loads</span>
+        </div>
+        <div style="padding: 14px 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+            <div>
+              <div style="font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #9AA1AC;">Total billed</div>
+              <div style="font-size: 26px; font-weight: 800; color: #0E2646; font-family: 'JetBrains Mono', monospace; letter-spacing: -0.01em; line-height: 1.1;">$2,114.38</div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #9AA1AC;">Head</div>
+              <div style="font-size: 20px; font-weight: 800; color: #0E2646; font-family: 'JetBrains Mono', monospace;">211</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 13px; border-top: 1px solid #EFEFEA; padding-top: 11px;">
+            <div style="flex: 1;"><div style="font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #9AA1AC;">Vet</div><div style="font-size: 13.5px; font-weight: 700; color: #222; font-family: 'JetBrains Mono', monospace; margin-top: 2px;">$1,883.94</div></div>
+            <div style="flex: 1;"><div style="font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #9AA1AC;">Admin</div><div style="font-size: 13.5px; font-weight: 700; color: #222; font-family: 'JetBrains Mono', monospace; margin-top: 2px;">$94.19</div></div>
+            <div style="flex: 1;"><div style="font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #9AA1AC;">SOL</div><div style="font-size: 13.5px; font-weight: 700; color: #222; font-family: 'JetBrains Mono', monospace; margin-top: 2px;">$136.25</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMBINED TOTAL STRIP -->
+    <div style="display: flex; align-items: center; justify-content: space-between; background: #FBF7E0; border: 1px solid #E6DCA8; border-radius: 10px; padding: 12px 18px; margin-top: 14px;">
+      <div style="display: flex; align-items: baseline; gap: 10px;">
+        <span style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #0E2646;">Sale Day Total</span>
+        <span style="font-size: 11px; color: #6B7280; font-weight: 600;">9 customers · 275 head</span>
+      </div>
+      <div style="display: flex; gap: 24px; align-items: baseline; font-family: 'JetBrains Mono', monospace;">
+        <div style="text-align: right;"><div style="font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #6B7280; font-family: 'Inter', sans-serif;">Vet</div><div style="font-size: 13px; font-weight: 700; color: #0E2646; margin-top: 2px;">$2,664.40</div></div>
+        <div style="text-align: right;"><div style="font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #6B7280; font-family: 'Inter', sans-serif;">Admin</div><div style="font-size: 13px; font-weight: 700; color: #0E2646; margin-top: 2px;">$133.22</div></div>
+        <div style="text-align: right;"><div style="font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #6B7280; font-family: 'Inter', sans-serif;">SOL</div><div style="font-size: 13px; font-weight: 700; color: #0E2646; margin-top: 2px;">$202.75</div></div>
+        <div style="text-align: right; padding-left: 22px; border-left: 1px solid #E0D7AE;"><div style="font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #8A6D10; font-family: 'Inter', sans-serif;">Total</div><div style="font-size: 19px; font-weight: 800; color: #0E2646; margin-top: 1px; letter-spacing: -0.01em;">$3,000.37</div></div>
+      </div>
+    </div>
+
+    <!-- SELLERS -->
+    <div style="display: flex; align-items: center; gap: 8px; margin: 22px 0 6px; font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: #0E2646;">Sellers <span style="font-size: 10px; font-weight: 800; color: #fff; background: #2E9486; border-radius: 999px; padding: 1px 8px; letter-spacing: 0.02em; text-transform: none;">consignors</span></div>
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead><tr>
+        <th style="text-align: left; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Customer</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Head</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Vet</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Admin</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">SOL</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Total</th>
+      </tr></thead>
+      <tbody style="font-family: 'JetBrains Mono', monospace;">
+        <tr><td style="text-align: left; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Heart Tail Ranch LLP</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">15</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$171.93</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$8.60</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$18.75</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$199.28</td></tr>
+        <tr><td style="text-align: left; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Moe Farm &amp; Ranch Inc.</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">18</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$243.83</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$12.19</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$9.00</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$265.02</td></tr>
+        <tr><td style="text-align: left; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Richendifer, Darlene</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">9</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$112.54</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$5.63</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$11.25</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$129.42</td></tr>
+        <tr><td style="text-align: left; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Sprague, Dale</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">22</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$252.16</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$12.61</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$27.50</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$292.27</td></tr>
+        <tr><td style="text-align: left; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646; font-family: 'Inter', sans-serif;">Sellers subtotal</td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">64</td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">$780.46</td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">$39.03</td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">$66.50</td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">$885.99</td></tr>
+      </tbody>
+    </table>
+
+    <!-- BUYERS -->
+    <div style="display: flex; align-items: center; gap: 8px; margin: 22px 0 6px; font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: #0E2646;">Buyers <span style="font-size: 10px; font-weight: 800; color: #fff; background: #2E9486; border-radius: 999px; padding: 1px 8px; letter-spacing: 0.02em; text-transform: none;">loads</span></div>
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead><tr>
+        <th style="text-align: left; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Customer</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Buyer #</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Head</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Vet</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Admin</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">SOL</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Total</th>
+      </tr></thead>
+      <tbody style="font-family: 'JetBrains Mono', monospace;">
+        <tr><td style="text-align: left; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">American Food Group</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #6B7280; font-weight: 700; border-bottom: 1px solid #F0F0EC;">821</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">13</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$176.10</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$8.80</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$16.25</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$201.15</td></tr>
+        <tr><td style="text-align: left; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">American Food Groups</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #6B7280; font-weight: 700; border-bottom: 1px solid #F0F0EC;">820</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">28</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$379.29</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$18.96</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$35.00</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$433.25</td></tr>
+        <tr><td style="text-align: left; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">American Foods-Fall River</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #6B7280; font-weight: 700; border-bottom: 1px solid #F0F0EC;">896</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">118</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$922.17</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$46.11</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$59.00</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$1,027.28</td></tr>
+        <tr><td style="text-align: left; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Jansma Cattle Co, Todd</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #6B7280; font-weight: 700; border-bottom: 1px solid #F0F0EC;">701</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">40</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$312.60</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$15.63</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$20.00</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$348.23</td></tr>
+        <tr><td style="text-align: left; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Rc Cattle LLC</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #6B7280; font-weight: 700; border-bottom: 1px solid #F0F0EC;">7560</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">12</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$93.78</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$4.69</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$6.00</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$104.47</td></tr>
+        <tr><td style="text-align: left; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646; font-family: 'Inter', sans-serif;">Buyers subtotal</td><td style="border-top: 1px solid #0E2646;"></td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">211</td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">$1,883.94</td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">$94.19</td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">$136.25</td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">$2,114.38</td></tr>
+      </tbody>
+    </table>
+
+    <!-- GRAND TOTAL -->
+    <table style="width: 100%; border-collapse: collapse; margin-top: 8px;">
+      <tbody style="font-family: 'JetBrains Mono', monospace;">
+        <tr>
+          <td style="width: 34%; text-align: left; padding: 9px 8px; font-size: 13px; font-weight: 800; color: #0E2646; border-top: 2px solid #0E2646; background: #FBF7E0; font-family: 'Inter', sans-serif;">Grand total · all customers</td>
+          <td style="width: 12%; text-align: right; padding: 9px 8px; font-size: 13px; font-weight: 800; color: #0E2646; border-top: 2px solid #0E2646; background: #FBF7E0;">275</td>
+          <td style="width: 14%; text-align: right; padding: 9px 8px; font-size: 13px; font-weight: 800; color: #0E2646; border-top: 2px solid #0E2646; background: #FBF7E0;">$2,664.40</td>
+          <td style="width: 13%; text-align: right; padding: 9px 8px; font-size: 13px; font-weight: 800; color: #0E2646; border-top: 2px solid #0E2646; background: #FBF7E0;">$133.22</td>
+          <td style="width: 13%; text-align: right; padding: 9px 8px; font-size: 13px; font-weight: 800; color: #0E2646; border-top: 2px solid #0E2646; background: #FBF7E0;">$202.75</td>
+          <td style="width: 14%; text-align: right; padding: 9px 8px; font-size: 13px; font-weight: 800; color: #0E2646; border-top: 2px solid #0E2646; background: #FBF7E0;">$3,000.37</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="display: flex; justify-content: space-between; font-size: 10px; color: #9AA1AC; margin-top: 18px; border-top: 1px solid #E4E4DE; padding-top: 8px;">
+      <span>St. Onge Livestock · Sale Day Closeout · Jun 26, 2026</span><span>Page 1 of 1</span>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ===================== ITEMIZED ===================== -->
+  <sc-if value="{{ isItemized }}" hint-placeholder-val="{{ false }}">
+
+  <!-- ---- PAGE 1: SUMMARY ---- -->
+  <div class="paper" style="background: #fff; border: 1px solid #D4D4D0; border-radius: 10px; box-shadow: 0 14px 34px rgba(8,20,42,0.10); padding: 34px 36px 26px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0E2646; padding-bottom: 14px;">
+      <div>
+        <div style="font-family: 'Alfa Slab One', serif; font-size: 30px; line-height: 0.95; color: #0E2646; letter-spacing: -0.01em;">St. Onge Livestock</div>
+        <div style="font-size: 11.5px; color: #6B7280; line-height: 1.4; margin-top: 6px;">PO Box 290, St. Onge, SD 57779 · 1-800-249-1995</div>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-size: 17px; font-weight: 800; color: #0E2646; letter-spacing: -0.01em;">Sale Day Closeout · Itemized</div>
+        <div style="font-size: 13px; font-weight: 700; color: #3A4658; margin-top: 2px;">Friday, June 26, 2026</div>
+        <div style="font-size: 10px; color: #9AA1AC; margin-top: 6px;">Generated Jun 28, 2026 10:42 AM · Sale Barn Vet v0.1.0</div>
+      </div>
+    </div>
+
+    <!-- cards -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 20px;">
+      <div style="border: 1px solid #D4D4D0; border-radius: 10px; overflow: hidden;">
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #0E2646; padding: 9px 14px;"><span style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #fff;">Sellers</span><span style="font-size: 11px; font-weight: 800; color: #0E2646; background: #55BAAA; border-radius: 999px; padding: 2px 9px;">4 consignors</span></div>
+        <div style="padding: 14px 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+            <div><div style="font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #9AA1AC;">Total billed</div><div style="font-size: 26px; font-weight: 800; color: #0E2646; font-family: 'JetBrains Mono', monospace; letter-spacing: -0.01em; line-height: 1.1;">$885.99</div></div>
+            <div style="text-align: right;"><div style="font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #9AA1AC;">Head</div><div style="font-size: 20px; font-weight: 800; color: #0E2646; font-family: 'JetBrains Mono', monospace;">64</div></div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 13px; border-top: 1px solid #EFEFEA; padding-top: 11px;">
+            <div style="flex: 1;"><div style="font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #9AA1AC;">Vet</div><div style="font-size: 13.5px; font-weight: 700; color: #222; font-family: 'JetBrains Mono', monospace; margin-top: 2px;">$780.46</div></div>
+            <div style="flex: 1;"><div style="font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #9AA1AC;">Admin</div><div style="font-size: 13.5px; font-weight: 700; color: #222; font-family: 'JetBrains Mono', monospace; margin-top: 2px;">$39.03</div></div>
+            <div style="flex: 1;"><div style="font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #9AA1AC;">SOL</div><div style="font-size: 13.5px; font-weight: 700; color: #222; font-family: 'JetBrains Mono', monospace; margin-top: 2px;">$66.50</div></div>
+          </div>
+        </div>
+      </div>
+      <div style="border: 1px solid #D4D4D0; border-radius: 10px; overflow: hidden;">
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #0E2646; padding: 9px 14px;"><span style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #fff;">Buyers</span><span style="font-size: 11px; font-weight: 800; color: #0E2646; background: #F3D12A; border-radius: 999px; padding: 2px 9px;">5 loads</span></div>
+        <div style="padding: 14px 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-end;">
+            <div><div style="font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #9AA1AC;">Total billed</div><div style="font-size: 26px; font-weight: 800; color: #0E2646; font-family: 'JetBrains Mono', monospace; letter-spacing: -0.01em; line-height: 1.1;">$2,114.38</div></div>
+            <div style="text-align: right;"><div style="font-size: 10px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #9AA1AC;">Head</div><div style="font-size: 20px; font-weight: 800; color: #0E2646; font-family: 'JetBrains Mono', monospace;">211</div></div>
+          </div>
+          <div style="display: flex; gap: 8px; margin-top: 13px; border-top: 1px solid #EFEFEA; padding-top: 11px;">
+            <div style="flex: 1;"><div style="font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #9AA1AC;">Vet</div><div style="font-size: 13.5px; font-weight: 700; color: #222; font-family: 'JetBrains Mono', monospace; margin-top: 2px;">$1,883.94</div></div>
+            <div style="flex: 1;"><div style="font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #9AA1AC;">Admin</div><div style="font-size: 13.5px; font-weight: 700; color: #222; font-family: 'JetBrains Mono', monospace; margin-top: 2px;">$94.19</div></div>
+            <div style="flex: 1;"><div style="font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #9AA1AC;">SOL</div><div style="font-size: 13.5px; font-weight: 700; color: #222; font-family: 'JetBrains Mono', monospace; margin-top: 2px;">$136.25</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMBINED TOTAL STRIP -->
+    <div style="display: flex; align-items: center; justify-content: space-between; background: #FBF7E0; border: 1px solid #E6DCA8; border-radius: 10px; padding: 12px 18px; margin-top: 14px;">
+      <div style="display: flex; align-items: baseline; gap: 10px;">
+        <span style="font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #0E2646;">Sale Day Total</span>
+        <span style="font-size: 11px; color: #6B7280; font-weight: 600;">9 customers · 275 head</span>
+      </div>
+      <div style="display: flex; gap: 24px; align-items: baseline; font-family: 'JetBrains Mono', monospace;">
+        <div style="text-align: right;"><div style="font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #6B7280; font-family: 'Inter', sans-serif;">Vet</div><div style="font-size: 13px; font-weight: 700; color: #0E2646; margin-top: 2px;">$2,664.40</div></div>
+        <div style="text-align: right;"><div style="font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #6B7280; font-family: 'Inter', sans-serif;">Admin</div><div style="font-size: 13px; font-weight: 700; color: #0E2646; margin-top: 2px;">$133.22</div></div>
+        <div style="text-align: right;"><div style="font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #6B7280; font-family: 'Inter', sans-serif;">SOL</div><div style="font-size: 13px; font-weight: 700; color: #0E2646; margin-top: 2px;">$202.75</div></div>
+        <div style="text-align: right; padding-left: 22px; border-left: 1px solid #E0D7AE;"><div style="font-size: 9.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #8A6D10; font-family: 'Inter', sans-serif;">Total</div><div style="font-size: 19px; font-weight: 800; color: #0E2646; margin-top: 1px; letter-spacing: -0.01em;">$3,000.37</div></div>
+      </div>
+    </div>
+
+    <!-- summary tables -->
+    <div style="display: flex; align-items: center; gap: 8px; margin: 22px 0 6px; font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: #0E2646;">Sellers <span style="font-size: 10px; font-weight: 800; color: #fff; background: #2E9486; border-radius: 999px; padding: 1px 8px; letter-spacing: 0.02em; text-transform: none;">consignors</span></div>
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead><tr>
+        <th style="text-align: left; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Customer</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Head</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Vet</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Admin</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">SOL</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Total</th>
+      </tr></thead>
+      <tbody style="font-family: 'JetBrains Mono', monospace;">
+        <tr><td style="text-align: left; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Heart Tail Ranch LLP</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">15</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$171.93</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$8.60</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$18.75</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$199.28</td></tr>
+        <tr><td style="text-align: left; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Moe Farm &amp; Ranch Inc.</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">18</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$243.83</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$12.19</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$9.00</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$265.02</td></tr>
+        <tr><td style="text-align: left; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Richendifer, Darlene</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">9</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$112.54</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$5.63</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$11.25</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$129.42</td></tr>
+        <tr><td style="text-align: left; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Sprague, Dale</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">22</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$252.16</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$12.61</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$27.50</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$292.27</td></tr>
+        <tr><td style="text-align: left; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646; font-family: 'Inter', sans-serif;">Sellers subtotal</td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">64</td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">$780.46</td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">$39.03</td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">$66.50</td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">$885.99</td></tr>
+      </tbody>
+    </table>
+
+    <div style="display: flex; align-items: center; gap: 8px; margin: 22px 0 6px; font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: #0E2646;">Buyers <span style="font-size: 10px; font-weight: 800; color: #fff; background: #2E9486; border-radius: 999px; padding: 1px 8px; letter-spacing: 0.02em; text-transform: none;">loads</span></div>
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead><tr>
+        <th style="text-align: left; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Customer</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Buyer #</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Head</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Vet</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Admin</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">SOL</th>
+        <th style="text-align: right; padding: 7px 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #E4E4DE;">Total</th>
+      </tr></thead>
+      <tbody style="font-family: 'JetBrains Mono', monospace;">
+        <tr><td style="text-align: left; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">American Food Group</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #6B7280; font-weight: 700; border-bottom: 1px solid #F0F0EC;">821</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">13</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$176.10</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$8.80</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$16.25</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$201.15</td></tr>
+        <tr><td style="text-align: left; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">American Food Groups</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #6B7280; font-weight: 700; border-bottom: 1px solid #F0F0EC;">820</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">28</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$379.29</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$18.96</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$35.00</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$433.25</td></tr>
+        <tr><td style="text-align: left; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">American Foods-Fall River</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #6B7280; font-weight: 700; border-bottom: 1px solid #F0F0EC;">896</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">118</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$922.17</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$46.11</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$59.00</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$1,027.28</td></tr>
+        <tr><td style="text-align: left; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Jansma Cattle Co, Todd</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #6B7280; font-weight: 700; border-bottom: 1px solid #F0F0EC;">701</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">40</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$312.60</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$15.63</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$20.00</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$348.23</td></tr>
+        <tr><td style="text-align: left; padding: 6px 8px; font-size: 12px; font-weight: 600; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Rc Cattle LLC</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #6B7280; font-weight: 700; border-bottom: 1px solid #F0F0EC;">7560</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">12</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$93.78</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$4.69</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$6.00</td><td style="text-align: right; padding: 6px 8px; font-size: 12px; color: #222; border-bottom: 1px solid #F0F0EC;">$104.47</td></tr>
+        <tr><td style="text-align: left; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646; font-family: 'Inter', sans-serif;">Buyers subtotal</td><td style="border-top: 1px solid #0E2646;"></td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">211</td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">$1,883.94</td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">$94.19</td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">$136.25</td><td style="text-align: right; padding: 7px 8px 6px; font-size: 12px; font-weight: 800; color: #0E2646; border-top: 1px solid #0E2646;">$2,114.38</td></tr>
+      </tbody>
+    </table>
+
+    <table style="width: 100%; border-collapse: collapse; margin-top: 8px;">
+      <tbody style="font-family: 'JetBrains Mono', monospace;">
+        <tr>
+          <td style="width: 34%; text-align: left; padding: 9px 8px; font-size: 13px; font-weight: 800; color: #0E2646; border-top: 2px solid #0E2646; background: #FBF7E0; font-family: 'Inter', sans-serif;">Grand total · all customers</td>
+          <td style="width: 12%; text-align: right; padding: 9px 8px; font-size: 13px; font-weight: 800; color: #0E2646; border-top: 2px solid #0E2646; background: #FBF7E0;">275</td>
+          <td style="width: 14%; text-align: right; padding: 9px 8px; font-size: 13px; font-weight: 800; color: #0E2646; border-top: 2px solid #0E2646; background: #FBF7E0;">$2,664.40</td>
+          <td style="width: 13%; text-align: right; padding: 9px 8px; font-size: 13px; font-weight: 800; color: #0E2646; border-top: 2px solid #0E2646; background: #FBF7E0;">$133.22</td>
+          <td style="width: 13%; text-align: right; padding: 9px 8px; font-size: 13px; font-weight: 800; color: #0E2646; border-top: 2px solid #0E2646; background: #FBF7E0;">$202.75</td>
+          <td style="width: 14%; text-align: right; padding: 9px 8px; font-size: 13px; font-weight: 800; color: #0E2646; border-top: 2px solid #0E2646; background: #FBF7E0;">$3,000.37</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="display: flex; justify-content: space-between; font-size: 10px; color: #9AA1AC; margin-top: 18px; border-top: 1px solid #E4E4DE; padding-top: 8px;">
+      <span>St. Onge Livestock · Sale Day Closeout · Jun 26, 2026</span><span>Page 1 of 4 · Summary</span>
+    </div>
+  </div>
+
+  <!-- ---- PAGE 2: ITEMIZED DETAIL ---- -->
+  <div class="paper pb" style="background: #fff; border: 1px solid #D4D4D0; border-radius: 10px; box-shadow: 0 14px 34px rgba(8,20,42,0.10); padding: 34px 36px 26px; margin-top: 30px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0E2646; padding-bottom: 14px;">
+      <div>
+        <div style="font-family: 'Alfa Slab One', serif; font-size: 24px; line-height: 0.95; color: #0E2646; letter-spacing: -0.01em;">St. Onge Livestock</div>
+        <div style="font-size: 11px; color: #6B7280; margin-top: 5px;">Itemized detail · every work line</div>
+      </div>
+      <div style="text-align: right;">
+        <div style="font-size: 15px; font-weight: 800; color: #0E2646;">Sale Day Closeout · Itemized</div>
+        <div style="font-size: 12.5px; font-weight: 700; color: #3A4658; margin-top: 2px;">Friday, June 26, 2026</div>
+      </div>
+    </div>
+
+    <!-- SELLERS detail -->
+    <div style="margin: 18px 0 6px; font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: #0E2646;">Sellers</div>
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead><tr>
+        <th style="width: 6%; text-align: left; padding: 6px 8px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #C9CDD6;">Pen</th>
+        <th style="width: 26%; text-align: left; padding: 6px 8px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #C9CDD6;">Work Type</th>
+        <th style="width: 8%; text-align: right; padding: 6px 8px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #C9CDD6;">Head</th>
+        <th style="width: 10%; text-align: right; padding: 6px 8px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #C9CDD6;">Vet/hd</th>
+        <th style="width: 10%; text-align: right; padding: 6px 8px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #C9CDD6;">SOL/hd</th>
+        <th style="width: 11%; text-align: right; padding: 6px 8px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #C9CDD6;">Vet</th>
+        <th style="width: 8%; text-align: right; padding: 6px 8px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #C9CDD6;">Admin</th>
+        <th style="width: 7%; text-align: right; padding: 6px 8px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #C9CDD6;">SOL</th>
+        <th style="width: 14%; text-align: right; padding: 6px 8px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #C9CDD6;">Line Total</th>
+      </tr></thead>
+      <tbody style="font-family: 'JetBrains Mono', monospace;">
+        <tr><td colspan="9" style="padding: 6px 10px; font-size: 11.5px; font-weight: 800; color: #0E2646; background: #EEF1F6; font-family: 'Inter', sans-serif;">Heart Tail Ranch LLP <span style="color: #6B7280; font-weight: 600;">· Preg &amp; Mouth Cows</span></td></tr>
+        <tr><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">3</td><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Preg &amp; Mouth Cows</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">9</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$11.00</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$1.25</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$103.16</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$5.16</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$11.25</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$119.57</td></tr>
+        <tr style="background: #F6F7F9;"><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">4</td><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Preg &amp; Mouth Cows</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">6</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$11.00</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$1.25</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$68.77</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$3.44</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$7.50</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$79.71</td></tr>
+        <tr><td colspan="2" style="text-align: left; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6; font-family: 'Inter', sans-serif;">Customer subtotal</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">15</td><td style="border-top: 1px solid #C9CDD6;"></td><td style="border-top: 1px solid #C9CDD6;"></td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$171.93</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$8.60</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$18.75</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$199.28</td></tr>
+
+        <tr><td colspan="9" style="padding: 6px 10px; font-size: 11.5px; font-weight: 800; color: #0E2646; background: #EEF1F6; font-family: 'Inter', sans-serif;">Moe Farm &amp; Ranch Inc. <span style="color: #6B7280; font-weight: 600;">· Drug Free Bull</span></td></tr>
+        <tr><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">7</td><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Drug Free Bull</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">18</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$13.00</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$0.50</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$243.83</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$12.19</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$9.00</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$265.02</td></tr>
+        <tr><td colspan="2" style="text-align: left; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6; font-family: 'Inter', sans-serif;">Customer subtotal</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">18</td><td style="border-top: 1px solid #C9CDD6;"></td><td style="border-top: 1px solid #C9CDD6;"></td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$243.83</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$12.19</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$9.00</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$265.02</td></tr>
+
+        <tr><td colspan="9" style="padding: 6px 10px; font-size: 11.5px; font-weight: 800; color: #0E2646; background: #EEF1F6; font-family: 'Inter', sans-serif;">Richendifer, Darlene <span style="color: #6B7280; font-weight: 600;">· Preg &amp; Mouth Pairs</span></td></tr>
+        <tr><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">5</td><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Preg &amp; Mouth Pairs</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">9</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$12.00</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$1.25</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$112.54</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$5.63</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$11.25</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$129.42</td></tr>
+        <tr><td colspan="2" style="text-align: left; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6; font-family: 'Inter', sans-serif;">Customer subtotal</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">9</td><td style="border-top: 1px solid #C9CDD6;"></td><td style="border-top: 1px solid #C9CDD6;"></td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$112.54</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$5.63</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$11.25</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$129.42</td></tr>
+
+        <tr><td colspan="9" style="padding: 6px 10px; font-size: 11.5px; font-weight: 800; color: #0E2646; background: #EEF1F6; font-family: 'Inter', sans-serif;">Sprague, Dale <span style="color: #6B7280; font-weight: 600;">· Preg &amp; Mouth Cows</span></td></tr>
+        <tr><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">8</td><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Preg &amp; Mouth Cows</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">22</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$11.00</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$1.25</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$252.16</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$12.61</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$27.50</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$292.27</td></tr>
+        <tr><td colspan="2" style="text-align: left; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6; font-family: 'Inter', sans-serif;">Customer subtotal</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">22</td><td style="border-top: 1px solid #C9CDD6;"></td><td style="border-top: 1px solid #C9CDD6;"></td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$252.16</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$12.61</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$27.50</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$292.27</td></tr>
+
+        <tr><td colspan="2" style="text-align: left; padding: 7px 8px; font-size: 12px; font-weight: 800; color: #0E2646; background: #EEF1F6; border-top: 2px solid #0E2646; font-family: 'Inter', sans-serif;">All sellers · subtotal</td><td style="text-align: right; padding: 7px 8px; font-size: 12px; font-weight: 800; color: #0E2646; background: #EEF1F6; border-top: 2px solid #0E2646;">64</td><td style="background: #EEF1F6; border-top: 2px solid #0E2646;"></td><td style="background: #EEF1F6; border-top: 2px solid #0E2646;"></td><td style="text-align: right; padding: 7px 8px; font-size: 12px; font-weight: 800; color: #0E2646; background: #EEF1F6; border-top: 2px solid #0E2646;">$780.46</td><td style="text-align: right; padding: 7px 8px; font-size: 12px; font-weight: 800; color: #0E2646; background: #EEF1F6; border-top: 2px solid #0E2646;">$39.03</td><td style="text-align: right; padding: 7px 8px; font-size: 12px; font-weight: 800; color: #0E2646; background: #EEF1F6; border-top: 2px solid #0E2646;">$66.50</td><td style="text-align: right; padding: 7px 8px; font-size: 12px; font-weight: 800; color: #0E2646; background: #EEF1F6; border-top: 2px solid #0E2646;">$885.99</td></tr>
+      </tbody>
+    </table>
+
+    <!-- BUYERS detail -->
+    <div style="margin: 20px 0 6px; font-size: 12px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: #0E2646;">Buyers</div>
+    <table style="width: 100%; border-collapse: collapse;">
+      <thead><tr>
+        <th style="width: 6%; text-align: left; padding: 6px 8px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #C9CDD6;">Pen</th>
+        <th style="width: 26%; text-align: left; padding: 6px 8px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #C9CDD6;">Work Type</th>
+        <th style="width: 8%; text-align: right; padding: 6px 8px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #C9CDD6;">Head</th>
+        <th style="width: 10%; text-align: right; padding: 6px 8px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #C9CDD6;">Vet/hd</th>
+        <th style="width: 10%; text-align: right; padding: 6px 8px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #C9CDD6;">SOL/hd</th>
+        <th style="width: 11%; text-align: right; padding: 6px 8px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #C9CDD6;">Vet</th>
+        <th style="width: 8%; text-align: right; padding: 6px 8px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #C9CDD6;">Admin</th>
+        <th style="width: 7%; text-align: right; padding: 6px 8px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #C9CDD6;">SOL</th>
+        <th style="width: 14%; text-align: right; padding: 6px 8px; font-size: 9.5px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; color: #6B7280; border-bottom: 1px solid #C9CDD6;">Line Total</th>
+      </tr></thead>
+      <tbody style="font-family: 'JetBrains Mono', monospace;">
+        <tr><td colspan="9" style="padding: 6px 10px; font-size: 11.5px; font-weight: 800; color: #0E2646; background: #EEF1F6; font-family: 'Inter', sans-serif;">American Foods-Fall River <span style="color: #6B7280; font-weight: 600;">· Buyer #896 · Cow ID - Chute</span></td></tr>
+        <tr><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">12</td><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Cow ID - Chute</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">70</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$7.50</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$0.50</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$547.05</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$27.35</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$35.00</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$609.40</td></tr>
+        <tr style="background: #F6F7F9;"><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">14</td><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Cow ID - Chute</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">48</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$7.50</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$0.50</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$375.12</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$18.76</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$24.00</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$417.88</td></tr>
+        <tr><td colspan="2" style="text-align: left; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6; font-family: 'Inter', sans-serif;">Customer subtotal</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">118</td><td style="border-top: 1px solid #C9CDD6;"></td><td style="border-top: 1px solid #C9CDD6;"></td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$922.17</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$46.11</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$59.00</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$1,027.28</td></tr>
+
+        <tr><td colspan="9" style="padding: 6px 10px; font-size: 11.5px; font-weight: 800; color: #0E2646; background: #EEF1F6; font-family: 'Inter', sans-serif;">American Food Group <span style="color: #6B7280; font-weight: 600;">· Buyer #821 · Drug Free Bull</span></td></tr>
+        <tr><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">21</td><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Drug Free Bull</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">13</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$13.00</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$1.25</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$176.10</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$8.80</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$16.25</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$201.15</td></tr>
+        <tr><td colspan="2" style="text-align: left; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6; font-family: 'Inter', sans-serif;">Customer subtotal</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">13</td><td style="border-top: 1px solid #C9CDD6;"></td><td style="border-top: 1px solid #C9CDD6;"></td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$176.10</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$8.80</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$16.25</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$201.15</td></tr>
+
+        <tr><td colspan="9" style="padding: 6px 10px; font-size: 11.5px; font-weight: 800; color: #0E2646; background: #EEF1F6; font-family: 'Inter', sans-serif;">American Food Groups <span style="color: #6B7280; font-weight: 600;">· Buyer #820 · Drug Free Bull</span></td></tr>
+        <tr><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">22</td><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Drug Free Bull</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">28</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$13.00</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$1.25</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$379.29</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$18.96</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$35.00</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$433.25</td></tr>
+        <tr><td colspan="2" style="text-align: left; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6; font-family: 'Inter', sans-serif;">Customer subtotal</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">28</td><td style="border-top: 1px solid #C9CDD6;"></td><td style="border-top: 1px solid #C9CDD6;"></td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$379.29</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$18.96</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$35.00</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$433.25</td></tr>
+
+        <tr><td colspan="9" style="padding: 6px 10px; font-size: 11.5px; font-weight: 800; color: #0E2646; background: #EEF1F6; font-family: 'Inter', sans-serif;">Jansma Cattle Co, Todd <span style="color: #6B7280; font-weight: 600;">· Buyer #701 · Cow ID - Chute</span></td></tr>
+        <tr><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">18</td><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Cow ID - Chute</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">40</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$7.50</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$0.50</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$312.60</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$15.63</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$20.00</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$348.23</td></tr>
+        <tr><td colspan="2" style="text-align: left; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6; font-family: 'Inter', sans-serif;">Customer subtotal</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">40</td><td style="border-top: 1px solid #C9CDD6;"></td><td style="border-top: 1px solid #C9CDD6;"></td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$312.60</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$15.63</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$20.00</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$348.23</td></tr>
+
+        <tr><td colspan="9" style="padding: 6px 10px; font-size: 11.5px; font-weight: 800; color: #0E2646; background: #EEF1F6; font-family: 'Inter', sans-serif;">Rc Cattle LLC <span style="color: #6B7280; font-weight: 600;">· Buyer #7560 · Cow ID - Chute</span></td></tr>
+        <tr><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">25</td><td style="text-align: left; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC; font-family: 'Inter', sans-serif;">Cow ID - Chute</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">12</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$7.50</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$0.50</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$93.78</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$4.69</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$6.00</td><td style="text-align: right; padding: 5px 8px; font-size: 11.5px; color: #222; border-bottom: 1px solid #F0F0EC;">$104.47</td></tr>
+        <tr><td colspan="2" style="text-align: left; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6; font-family: 'Inter', sans-serif;">Customer subtotal</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">12</td><td style="border-top: 1px solid #C9CDD6;"></td><td style="border-top: 1px solid #C9CDD6;"></td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$93.78</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$4.69</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$6.00</td><td style="text-align: right; padding: 6px 8px; font-size: 11.5px; font-weight: 800; color: #0E2646; border-top: 1px solid #C9CDD6;">$104.47</td></tr>
+
+        <tr><td colspan="2" style="text-align: left; padding: 7px 8px; font-size: 12px; font-weight: 800; color: #0E2646; background: #EEF1F6; border-top: 2px solid #0E2646; font-family: 'Inter', sans-serif;">All buyers · subtotal</td><td style="text-align: right; padding: 7px 8px; font-size: 12px; font-weight: 800; color: #0E2646; background: #EEF1F6; border-top: 2px solid #0E2646;">211</td><td style="background: #EEF1F6; border-top: 2px solid #0E2646;"></td><td style="background: #EEF1F6; border-top: 2px solid #0E2646;"></td><td style="text-align: right; padding: 7px 8px; font-size: 12px; font-weight: 800; color: #0E2646; background: #EEF1F6; border-top: 2px solid #0E2646;">$1,883.94</td><td style="text-align: right; padding: 7px 8px; font-size: 12px; font-weight: 800; color: #0E2646; background: #EEF1F6; border-top: 2px solid #0E2646;">$94.19</td><td style="text-align: right; padding: 7px 8px; font-size: 12px; font-weight: 800; color: #0E2646; background: #EEF1F6; border-top: 2px solid #0E2646;">$136.25</td><td style="text-align: right; padding: 7px 8px; font-size: 12px; font-weight: 800; color: #0E2646; background: #EEF1F6; border-top: 2px solid #0E2646;">$2,114.38</td></tr>
+      </tbody>
+    </table>
+
+    <div style="margin-top: 14px; font-size: 11px; color: #9AA1AC; font-style: italic;">Holds (unassigned) — Pen 30 · ID Only · 5 hd · not billed (excluded from totals).</div>
+
+    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+      <tbody style="font-family: 'JetBrains Mono', monospace;">
+        <tr><td style="width: 34%; text-align: left; padding: 9px 8px; font-size: 13px; font-weight: 800; color: #0E2646; border-top: 2px solid #0E2646; background: #FBF7E0; font-family: 'Inter', sans-serif;">Grand total · all customers</td><td style="width: 8%; text-align: right; padding: 9px 8px; font-size: 13px; font-weight: 800; color: #0E2646; border-top: 2px solid #0E2646; background: #FBF7E0;">275</td><td style="width: 12%; border-top: 2px solid #0E2646; background: #FBF7E0;"></td><td style="width: 12%; border-top: 2px solid #0E2646; background: #FBF7E0;"></td><td style="width: 11%; text-align: right; padding: 9px 8px; font-size: 13px; font-weight: 800; color: #0E2646; border-top: 2px solid #0E2646; background: #FBF7E0;">$2,664.40</td><td style="width: 9%; text-align: right; padding: 9px 8px; font-size: 13px; font-weight: 800; color: #0E2646; border-top: 2px solid #0E2646; background: #FBF7E0;">$133.22</td><td style="width: 8%; text-align: right; padding: 9px 8px; font-size: 13px; font-weight: 800; color: #0E2646; border-top: 2px solid #0E2646; background: #FBF7E0;">$202.75</td><td style="width: 14%; text-align: right; padding: 9px 8px; font-size: 13px; font-weight: 800; color: #0E2646; border-top: 2px solid #0E2646; background: #FBF7E0;">$3,000.37</td></tr>
+      </tbody>
+    </table>
+
+    <div style="display: flex; justify-content: space-between; font-size: 10px; color: #9AA1AC; margin-top: 18px; border-top: 1px solid #E4E4DE; padding-top: 8px;">
+      <span>St. Onge Livestock · Sale Day Closeout (itemized) · Jun 26, 2026</span><span>Page 2 of 4 · Itemized detail</span>
+    </div>
+  </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:940,&quot;height&quot;:1180}}">
+class Component extends DCLogic {
+  state = { form: 'summary' };
+  renderVals() {
+    const f = this.state.form;
+    const seg = (active) => ({ bg: active ? '#F3D12A' : 'transparent', color: active ? '#0E2646' : '#CDD8EA' });
+    return {
+      isSummary: f === 'summary',
+      isItemized: f === 'itemized',
+      setSummary: () => this.setState({ form: 'summary' }),
+      setItemized: () => this.setState({ form: 'itemized' }),
+      sumSeg: seg(f === 'summary'),
+      itemSeg: seg(f === 'itemized'),
+      print: () => window.print()
+    };
+  }
+}
+</script>
+</body>
+</html>
