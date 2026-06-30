@@ -18,7 +18,9 @@ import { COLUMNS, GROUP_FIELDS, type AnimalRow, type ColKey, type ColumnDef } fr
 import { naturalCompare, textCompare } from '@/lib/animals/natural-sort'
 import { buildTsv, exportXlsx } from '@/lib/animals/export'
 import { deleteAnimals, updateAnimalsBatch, type BatchField } from '@/app/(office)/animals/actions'
+import { assignAnimalsToLoad, type AssignInput } from '@/app/(app)/loads/actions'
 import { BatchEditPanel } from './batch-edit-panel'
+import { AssignToBuyerPanel } from './assign-to-buyer-panel'
 
 const APP_VERSION = '0.1.0'
 // Where the per-device column layout for this report is remembered.
@@ -106,6 +108,12 @@ export function AnimalsReport({
   const [batchOpen, setBatchOpen] = useState(false)
   const [batchBusy, setBatchBusy] = useState(false)
   const [batchErr, setBatchErr] = useState<string | null>(null)
+  // Build a load: the "pool only" view (animals with no buyer number yet) and the
+  // Assign-to-buyer popover.
+  const [poolOnly, setPoolOnly] = useState(false)
+  const [assignOpen, setAssignOpen] = useState(false)
+  const [assignBusy, setAssignBusy] = useState(false)
+  const [assignErr, setAssignErr] = useState<string | null>(null)
   const router = useRouter()
 
   function note(msg: string) {
@@ -134,12 +142,14 @@ export function AnimalsReport({
       .map(([k, q]) => [k, q.trim().toLowerCase()] as const)
       .filter(([, q]) => q)
     return rows.filter((r) => {
+      // The load-building pool: animals that don't have a buyer number yet.
+      if (poolOnly && r.hasBuyer) return false
       for (const [k, vals] of cats) if (!vals.includes(r[k as ColKey] || '—')) return false
       for (const [k, q] of texts) if (!r[k as ColKey].toLowerCase().includes(q)) return false
       if (gs && !columns.some((c) => r[c.key].toLowerCase().includes(gs))) return false
       return true
     })
-  }, [rows, catFilters, textFilters, search, columns])
+  }, [rows, catFilters, textFilters, search, columns, poolOnly])
 
   // Default order: Sort Pen, then EID (both natural). Used on its own and as the
   // stable tiebreak under any explicit column sort.
@@ -298,6 +308,28 @@ export function AnimalsReport({
     }
   }
 
+  // Assign the selected animals to a buyer's load. Same selection as the rest;
+  // on success clear it and re-pull so the assigned animals leave the pool.
+  async function applyAssign(input: AssignInput) {
+    const ids = [...selected]
+    if (ids.length === 0) return
+    setAssignBusy(true)
+    setAssignErr(null)
+    try {
+      const res = await assignAnimalsToLoad(ids, input)
+      if (!res.ok) {
+        setAssignErr(res.error)
+        return
+      }
+      setAssignOpen(false)
+      setSelected(new Set())
+      note(`Assigned ${res.assigned} animal${res.assigned === 1 ? '' : 's'}`)
+      router.refresh()
+    } finally {
+      setAssignBusy(false)
+    }
+  }
+
   // Select-all-in-view toggles the whole filtered set.
   const allInView = sorted.length > 0 && sorted.every((r) => selected.has(r.id))
   function toggleAll() {
@@ -393,6 +425,16 @@ export function AnimalsReport({
             })}
           </div>
 
+          <button
+            type="button"
+            onClick={() => setPoolOnly((p) => !p)}
+            aria-pressed={poolOnly}
+            title="Show only animals that don't have a buyer number yet"
+            style={{ height: 34, padding: '0 12px', borderRadius: 999, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 700, background: poolOnly ? colors.navy : '#fff', border: `1px solid ${poolOnly ? colors.navy : colors.border}`, color: poolOnly ? '#fff' : colors.textPrimary }}
+          >
+            Pool only
+          </button>
+
           <div style={{ flex: 1 }} />
 
           {activeFilterCount > 0 && (
@@ -421,6 +463,22 @@ export function AnimalsReport({
           <button type="button" onClick={() => void onExport()} disabled={exportRows.length === 0} style={{ height: 36, padding: '0 14px', borderRadius: 9, cursor: exportRows.length ? 'pointer' : 'default', opacity: exportRows.length ? 1 : 0.5, fontFamily: 'inherit', fontSize: 13, fontWeight: 800, background: colors.gold, border: `1px solid ${colors.gold}`, color: colors.navy }}>
             Export to Excel{selected.size ? ` (${selected.size})` : ''}
           </button>
+          {selected.size > 0 && (
+            <div style={{ position: 'relative' }}>
+              <button type="button" onClick={() => { setAssignErr(null); setAssignOpen((o) => !o) }} aria-pressed={assignOpen} style={{ height: 36, padding: '0 14px', borderRadius: 9, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, background: assignOpen ? colors.navy : '#fff', border: `1px solid ${assignOpen ? colors.navy : colors.border}`, color: assignOpen ? '#fff' : colors.navy }}>
+                Assign to buyer ({selected.size})
+              </button>
+              {assignOpen && (
+                <AssignToBuyerPanel
+                  count={selected.size}
+                  busy={assignBusy}
+                  error={assignErr}
+                  onApply={applyAssign}
+                  onClose={() => setAssignOpen(false)}
+                />
+              )}
+            </div>
+          )}
           {selected.size > 0 && (
             <div style={{ position: 'relative' }}>
               <button type="button" onClick={() => { setBatchErr(null); setBatchOpen((o) => !o) }} aria-pressed={batchOpen} style={{ height: 36, padding: '0 14px', borderRadius: 9, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, background: batchOpen ? colors.navy : '#fff', border: `1px solid ${batchOpen ? colors.navy : colors.border}`, color: batchOpen ? '#fff' : colors.navy }}>
