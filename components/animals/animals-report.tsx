@@ -17,7 +17,8 @@ import { Modal } from '@/components/ui/modal'
 import { COLUMNS, GROUP_FIELDS, type AnimalRow, type ColKey, type ColumnDef } from '@/lib/animals/types'
 import { naturalCompare, textCompare } from '@/lib/animals/natural-sort'
 import { buildTsv, exportXlsx } from '@/lib/animals/export'
-import { deleteAnimals } from '@/app/(office)/animals/actions'
+import { deleteAnimals, updateAnimalsBatch, type BatchField } from '@/app/(office)/animals/actions'
+import { BatchEditPanel } from './batch-edit-panel'
 
 const APP_VERSION = '0.1.0'
 // Where the per-device column layout for this report is remembered.
@@ -101,6 +102,10 @@ export function AnimalsReport({
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteErr, setDeleteErr] = useState<string | null>(null)
+  // Batch edit: the open popover, the in-flight flag, and any error to show.
+  const [batchOpen, setBatchOpen] = useState(false)
+  const [batchBusy, setBatchBusy] = useState(false)
+  const [batchErr, setBatchErr] = useState<string | null>(null)
   const router = useRouter()
 
   function note(msg: string) {
@@ -271,6 +276,28 @@ export function AnimalsReport({
     }
   }
 
+  // Batch edit: set one shared field across the selected animals. Same selection
+  // the delete uses; on success we clear it and re-pull so the new values show.
+  async function applyBatch(field: BatchField, value: string) {
+    const ids = [...selected]
+    if (ids.length === 0) return
+    setBatchBusy(true)
+    setBatchErr(null)
+    try {
+      const res = await updateAnimalsBatch(ids, field, value)
+      if (!res.ok) {
+        setBatchErr(res.error)
+        return
+      }
+      setBatchOpen(false)
+      setSelected(new Set())
+      note(`Updated ${res.updated} animal${res.updated === 1 ? '' : 's'}`)
+      router.refresh()
+    } finally {
+      setBatchBusy(false)
+    }
+  }
+
   // Select-all-in-view toggles the whole filtered set.
   const allInView = sorted.length > 0 && sorted.every((r) => selected.has(r.id))
   function toggleAll() {
@@ -394,6 +421,22 @@ export function AnimalsReport({
           <button type="button" onClick={() => void onExport()} disabled={exportRows.length === 0} style={{ height: 36, padding: '0 14px', borderRadius: 9, cursor: exportRows.length ? 'pointer' : 'default', opacity: exportRows.length ? 1 : 0.5, fontFamily: 'inherit', fontSize: 13, fontWeight: 800, background: colors.gold, border: `1px solid ${colors.gold}`, color: colors.navy }}>
             Export to Excel{selected.size ? ` (${selected.size})` : ''}
           </button>
+          {selected.size > 0 && (
+            <div style={{ position: 'relative' }}>
+              <button type="button" onClick={() => { setBatchErr(null); setBatchOpen((o) => !o) }} aria-pressed={batchOpen} style={{ height: 36, padding: '0 14px', borderRadius: 9, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, background: batchOpen ? colors.navy : '#fff', border: `1px solid ${batchOpen ? colors.navy : colors.border}`, color: batchOpen ? '#fff' : colors.navy }}>
+                Batch edit ({selected.size})
+              </button>
+              {batchOpen && (
+                <BatchEditPanel
+                  count={selected.size}
+                  busy={batchBusy}
+                  error={batchErr}
+                  onApply={applyBatch}
+                  onClose={() => setBatchOpen(false)}
+                />
+              )}
+            </div>
+          )}
           {selected.size > 0 && (
             <button type="button" onClick={() => { setDeleteErr(null); setConfirmDelete(true) }} style={{ height: 36, padding: '0 14px', borderRadius: 9, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13, fontWeight: 800, background: '#fff', border: '1px solid #E2B4B4', color: '#B42318' }}>
               Delete ({selected.size})
