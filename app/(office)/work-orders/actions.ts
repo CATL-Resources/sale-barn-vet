@@ -233,8 +233,19 @@ export async function upsertLocation(
   input: LocationInput,
 ): Promise<{ ok: true; location: PartyLocation } | { ok: false; error: string }> {
   const supabase = createClient()
+  // The location's barn comes from its customer. A database trigger also fills
+  // this in, but the generated types (correctly) require it on insert, so set it
+  // here from the party. RLS keeps this to the signed-in member's barn.
+  const { data: party, error: partyErr } = await supabase
+    .from('party')
+    .select('barn_id')
+    .eq('id', input.partyId)
+    .maybeSingle()
+  if (partyErr) return { ok: false, error: partyErr.message }
+  if (!party) return { ok: false, error: 'Customer not found' }
   const row = {
     party_id: input.partyId,
+    barn_id: party.barn_id,
     label: input.label?.trim() || null,
     address: input.address?.trim() || null,
     city: input.city?.trim() || null,
