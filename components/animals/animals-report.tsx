@@ -33,6 +33,19 @@ const slug = (s: string) => s.replace(/[^a-z0-9]+/gi, '-').replace(/^-+|-+$/g, '
 
 const compareFor = (kind: ColumnDef['sort']) => (kind === 'natural' ? naturalCompare : textCompare)
 
+// How a text-column filter matches. Buyer number defaults to Exact (a buyer
+// number is a specific number, not a fragment — 804 should not pull 804X); every
+// other text filter keeps the old Contains behavior so nothing changes for them.
+type MatchMode = 'exact' | 'starts' | 'contains'
+const MATCH_MODES: { key: MatchMode; label: string }[] = [
+  { key: 'exact', label: 'Exact' },
+  { key: 'starts', label: 'Starts' },
+  { key: 'contains', label: 'Contains' },
+]
+const defaultTextMode = (key: ColKey): MatchMode => (key === 'buyerNo' ? 'exact' : 'contains')
+const matches = (value: string, query: string, mode: MatchMode): boolean =>
+  mode === 'exact' ? value === query : mode === 'starts' ? value.startsWith(query) : value.includes(query)
+
 export function AnimalsReport({
   saleDayId,
   saleDate,
@@ -90,6 +103,9 @@ export function AnimalsReport({
 
   const [catFilters, setCatFilters] = useState<Record<string, string[]>>({})
   const [textFilters, setTextFilters] = useState<Record<string, string>>({})
+  // Per-column match mode for the text filters (Exact / Starts / Contains). A
+  // column with no entry here uses its default (buyer number = Exact, else Contains).
+  const [textModes, setTextModes] = useState<Record<string, MatchMode>>({})
   // The hub drives search when embedded; otherwise the report owns it.
   const [internalSearch, setInternalSearch] = useState('')
   const search = embedded ? externalSearch ?? '' : internalSearch
@@ -145,11 +161,14 @@ export function AnimalsReport({
       // The load-building pool: animals that don't have a buyer number yet.
       if (poolOnly && r.hasBuyer) return false
       for (const [k, vals] of cats) if (!vals.includes(r[k as ColKey] || '—')) return false
-      for (const [k, q] of texts) if (!r[k as ColKey].toLowerCase().includes(q)) return false
+      for (const [k, q] of texts) {
+        const key = k as ColKey
+        if (!matches(r[key].toLowerCase(), q, textModes[key] ?? defaultTextMode(key))) return false
+      }
       if (gs && !columns.some((c) => r[c.key].toLowerCase().includes(gs))) return false
       return true
     })
-  }, [rows, catFilters, textFilters, search, columns, poolOnly])
+  }, [rows, catFilters, textFilters, textModes, search, columns, poolOnly])
 
   // Default order: Sort Pen, then EID (both natural). Used on its own and as the
   // stable tiebreak under any explicit column sort.
@@ -210,6 +229,7 @@ export function AnimalsReport({
   function clearAll() {
     setCatFilters({})
     setTextFilters({})
+    setTextModes({})
     setSearch('')
   }
 
@@ -219,7 +239,11 @@ export function AnimalsReport({
       const cat = catFilters[c.key]
       if (cat && cat.length) parts.push(`${c.label}: ${cat.join(', ')}`)
       const txt = textFilters[c.key]
-      if (txt && txt.trim()) parts.push(`${c.label} contains "${txt.trim()}"`)
+      if (txt && txt.trim()) {
+        const mode = textModes[c.key] ?? defaultTextMode(c.key)
+        const verb = mode === 'exact' ? 'is' : mode === 'starts' ? 'starts with' : 'contains'
+        parts.push(`${c.label} ${verb} "${txt.trim()}"`)
+      }
     }
     if (search.trim()) parts.push(`search "${search.trim()}"`)
     return parts.length ? parts.join('; ') : 'None'
@@ -334,6 +358,16 @@ export function AnimalsReport({
   const allInView = sorted.length > 0 && sorted.every((r) => selected.has(r.id))
   function toggleAll() {
     setSelected(() => (allInView ? new Set() : new Set(sorted.map((r) => r.id))))
+  }
+  // Select or clear a whole group at once (only the rows shown in it). Reuses the
+  // one selection set, so every batch action works on a group-selected set.
+  function toggleGroup(ids: string[], select: boolean) {
+    setSelected((s) => {
+      const next = new Set(s)
+      for (const id of ids) if (select) next.add(id)
+      else next.delete(id)
+      return next
+    })
   }
   function toggleRow(id: string) {
     setSelected((s) => {
@@ -533,8 +567,10 @@ export function AnimalsReport({
                               options={optionsByCol[c.key] ?? []}
                               selectedValues={catFilters[c.key] ?? []}
                               textValue={textFilters[c.key] ?? ''}
+                              textMode={textModes[c.key] ?? defaultTextMode(c.key)}
                               onSetCategory={(vals) => setCatFilters((f) => ({ ...f, [c.key]: vals }))}
                               onSetText={(v) => setTextFilters((f) => ({ ...f, [c.key]: v }))}
+                              onSetMode={(m) => setTextModes((f) => ({ ...f, [c.key]: m }))}
                               onClose={() => setOpenFilter(null)}
                             />
                           )}
@@ -556,6 +592,7 @@ export function AnimalsReport({
                         onToggle={() => toggleCollapsed(g.id)}
                         selected={selected}
                         onToggleRow={toggleRow}
+                        onToggleGroup={toggleGroup}
                       />
                     ))
                   : sorted.map((r, i) => (
@@ -645,21 +682,33 @@ function Row({ row, columns, zebra, selected, onToggle }: { row: AnimalRow; colu
 
 type GroupShape = { id: string; label: string; rows: AnimalRow[]; head: number; mixed: boolean; breakdown: [string, number][] }
 
-function GroupBlock({ group, columns, colCount, collapsed, onToggle, selected, onToggleRow }: { group: GroupShape; columns: ColumnDef[]; colCount: number; collapsed: boolean; onToggle: () => void; selected: Set<string>; onToggleRow: (id: string) => void }) {
+function GroupBlock({ group, columns, colCount, collapsed, onToggle, selected, onToggleRow, onToggleGroup }: { group: GroupShape; columns: ColumnDef[]; colCount: number; collapsed: boolean; onToggle: () => void; selected: Set<string>; onToggleRow: (id: string) => void; onToggleGroup: (ids: string[], select: boolean) => void }) {
+  const ids = group.rows.map((r) => r.id)
+  const selectedCount = ids.reduce((n, id) => n + (selected.has(id) ? 1 : 0), 0)
+  const allSel = selectedCount === ids.length && ids.length > 0
   return (
     <>
       <tr>
         <td colSpan={colCount} style={{ position: 'sticky', top: 36, zIndex: 1, background: colors.columnSubheaderBg, borderTop: `1px solid ${colors.cardHeaderBorder}`, borderBottom: `1px solid ${colors.cardHeaderBorder}`, padding: '7px 10px' }}>
-          <button type="button" onClick={onToggle} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
-            <span style={{ color: colors.textMuted, fontSize: 11, width: 12, display: 'inline-block' }}>{collapsed ? '▶' : '▼'}</span>
-            <span style={{ fontSize: 13, fontWeight: 800, color: colors.navy }}>{group.label}</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: colors.textMuted }}>· {group.head} hd</span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+            <input
+              type="checkbox"
+              aria-label={`Select all in ${group.label}`}
+              checked={allSel}
+              ref={(el) => { if (el) el.indeterminate = selectedCount > 0 && !allSel }}
+              onChange={() => onToggleGroup(ids, !allSel)}
+            />
+            <button type="button" onClick={onToggle} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+              <span style={{ color: colors.textMuted, fontSize: 11, width: 12, display: 'inline-block' }}>{collapsed ? '▶' : '▼'}</span>
+              <span style={{ fontSize: 13, fontWeight: 800, color: colors.navy }}>{group.label}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: colors.textMuted }}>· {group.head} hd</span>
             {group.mixed && (
               <span style={{ fontSize: 11, fontWeight: 800, color: colors.warning, background: '#FDF1DC', border: `1px solid ${colors.warning}`, borderRadius: 999, padding: '1px 8px', letterSpacing: '0.02em' }}>
                 Mixed — {group.breakdown.map(([s, n]) => `${s} ${n}`).join(', ')}
               </span>
             )}
-          </button>
+            </button>
+          </span>
         </td>
       </tr>
       {!collapsed && group.rows.map((r, i) => (
@@ -703,7 +752,7 @@ function ColumnsPanel({ columns, hidden, onToggle, onShowAll, onClose }: { colum
   )
 }
 
-function FilterPopover({ col, options, selectedValues, textValue, onSetCategory, onSetText, onClose }: { col: ColumnDef; options: string[]; selectedValues: string[]; textValue: string; onSetCategory: (vals: string[]) => void; onSetText: (v: string) => void; onClose: () => void }) {
+function FilterPopover({ col, options, selectedValues, textValue, textMode, onSetCategory, onSetText, onSetMode, onClose }: { col: ColumnDef; options: string[]; selectedValues: string[]; textValue: string; textMode: MatchMode; onSetCategory: (vals: string[]) => void; onSetText: (v: string) => void; onSetMode: (m: MatchMode) => void; onClose: () => void }) {
   const [q, setQ] = useState('')
   const shown = col.filter === 'category' ? options.filter((o) => !q.trim() || o.toLowerCase().includes(q.trim().toLowerCase())) : []
   const sel = new Set(selectedValues)
@@ -720,11 +769,28 @@ function FilterPopover({ col, options, selectedValues, textValue, onSetCategory,
       <div style={{ position: 'absolute', top: '100%', left: 0, zIndex: 41, marginTop: 2, width: 230, background: '#fff', border: `1px solid ${colors.border}`, borderRadius: 10, boxShadow: '0 12px 30px rgba(14,38,70,0.18)', padding: 10, textTransform: 'none' }}>
         {col.filter === 'text' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {/* Match mode — how the typed text is matched against the column. */}
+            <div style={{ display: 'flex', gap: 4 }}>
+              {MATCH_MODES.map((m) => {
+                const on = textMode === m.key
+                return (
+                  <button
+                    key={m.key}
+                    type="button"
+                    onClick={() => onSetMode(m.key)}
+                    aria-pressed={on}
+                    style={{ flex: 1, height: 28, borderRadius: 7, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12, fontWeight: 700, background: on ? colors.navy : '#fff', border: `1px solid ${on ? colors.navy : colors.border}`, color: on ? '#fff' : colors.textMuted }}
+                  >
+                    {m.label}
+                  </button>
+                )
+              })}
+            </div>
             <input
               autoFocus
               value={textValue}
               onChange={(e) => onSetText(e.target.value)}
-              placeholder={`Contains…`}
+              placeholder={textMode === 'exact' ? 'Is exactly…' : textMode === 'starts' ? 'Starts with…' : 'Contains…'}
               style={{ width: '100%', boxSizing: 'border-box', height: 34, border: `1px solid ${colors.border}`, borderRadius: 8, padding: '0 10px', fontFamily: 'inherit', fontSize: 13, color: colors.textPrimary }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
