@@ -1,6 +1,6 @@
 # Changelog
 
-_Generated from the git history by `npm run changelog`. The hand-written product log lives in `spec-changelog.md`._
+_Generated from the git history by `npm run changelog` (append-only — it adds newly merged commits and never removes what is already here). The hand-written product log lives in `spec-changelog.md`._
 
 ## New
 
@@ -63,6 +63,14 @@ _Generated from the git history by `npm run changelog`. The hand-written product
 
 ## Other
 
+- Animals report: filter match modes + group-header select _(2026-07-01, `f4e6e12`)_
+- Build a Load (PR 2): pool, Assign to buyer, Loads list + detail, GVL export _(2026-06-30, `73324d9`)_
+- Build a Load (PR 1): buyer_load table + animal link (migration + types) _(2026-06-30, `501f0d8`)_
+- Animals report: batch-edit one field across selected animals _(2026-06-30, `8861494`)_
+- Sale Day Closeout report: printable PDF + two-tab Excel _(2026-06-29, `0870bd3`)_
+- Billing report: add a per-line table with buyer number and pen _(2026-06-29, `dc73e7f`)_
+- Cross off the EID 840 fix in TODO.md (it's done and merged) _(2026-06-29, `c929926`)_
+- Capture ID rows: stretch the inputs and line them up _(2026-06-29, `bef34d3`)_
 - Capture ID rows: stretch the inputs and line them up _(2026-06-29, `4b82649`)_
 - require the official 840 prefix (the third validation) _(2026-06-29, `70d64f7`)_
 - Capture EID row: give the EID more width on a phone _(2026-06-29, `f224bd1`)_
