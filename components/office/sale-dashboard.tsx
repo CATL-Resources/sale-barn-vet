@@ -147,6 +147,7 @@ export function SaleDashboard({
           <JumpCard href={pl} title="Pen List" summary="Work cows pen by pen at the chute." count={`${metrics.pensInUse} pen${metrics.pensInUse === 1 ? '' : 's'} · ${metrics.toWork} head to work`} />
           <JumpCard href="/reports" title="Reports" summary="Day and customer billing summaries." count="Coming soon" />
           <JumpCard href={`/print/closeout/${saleDayId}`} title="Sale Day Closeout" summary="Print or download the day's billing — sellers and buyers, with a grand total." count="Summary or itemized" />
+          <JumpCard href={`/loads?day=${saleDayId}`} title="Loads" summary="Build and review buyer loads for the sale day." count="Per buyer number" />
         </div>
       </div>
 
