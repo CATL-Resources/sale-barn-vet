@@ -3,20 +3,39 @@
 Plain-language running list of what's built and what's next. Keep it in everyday
 words (see `CLAUDE.md`).
 
-_Last updated: 2026-06-29_
+_Last updated: 2026-07-01_
 
 ## The short version
 
 The chuteside Capture screen, the office Work Orders screen and Sale Dashboard,
 the Reports hub (Animals, Billing, Customer, Sale Summary), Settings, and Login
 are all live. The full customer list is loaded, and the office can now search it
-and edit a customer's addresses. The biggest gaps before real customer use: the
-Buyers and Sellers pages are still placeholders, the "add a customer" box doesn't
-use the search yet, new customers get no number, and there's no screen that makes
-the day's paperwork (CVIs / change-of-ownership). A short safety list (access
-rules, backups, alerts) still needs doing before the first real sale day.
+and edit a customer's addresses. The office can now group a buyer's animals into
+a load and pull the tags for a health paper, and can print a Sale Day Closeout.
+The biggest gaps before real customer use: the Buyers and Sellers pages are still
+placeholders, the "add a customer / add a consignor" box still free-types a name,
+new customers get no number, and there's still no screen that builds the day's
+paperwork itself (the CVI / change-of-ownership paper — the closeout and the
+per-load tag export are steps toward it, not the paper). A short safety list
+(access rules, backups, alerts) still needs doing before the first real sale day.
 
 ## Done — built since the last update (cross these off)
+
+- **Build a Load.** A load = one buyer number to one destination (paperwork only,
+  no billing). In the Animals report: a "Pool only" view (animals with no buyer
+  number yet) and "Assign to buyer" (search a buyer number or free-type one,
+  pre-fill the destination, set expected head). A Loads list + load detail with a
+  kept-vs-expected head check, edit destination / notes, take animals off, delete
+  a load, and copy / export the load's EID + back tag for GVL.
+- **Sale Day Closeout report.** A printable one-day billing document (Summary or
+  Itemized), split into Sellers and Buyers with a grand total, plus a two-tab
+  Excel. Reachable from the Sale Dashboard.
+- **Billing report shows the buyer number and pen on every line**, and the buyer
+  number is searchable — a new per-line table under the customer rollup.
+- **Animals report — batch edit and more selection power.** Edit one shared field
+  across many selected animals at once; select a whole group with one tap on its
+  header; and text filters now match Exact / Starts with / Contains (buyer number
+  defaults to Exact so "804" doesn't pull "804X").
 
 - **The 840 check on the chute EID now holds for typed entry too.** A real
   official EID is 15 digits and starts with 840. Before, a 15-digit number that
@@ -53,14 +72,16 @@ rules, backups, alerts) still needs doing before the first real sale day.
 
 - [ ] **Buyers and Sellers pages.** Turn the "Coming Soon" placeholders into real
   lists backed by the loaded customers.
-- [ ] **Customer picker when adding a consignor or buyer.** The search works on
-  the server, but the add box still only free-types a name — wire the search in
-  so you pick an existing customer instead of making a duplicate.
+- [ ] **Customer picker when adding a consignor or buyer.** The Build-a-Load
+  "Assign to buyer" box now searches recorded buyer numbers, but the Work Orders
+  "add a consignor / buyer" box still only free-types a name — wire the search in
+  there too so you pick an existing customer instead of making a duplicate.
 - [ ] **Give a brand-new customer a number automatically** (today an added
   customer has no number). Decide the rule and wire it in.
 - [ ] **Document generation.** A screen that makes the day's CVIs and
-  change-of-ownership paper from the work. (Today you can export the Animals
-  report to Excel and copy for GVL, but there's no document build.)
+  change-of-ownership paper from the work. (The Sale Day Closeout prints the day's
+  billing and Build-a-Load exports a load's EID / back tag for GVL — those are
+  steps toward it, but the CVI / change-of-ownership paper itself isn't built.)
 - [ ] **Barn Settings editing.** The screen shows the config; confirm edits
   actually save (it's view-only for now — editing is a separate build).
 
@@ -97,7 +118,7 @@ rules, backups, alerts) still needs doing before the first real sale day.
 
 ## Handy facts
 
-- Repo: `chandyolson/sale-barn-vet` · App: Next.js + Supabase · Site:
+- Repo: `CATL-Resources/sale-barn-vet` · App: Next.js + Supabase · Site:
   salebarnvet.com
 - Supabase project id: `odrcpdnzhnyiofokokum` (us-west-1)
 - Customer data lives in `party` (~19,570 rows, each with a `customer_number`)
